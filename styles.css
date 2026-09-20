@@ -688,6 +688,38 @@ header {
 @keyframes dawnFlash { from { opacity: .95; transform: scale(.35); } to { opacity: 0; transform: scale(1.45); } }
 @keyframes dawnShockwave { from { opacity: 1; transform: scale(.3); } to { opacity: 0; transform: scale(2.4); } }
 @keyframes dawnSpark { from { opacity: 1; transform: rotate(var(--angle)) translateX(5px) scale(1); } to { opacity: 0; transform: rotate(var(--angle)) translateX(39px) scale(.2); } }
+.dawn-moonfall-flash,
+.dawn-moonfall-pulse,
+.dawn-moonfall-hit {
+  position: absolute;
+  z-index: 48;
+  display: block;
+  pointer-events: none;
+}
+.dawn-moonfall-flash {
+  inset: 0;
+  background: radial-gradient(circle at 50% 42%, rgba(235, 246, 255, .66), rgba(119, 170, 255, .2) 46%, transparent 78%);
+  animation: dawnMoonfallFlash .52s ease-out forwards;
+}
+.dawn-moonfall-pulse {
+  width: 92px;
+  aspect-ratio: 1;
+  border: 5px solid rgba(226, 242, 255, .9);
+  border-left-color: transparent;
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(127, 188, 255, .9);
+  animation: dawnMoonfallPulse .65s ease-out forwards;
+}
+.dawn-moonfall-hit {
+  width: 28px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 12%, #9dccff 16% 28%, transparent 65%);
+  animation: dawnMoonfallHit .46s ease-out forwards;
+}
+@keyframes dawnMoonfallFlash { from { opacity: .95; } to { opacity: 0; } }
+@keyframes dawnMoonfallPulse { from { opacity: 1; transform: translate(-50%, -50%) scale(.25) rotate(-35deg); } to { opacity: 0; transform: translate(-50%, -50%) scale(2.1) rotate(15deg); } }
+@keyframes dawnMoonfallHit { from { opacity: 1; transform: translate(-50%, -50%) scale(.35); } to { opacity: 0; transform: translate(-50%, -50%) scale(1.65); } }
 @keyframes dawnMoonComplete {
   0% {
     opacity: 0;

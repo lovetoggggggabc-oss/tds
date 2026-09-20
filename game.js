@@ -69,7 +69,10 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       nodes: Object.freeze([[18, 67], [36, 42], [61, 28], [82, 48]]),
       edges: Object.freeze([[0, 1], [1, 2], [2, 3]]),
     }),
-    abilities: Object.freeze(["같은 적을 4회 공격하면 현재 공격력의 1500% 특수 피해 (기본 공격력 기준 7,500)"]),
+    abilities: Object.freeze([
+      "같은 적을 4회 공격하면 현재 공격력의 1500% 특수 피해",
+      "직접 3킬마다 모든 살아있는 적에게 각 적 최대 체력의 25% 피해",
+    ]),
   }),
   [CONSTELLATION_IDS.RADIANCE]: Object.freeze({
     id: CONSTELLATION_IDS.RADIANCE, name: "광휘의 별자리",
@@ -80,7 +83,10 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       edges: Object.freeze([[0, 1], [1, 2], [2, 0]]),
       order: Object.freeze([0, 2, 1]),
     }),
-    abilities: Object.freeze(["구성 별들의 단계 합만큼 서로 다른 적에게 연쇄 공격. 각 대상은 광휘의 별자리 공격력만큼 피해"]),
+    abilities: Object.freeze([
+      "구성 별들의 단계 합만큼 서로 다른 적에게 연쇄 공격. 각 대상은 광휘의 별자리 공격력만큼 피해",
+      "직접 처치할 때마다 이 별자리의 공격력 영구 +1%",
+    ]),
   }),
   [CONSTELLATION_IDS.SAGITTARIUS]: Object.freeze({
     id: CONSTELLATION_IDS.SAGITTARIUS, name: "궁수자리",
@@ -283,13 +289,13 @@ class Enemy {
       game.leak(this);
     } else this.render();
   }
-  hit(n, from) {
+  hit(n, from, sourceConstellation = null) {
     this.hp -= n;
     UIManager.beam(from, this.position());
     if (this.hp <= 0 && !this.dead) {
       this.dead = true;
       this.el.remove();
-      game.kill(this);
+      game.kill(this, sourceConstellation);
     } else this.updateHealthBar();
   }
   updateHealthBar() {
@@ -474,33 +480,42 @@ class SpatialGrid {
 }
 const CONSTELLATION_BEHAVIORS = Object.freeze({
   [CONSTELLATION_IDS.DAWN]: Object.freeze({
-    createRuntime: () => ({ sameTargetId: null, sameTargetHits: 0 }),
+    createRuntime: (constellation) => ({
+      componentStageSum: constellation.componentStageSum,
+      sameTargetId: null,
+      sameTargetHits: 0,
+      dawnKillProgress: 0,
+    }),
     onTargetChanged(constellation, target) {
       constellation.runtime.sameTargetId = target;
       constellation.runtime.sameTargetHits = 0;
     },
     attack(constellation, target, origin) {
       const damage = constellation.currentDamage();
-      target.hit(damage, origin);
+      target.hit(damage, origin, constellation);
       const runtime = constellation.runtime;
       runtime.sameTargetHits++;
       if (runtime.sameTargetHits === constellation.definition.specialHits) {
         if (!target.dead) {
           const specialDamage = damage * constellation.definition.specialMultiplier;
           UIManager.dawnSpecial(target.position(), specialDamage);
-          target.hit(specialDamage, origin);
+          target.hit(specialDamage, origin, constellation);
         }
         runtime.sameTargetHits = 0;
       }
     },
   }),
   [CONSTELLATION_IDS.RADIANCE]: Object.freeze({
-    createRuntime: (constellation) => ({ componentStageSum: constellation.componentStageSum }),
+    createRuntime: (constellation) => ({
+      componentStageSum: constellation.componentStageSum,
+      radianceKills: 0,
+      radianceKillBonus: 0,
+    }),
     attack(constellation, first, origin) { constellation.chainAttack(first, origin); },
   }),
   [CONSTELLATION_IDS.SAGITTARIUS]: Object.freeze({
     createRuntime: () => ({
-      focusTargetId: null, focusHits: 0, transcendenceUntil: 0,
+      componentStageSum: 0, focusTargetId: null, focusHits: 0, transcendenceUntil: 0,
     }),
     onTargetChanged(constellation, target) {
       constellation.runtime.focusTargetId = target;
@@ -512,7 +527,7 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
       const transcending = runtime.transcendenceUntil > now;
       const nextFocusHit = runtime.focusHits + 1;
       const focusMultiplier = transcending ? 1 : nextFocusHit >= 40 ? 21 : nextFocusHit >= 20 ? 11 : 1;
-      target.hit(constellation.currentDamage(focusMultiplier), origin);
+      target.hit(constellation.currentDamage(focusMultiplier), origin, constellation);
       if (!transcending) runtime.focusHits = nextFocusHit;
       if (runtime.focusHits >= 60 && runtime.transcendenceUntil <= now) {
         runtime.transcendenceUntil = now + 10;
@@ -522,9 +537,9 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
     },
   }),
   [CONSTELLATION_IDS.ASTROLOGER]: Object.freeze({
-    createRuntime: () => ({ lastDivinationResult: null }),
+    createRuntime: () => ({ componentStageSum: 0, lastDivinationResult: null }),
     attack(constellation, target, origin) {
-      target.hit(constellation.currentDamage(), origin);
+      target.hit(constellation.currentDamage(), origin, constellation);
       const active = game.players.reduce(
         (total, player) => total + player.manager.activeConstellations().length, 0,
       );
@@ -551,6 +566,9 @@ class Constellation {
     this.cooldown = 0;
     this.target = null;
     this.runtime = this.behavior.createRuntime(this);
+    // Keep the construction input on every instance's runtime state. Behavior
+    // factories may initialize additional, constellation-specific progress.
+    this.runtime.componentStageSum = this.componentStageSum;
     members.forEach((index) => (owner.stars[index].support = index !== center));
     owner.stars[center].constellation = this;
   }
@@ -579,7 +597,32 @@ class Constellation {
   }
   currentDamage(localMultiplier = 1) {
     const allyMultiplier = game.attackBuffUntil > game.gameTime ? 11 : 1;
-    return this.definition.attackDamage * allyMultiplier * localMultiplier;
+    const killMultiplier = this.definitionId === CONSTELLATION_IDS.RADIANCE
+      ? 1 + this.runtime.radianceKillBonus
+      : 1;
+    return this.definition.attackDamage * this.componentStageSum * killMultiplier * allyMultiplier * localMultiplier;
+  }
+  registerKill() {
+    if (this.definitionId === CONSTELLATION_IDS.RADIANCE) {
+      this.runtime.radianceKills++;
+      this.runtime.radianceKillBonus = this.runtime.radianceKills * 0.01;
+      game.markDirty();
+      return;
+    }
+    if (this.definitionId !== CONSTELLATION_IDS.DAWN) return;
+    this.runtime.dawnKillProgress++;
+    if (this.runtime.dawnKillProgress < 3) {
+      game.markDirty();
+      return;
+    }
+    this.runtime.dawnKillProgress = 0;
+    const origin = this.owner.pos(this.center);
+    const livingEnemies = game.enemies.filter((enemy) => !enemy.dead);
+    UIManager.dawnMoonfall(origin, livingEnemies);
+    // No source is passed for moonfall: its kills receive rewards normally,
+    // but cannot count toward (or recursively trigger) DAWN's direct-kill skill.
+    livingEnemies.forEach((enemy) => enemy.hit(enemy.maxHp * 0.25, origin));
+    game.markDirty();
   }
   effectiveRange() {
     return this.definition.range;
@@ -590,7 +633,7 @@ class Constellation {
     let from = origin;
     while (target && hit.size < this.runtime.componentStageSum) {
       const targetPosition = target.position();
-      target.hit(this.currentDamage(), from);
+      target.hit(this.currentDamage(), from, this);
       if (hit.size) UIManager.chainBeam(from, targetPosition);
       hit.add(target);
       from = targetPosition;
@@ -1022,6 +1065,29 @@ class UIManager {
     burst.innerHTML = `<i class="dawn-flash"></i><i class="dawn-shockwave"></i><svg viewBox="0 0 100 70"><path d="M87 9C65 58 29 69 7 46c28 11 55-3 80-37Z"/></svg>${Array.from({ length: 8 }, (_, i) => `<i class="dawn-spark" style="--angle:${i * 45}deg"></i>`).join("")}<b>${Math.round(damage).toLocaleString()}</b>`;
     this.addTransient(burst, arena, 480);
   }
+  static dawnMoonfall(origin, enemies) {
+    const flash = document.createElement("i");
+    flash.className = "dawn-moonfall-flash";
+    flash.setAttribute("aria-hidden", "true");
+    this.addTransient(flash, arena, 520);
+
+    const pulse = document.createElement("i");
+    pulse.className = "dawn-moonfall-pulse";
+    pulse.style.left = `${origin.x}%`;
+    pulse.style.top = `${origin.y}%`;
+    pulse.setAttribute("aria-hidden", "true");
+    this.addTransient(pulse, arena, 650);
+
+    enemies.forEach((enemy) => {
+      const position = enemy.position();
+      const hit = document.createElement("i");
+      hit.className = "dawn-moonfall-hit";
+      hit.style.left = `${position.x}%`;
+      hit.style.top = `${position.y}%`;
+      hit.setAttribute("aria-hidden", "true");
+      this.addTransient(hit, arena, 460);
+    });
+  }
   static divinationEffect(position, success) {
     const effect = document.createElement("div");
     effect.className = `divination-effect ${success ? "success" : "failure"}`;
@@ -1180,7 +1246,7 @@ class UIManager {
     let constellation = s.constellation;
     const constellationStats = constellation?.definition;
     starInfo.innerHTML = constellation
-      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>공격력 ${constellationStats.attackDamage}</span><span>공격속도 ${constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>단계 합 ${constellation.componentStageSum}</span><span>최대 연쇄 대상 ${constellation.componentStageSum}</span>` : ""}</div><div class="trait">${constellationStats.abilities.join(" · ")}</div>`
+      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합 ${constellation.componentStageSum}</span><span>공격력 ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/3</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>처치 공격력 보너스 +${constellation.runtime.radianceKills}%</span><span>광휘 처치 수 ${constellation.runtime.radianceKills}</span>` : ""}</div><div class="trait">${constellationStats.abilities.join(" · ")}</div>`
       : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? constellationStats.range : d.range,
@@ -1395,12 +1461,13 @@ class GameManager {
   markDirty() {
     this.dirty = true;
   }
-  kill(e) {
+  kill(e, sourceConstellation = null) {
     this.players.forEach((p) => {
       p.resources.starlight += e.reward;
       if (e.boss) p.resources.divinity++;
     });
     this.clearEnemyReferences(e);
+    sourceConstellation?.registerKill();
     this.markDirty();
   }
   leak(e) {

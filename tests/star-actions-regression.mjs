@@ -8,6 +8,7 @@ const definitions = source.slice(0, source.indexOf("class UIManager"));
 const hints = [];
 let moonPlays = 0;
 const dawnBursts = [];
+const moonfalls = [];
 const divinationResults = [];
 const completionPaths = [];
 
@@ -22,6 +23,7 @@ const context = {
     zodiacComplete: (points) => completionPaths.push(points),
     showDawnMoon: () => moonPlays++,
     dawnSpecial: (position, damage) => dawnBursts.push({ position, damage }),
+    dawnMoonfall: (position, enemies) => moonfalls.push({ position, enemies: [...enemies] }),
     divinationEffect: (position, success) => divinationResults.push({ position, success }),
   },
   effects: { querySelectorAll: () => [] },
@@ -209,10 +211,10 @@ for (let hit = 0; hit < 4; hit++) {
   constellation.cooldown = 0;
   constellation.attack(0);
 }
-assert.deepEqual(damage, [500, 500, 500, 500, 500 * 15]);
+assert.deepEqual(damage, [2000, 2000, 2000, 2000, 2000 * 15]);
 assert.equal(constellation.runtime.sameTargetHits, 0);
 assert.equal(moonPlays, 1, "special attack must not replay the moon");
-assert.deepEqual(dawnBursts, [{ position: { x: 1, y: 0 }, damage: 7500 }]);
+assert.deepEqual(dawnBursts, [{ position: { x: 1, y: 0 }, damage: 30000 }]);
 
 // Dawn's streak belongs to one living, in-range target only.
 const nextEnemy = { ...enemy, dead: false, hp: 100000, position: () => ({ x: 2, y: 0 }), hit: enemy.hit };
@@ -249,7 +251,7 @@ const chained = Array.from({ length: 5 }, (_, index) => ({
 context.game.enemies = chained;
 radiance.cooldown = 0;
 radiance.attack(0);
-const radianceDamage = 950;
+const radianceDamage = 950 * 4;
 assert.deepEqual(chained.map((enemy) => enemy.received || []), [
   [radianceDamage], [radianceDamage], [radianceDamage], [radianceDamage], [],
 ]);
@@ -257,6 +259,48 @@ context.game.enemies = chained.slice(0, 2).map((enemy) => ({ ...enemy, hp: 10000
 radiance.cooldown = 0;
 radiance.attack(0);
 assert.deepEqual(context.game.enemies.map((enemy) => enemy.received), [[radianceDamage], [radianceDamage]]);
+
+// Kill progression is instance-local. Dawn triggers exactly once on the third
+// direct kill and moonfall deals 25% max HP without assigning a damage source.
+const moonfallHits = [];
+context.game.enemies = [1000, 10000, 20000].map((maxHp, index) => ({
+  dead: index === 2,
+  maxHp,
+  position: () => ({ x: index, y: 1 }),
+  hit(...args) { moonfallHits.push(args); },
+}));
+constellation.registerKill();
+constellation.registerKill();
+assert.equal(moonfalls.length, 0);
+constellation.registerKill();
+assert.equal(moonfalls.length, 1);
+assert.equal(constellation.runtime.dawnKillProgress, 0);
+assert.deepEqual(moonfallHits.map(([amount]) => amount), [250, 2500]);
+assert.ok(moonfallHits.every((args) => args.length === 2), "moonfall kills must not carry DAWN attribution");
+
+// Radiance begins at +0%, gains exactly +1% per direct kill, and applies the
+// stage sum once before its accumulated multiplier.
+assert.equal(radiance.runtime.radianceKills, 0);
+assert.equal(radiance.currentDamage(), 950 * 4);
+for (let kill = 0; kill < 10; kill++) radiance.registerKill();
+assert.equal(radiance.runtime.radianceKills, 10);
+assert.equal(radiance.runtime.radianceKillBonus, 0.1);
+assert.equal(radiance.currentDamage(), 950 * 4 * 1.1);
+for (let kill = 10; kill < 100; kill++) radiance.registerKill();
+assert.equal(radiance.runtime.radianceKills, 100);
+assert.equal(radiance.runtime.radianceKillBonus, 1);
+assert.equal(radiance.currentDamage(), 950 * 4 * 2);
+
+const stageSevenManager = makeManager();
+[[0, "red", 2], [1, "red", 2], [2, "white", 3]].forEach(([slot, type, tier]) => {
+  stageSevenManager.stars[slot] = new Star(type, tier);
+});
+stageSevenManager.selected = [0, 1, 2];
+stageSevenManager.zodiacMode = true;
+ZodiacSystem.create(stageSevenManager);
+const stageSevenRadiance = stageSevenManager.stars[0].constellation;
+assert.equal(stageSevenRadiance.componentStageSum, 7);
+assert.equal(stageSevenRadiance.currentDamage(), 950 * 7, "2 + 2 + 3 stages must apply exactly one x7 multiplier");
 
 // Recipe matching is count-based: selection order and star tier never affect it.
 for (const tiers of [[1, 1, 1], [2, 4, 3]]) {
@@ -372,7 +416,7 @@ sagittarius.runtime.focusHits = 19;
 sagittarius.behavior.attack(sagittarius, focusEnemy, { x: 0, y: 0 });
 sagittarius.runtime.focusHits = 39;
 sagittarius.behavior.attack(sagittarius, focusEnemy, { x: 0, y: 0 });
-assert.deepEqual(focusDamage, [4400, 8400], "the 20th and 40th focus hits use 1100% and 2100% damage");
+assert.deepEqual(focusDamage, [400 * 4 * 11, 400 * 4 * 21], "the 20th and 40th focus hits use stage-scaled 1100% and 2100% damage");
 sagittarius.runtime.focusHits = 59;
 sagittarius.behavior.attack(sagittarius, enemy, { x: 0, y: 0 });
 assert.equal("totalHits" in sagittarius.runtime, false);
