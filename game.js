@@ -11,7 +11,7 @@ const CONFIG = {
   tierDamage: [1, 1.7, 2.8, 4.4],
   whiteBurstInterval: 0.16,
   whiteBurstRest: 2,
-  constellation: { range: 9, damagePerTier: 150, cooldown: 0.55 },
+  constellation: { range: 4, damage: 500, rate: 4, specialMultiplier: 15 },
   monsters: {
     slime: { name: "어둠 슬라임", hp: 500, speed: 4.6, reward: 1 },
     bug: { name: "암흑 벌레", hp: 800, speed: 7, reward: 2 },
@@ -240,28 +240,57 @@ class Constellation {
     this.center = center;
     this.members = members;
     this.cooldown = 0;
+    this.target = null;
+    this.hitCount = 0;
     members.forEach((i) => (owner.stars[i].support = i !== center));
     owner.stars[center].constellation = this;
   }
   attack(dt) {
     this.cooldown -= dt;
+    let position = this.owner.pos(this.center);
+    if (
+      this.target &&
+      (this.target.dead ||
+        Targeting.dist(position, this.target.position()) >
+          CONFIG.constellation.range * CONFIG.rangeUnit)
+    ) {
+      this.target = null;
+      this.hitCount = 0;
+    }
     if (this.cooldown > 0) return;
-    let target = Targeting.choose(
-      {
-        data: () => ({
-          range: CONFIG.constellation.range,
-          target: "highest",
-        }),
-      },
-      game.enemies,
-      this.owner.pos(this.center),
-    );
+    let target =
+      this.target ||
+      Targeting.choose(
+        {
+          data: () => ({
+            range: CONFIG.constellation.range,
+            target: "highest",
+          }),
+        },
+        game.enemies,
+        position,
+      );
     if (target) {
-      let power =
-        this.members.reduce((s, i) => s + this.owner.stars[i].tier, 0) *
-        CONFIG.constellation.damagePerTier;
-      target.hit(power, this.owner.pos(this.center));
-      this.cooldown = CONFIG.constellation.cooldown;
+      if (target !== this.target) {
+        this.target = target;
+        this.hitCount = 0;
+      }
+      const currentAttackDamage = CONFIG.constellation.damage;
+      target.hit(currentAttackDamage, position);
+      this.hitCount++;
+      if (this.hitCount === 3) {
+        if (!target.dead) {
+          const specialDamage =
+            currentAttackDamage * CONFIG.constellation.specialMultiplier;
+          target.hit(specialDamage, position);
+        }
+        this.hitCount = 0;
+      }
+      if (target.dead) {
+        this.target = null;
+        this.hitCount = 0;
+      }
+      this.cooldown = 1 / CONFIG.constellation.rate;
     }
   }
   release() {
@@ -449,30 +478,26 @@ class MergeSystem {
   }
 }
 class SwapSystem {
-  static begin(m) {
+  static execute(m) {
     if (!m.player.resources.can(CONFIG.swapCost))
       return UIManager.hint("별빛이 부족합니다.");
     if (m.zodiacMode)
       return UIManager.hint("먼저 조디악 선택을 완료하거나 취소하세요.");
     if (m.selected.length !== 1)
       return UIManager.hint("교환할 별을 먼저 선택하세요.");
-    m.swapMode = true;
-    UIManager.hint("위치를 바꿀 다른 별을 선택하세요.");
-    game.render();
-  }
-  static execute(m, a, b) {
-    if (
-      !m.stars[b] ||
-      m.stars[a].support ||
-      m.stars[b].support ||
-      m.stars[a].constellation ||
-      m.stars[b].constellation
-    )
+    let a = m.selected[0],
+      star = m.stars[a];
+    if (!star || star.support || star.constellation)
       return UIManager.hint("별자리 구성원은 교환할 수 없습니다.");
     if (!m.player.resources.spend(CONFIG.swapCost)) return;
-    m.stars[a] = [m.stars[b], (m.stars[b] = m.stars[a])][0];
-    m.selected = [b];
+    let candidates = STAR_KEYS.filter((type) => type !== star.type);
+    star.type = candidates[Math.floor(Math.random() * candidates.length)];
+    star.cooldown = 0;
+    star.burstLeft = 3;
+    star.lock = null;
+    m.selected = [a];
     m.swapMode = false;
+    UIManager.hint(`${star.data().name} 별로 교환했습니다.`);
     game.render();
   }
 }
@@ -509,7 +534,17 @@ class ZodiacSystem {
     new Constellation(m, center, [...picks]);
     m.exitModes();
     UIManager.zodiacComplete(points[0], points.slice(1));
+    UIManager.showDawnMoon();
     UIManager.hint("✨ 새벽의 별자리 완성!");
+    game.render();
+  }
+  static cancel(m) {
+    if (!m.zodiacMode) return;
+    m.exitModes();
+    effects
+      .querySelectorAll(".zodiac-preview")
+      .forEach((element) => element.remove());
+    UIManager.hint("조디악 선택을 취소했습니다.");
     game.render();
   }
   static release(m, center = m.selected[0]) {
@@ -580,6 +615,17 @@ class UIManager {
       1200,
     );
   }
+  static showDawnMoon() {
+    dawnMoon.hidden = false;
+    dawnMoon.classList.remove("play");
+    void dawnMoon.offsetWidth;
+    dawnMoon.classList.add("play");
+    clearTimeout(this.moonTimer);
+    this.moonTimer = setTimeout(() => {
+      dawnMoon.classList.remove("play");
+      dawnMoon.hidden = true;
+    }, 1800);
+  }
   static mergeEffect(m, fromIndex, toIndex) {
     let from = m.pos(fromIndex),
       to = m.pos(toIndex),
@@ -619,6 +665,7 @@ class UIManager {
       ranges.innerHTML = "";
       rangeIndicator.hidden = true;
       contextActions.hidden = true;
+      this.actionKey = null;
       return;
     }
     let s = pick.m.stars[pick.index],
@@ -630,12 +677,11 @@ class UIManager {
     starInfo.style.setProperty("--star-color", d.color);
     let constellation = s.constellation;
     starInfo.innerHTML = constellation
-      ? `<strong>✦ 새벽의 별자리</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>공격력 ${constellation.members.reduce((sum, i) => sum + pick.m.stars[i].tier, 0) * CONFIG.constellation.damagePerTier}</span><span>사정거리 ${CONFIG.constellation.range}</span></div><div class="trait">연결된 지원 별의 힘으로 공격</div>`
+      ? `<strong>✦ 새벽의 별자리</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>공격력 ${CONFIG.constellation.damage}</span><span>공격속도 ${CONFIG.constellation.rate}회/초</span><span>사정거리 ${CONFIG.constellation.range}</span></div><div class="trait">같은 적 3회 타격 시 공격력의 1500% 특수공격</div>`
       : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? CONFIG.constellation.range : d.range,
-      diameter =
-        (arena.clientWidth * shownRange * CONFIG.rangeUnit * 2) / 100;
+      diameter = (arena.clientWidth * shownRange * CONFIG.rangeUnit * 2) / 100;
     rangeIndicator.hidden = false;
     rangeIndicator.style.left = p.x + "%";
     rangeIndicator.style.top = p.y + "%";
@@ -649,19 +695,28 @@ class UIManager {
     contextActions.style.top = `${((slot.top - ar.top + (slot.top - ar.top < 55 ? slot.height + 5 : -5)) / ar.height) * 100}%`;
     if (constellation) {
       let enabled = pick.m.player.resources.divinity >= 1;
-      contextActions.innerHTML = `<button data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
-      contextActions.querySelector("button").onclick = () =>
-        ZodiacSystem.release(pick.m, pick.index);
+      let actionKey = `${pick.player}:${pick.index}:release:${enabled}`;
+      if (this.actionKey !== actionKey) {
+        contextActions.innerHTML = `<button data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
+        contextActions.querySelector("button").onclick = () =>
+          ZodiacSystem.release(pick.m, pick.index);
+        this.actionKey = actionKey;
+      }
     } else if (!s.support) {
       let partner = MergeSystem.partner(pick.m),
         canSwap = pick.m.player.resources.can(CONFIG.swapCost) && !s.support;
-      contextActions.innerHTML = `<button data-context="swap"${canSwap ? "" : " disabled"}>교환</button><button class="merge${partner >= 0 ? " available" : ""}" data-context="merge"${partner >= 0 ? "" : " disabled"}>합성</button>`;
-      contextActions.querySelector('[data-context="swap"]').onclick = () =>
-        SwapSystem.begin(pick.m);
-      contextActions.querySelector('[data-context="merge"]').onclick = () =>
-        MergeSystem.execute(pick.m);
+      let actionKey = `${pick.player}:${pick.index}:star:${s.type}:${s.tier}:${canSwap}:${partner}`;
+      if (this.actionKey !== actionKey) {
+        contextActions.innerHTML = `<button data-context="swap"${canSwap ? "" : " disabled"}>교환</button><button class="merge${partner >= 0 ? " available" : ""}" data-context="merge"${partner >= 0 ? "" : " disabled"}>합성</button>`;
+        contextActions.querySelector('[data-context="swap"]').onclick = () =>
+          SwapSystem.execute(pick.m);
+        contextActions.querySelector('[data-context="merge"]').onclick = () =>
+          MergeSystem.execute(pick.m);
+        this.actionKey = actionKey;
+      }
     } else {
       contextActions.hidden = true;
+      this.actionKey = null;
     }
   }
   static render(g) {
@@ -691,7 +746,8 @@ class UIManager {
     links.innerHTML = lines.join("");
     g.players.forEach((p) => p.manager.render());
     let p = g.players[0],
-      z = controls.querySelector("[data-act=zodiac]");
+      z = controls.querySelector("[data-act=zodiac]"),
+      cancel = controls.querySelector("[data-act=zodiac-cancel]");
     controls.classList.toggle(
       "active-player",
       p.manager.selected.length > 0 ||
@@ -701,6 +757,7 @@ class UIManager {
     controls.querySelector("[data-act=summon]").disabled =
       !p.resources.can(CONFIG.summonCost) || p.manager.stars.every(Boolean);
     z.classList.toggle("active", p.manager.zodiacMode);
+    cancel.hidden = !p.manager.zodiacMode;
     z.textContent = p.manager.zodiacMode
       ? `연결 실행 (${p.manager.selected.length}/4)`
       : "조디악";
@@ -730,9 +787,12 @@ class GameManager {
     controls
       .querySelector("[data-act=summon]")
       .addEventListener("click", () => p.manager.summon());
-    controls.querySelector("[data-act=zodiac]").addEventListener("click", () =>
-      ZodiacSystem.toggle(p.manager),
-    );
+    controls
+      .querySelector("[data-act=zodiac]")
+      .addEventListener("click", () => ZodiacSystem.toggle(p.manager));
+    controls
+      .querySelector("[data-act=zodiac-cancel]")
+      .addEventListener("click", () => ZodiacSystem.cancel(p.manager));
   }
   simulationTimeout(callback, milliseconds) {
     return setTimeout(callback, milliseconds / this.speed);

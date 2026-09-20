@@ -13,6 +13,9 @@ assert.equal((html.match(/data-act="summon"/g) || []).length, 1);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/);
 assert.equal((html.match(/data-act="zodiac"/g) || []).length, 1);
+assert.equal((html.match(/data-act="zodiac-cancel"/g) || []).length, 1);
+assert.match(html, /id="dawnMoon"/);
+assert.match(css, /\.dawn-moon\s*\{[\s\S]*?pointer-events:\s*none/);
 assert.doesNotMatch(html, /1P 마법사|2P 마법사|class="wallet"|class="players"/);
 assert.match(html, /class="game-controls"/);
 assert.ok(
