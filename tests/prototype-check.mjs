@@ -43,8 +43,30 @@ assert.match(js, /static partner\(m\)/);
 assert.match(js, /s\.tier\+\+;\s*m\.stars\[b\] = null/);
 assert.doesNotMatch(
   js,
+  /simulationTimeout\(\(\) => \{\s*s\.tier\+\+/,
+  "merge state changes must not wait for an animation timeout",
+);
+assert.doesNotMatch(
+  js,
   /data-act="merge"/,
   "merge must only be presented beside the selected star",
+);
+assert.doesNotMatch(js, /data-act="swap"/, "swap must not be a footer action");
+assert.doesNotMatch(
+  js,
+  /data-act="release"/,
+  "constellation release must not be a footer action",
+);
+assert.match(
+  js,
+  /data-context="swap"[\s\S]*data-context="merge"/,
+  "normal-star actions must be contextual",
+);
+assert.match(js, /data-context="release"/, "release must be contextual");
+assert.match(
+  js,
+  /let c = m\.stars\[center\]\?\.constellation;[\s\S]*c\.center !== center/,
+  "only a selected constellation center may be released",
 );
 assert.match(
   js,
