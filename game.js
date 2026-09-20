@@ -37,7 +37,7 @@ const CONSTELLATION_IDS = Object.freeze({
   ASTROLOGER: "ASTROLOGER",
   GUARDIAN: "GUARDIAN",
 });
-const BASE_MAX_HP = 5000;
+const BASE_MAX_HP = 150;
 const MAX_STARS_PER_PLAYER = 15;
 // Logical, normalized map data is authoritative for drawing, movement and
 // placement. New stages can provide another definition without changing any
@@ -134,8 +134,9 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       nodes: Object.freeze([[50, 18], [20, 68], [80, 68]]),
       edges: Object.freeze([[0, 1], [1, 2], [2, 0]]),
     }),
+    contextualAction: "guardianLight",
     specialDescriptions: Object.freeze([
-      "수호의 빛: 공격에 성공할 때마다 기지의 체력을 50 + 기지 최대 체력의 1%만큼 회복합니다. 기지의 체력이 이미 가득 차 있다면 대신 기지의 최대 체력을 1% 증가시킵니다.",
+      "특수능력 1 — 수호의 빛: 별빛 50을 소모하여 기지의 체력을 50 + 기지 최대 체력의 1%만큼 회복합니다. 기지의 체력이 이미 가득 차 있다면 대신 기지의 최대 체력을 1% 증가시킵니다.",
       "수호자 소환: 15초마다 기지 최대 체력의 20%만큼의 체력을 가진 수호자를 출구에서 소환합니다. 수호자는 적과 반대 방향으로 출구에서 입구를 향해 이동하며, 적을 만나면 길을 막고 전투합니다.",
     ]),
   }),
@@ -147,6 +148,7 @@ const CONFIG = {
   swapCost: 10,
   divinationCost: 30,
   divinationFailureCost: 15,
+  guardianLightCost: 50,
   startStarlight: 5000,
   startDivinity: 50,
   baseMaxHP: BASE_MAX_HP,
@@ -296,10 +298,12 @@ class Enemy {
     this.x = MAP_DEFINITION.spawn.x;
     this.y = MAP_DEFINITION.spawn.y;
     this.lastHpPercent = -1;
+    this.lastHpText = "";
     this.el = document.createElement("div");
     this.el.className = `enemy ${this.type}${this.boss ? " boss" : ""}`;
-    this.el.innerHTML = `<div class="bar" aria-hidden="true"><i></i></div><span class="enemy-body"></span><small>${this.boss ? this.name : ""}</small>`;
+    this.el.innerHTML = `<div class="enemy-health"><span class="enemy-hp"></span><div class="bar" aria-hidden="true"><i></i></div></div><span class="enemy-body"></span><small>${this.boss ? this.name : ""}</small>`;
     this.hpFill = this.el.querySelector(".bar i");
+    this.hpText = this.el.querySelector(".enemy-hp");
     arena.append(this.el);
     this.updateHealthBar();
     this.render();
@@ -339,9 +343,14 @@ class Enemy {
   }
   updateHealthBar() {
     const hpPercent = Math.max(0, Math.min(100, (this.hp / this.maxHp) * 100));
+    const hpText = `${Math.round(Math.max(0, this.hp)).toLocaleString()} / ${Math.round(this.maxHp).toLocaleString()}`;
     if (hpPercent !== this.lastHpPercent) {
       this.hpFill.style.width = `${hpPercent}%`;
       this.lastHpPercent = hpPercent;
+    }
+    if (hpText !== this.lastHpText) {
+      this.hpText.textContent = hpText;
+      this.lastHpText = hpText;
     }
   }
 }
@@ -680,13 +689,6 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
     },
     attack(constellation, target, origin) {
       target.hit(constellation.currentDamage(), origin, constellation);
-      const base = game.base;
-      if (base.hp < base.maxHp) base.hp = Math.min(base.maxHp, base.hp + 50 + base.maxHp * 0.01);
-      else {
-        base.maxHp *= 1.01;
-        base.hp = base.maxHp;
-      }
-      game.markDirty();
     },
   }),
 });
@@ -1156,6 +1158,30 @@ class DivinationSystem {
     game.markDirty();
   }
 }
+class GuardianLightSystem {
+  static execute(manager, index) {
+    const star = manager.stars[index];
+    if (
+      !star?.constellation ||
+      star.constellation.center !== index ||
+      star.constellation.definitionId !== CONSTELLATION_IDS.GUARDIAN
+    )
+      return UIManager.hint("수호자의 자리를 선택하세요.");
+    if (!manager.player.resources.spend(CONFIG.guardianLightCost))
+      return UIManager.hint("별빛이 부족합니다.");
+
+    const base = game.base;
+    if (base.hp < base.maxHp)
+      base.hp = Math.min(base.maxHp, base.hp + 50 + base.maxHp * 0.01);
+    else {
+      base.maxHp *= 1.01;
+      base.hp = base.maxHp;
+    }
+    UIManager.hint("수호의 빛을 사용했습니다.");
+    game.markDirty();
+    game.render();
+  }
+}
 class UIManager {
   static addTransient(element, parent, milliseconds, limit = 120) {
     this.activeEffects ||= 0;
@@ -1416,15 +1442,20 @@ class UIManager {
     if (constellation) {
       let enabled = pick.m.player.resources.divinity >= 1;
       const isAstrologer = constellation.definitionId === CONSTELLATION_IDS.ASTROLOGER;
+      const isGuardian = constellation.definitionId === CONSTELLATION_IDS.GUARDIAN;
       const canDivine = isAstrologer && pick.m.player.resources.can(CONFIG.divinationCost);
+      const canUseGuardianLight = isGuardian && pick.m.player.resources.can(CONFIG.guardianLightCost);
       // definitionId is deliberately part of the cache key: actions from a
       // previous tower type must never survive a selection/type change.
-      let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}`;
+      let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}:${canUseGuardianLight}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}<button class="${isAstrologer ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
+        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 50</button>` : ""}<button class="${isAstrologer || isGuardian ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
         if (isAstrologer)
           contextActions.querySelector('[data-context="divination"]').onclick = () =>
             DivinationSystem.execute(pick.m, pick.index);
+        if (isGuardian)
+          contextActions.querySelector('[data-context="guardian-light"]').onclick = () =>
+            GuardianLightSystem.execute(pick.m, pick.index);
         contextActions.querySelector('[data-context="release"]').onclick = () =>
           ZodiacSystem.release(pick.m, pick.index);
         this.actionKey = actionKey;

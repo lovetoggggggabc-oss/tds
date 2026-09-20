@@ -323,11 +323,26 @@ header {
   /* Paint containment clipped the bar because it sits above the enemy box. */
   contain: layout style;
 }
-.enemy .bar {
+.enemy-health {
   position: absolute;
-  left: -3px;
-  right: -3px;
-  top: -8px;
+  left: 50%;
+  top: -20px;
+  width: 42px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  text-align: center;
+}
+.enemy-hp {
+  display: block;
+  margin-bottom: 1px;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 10px;
+  white-space: nowrap;
+  text-shadow: 0 1px 1px #000;
+}
+.enemy .bar {
   height: 3px;
   background: rgba(17, 5, 20, 0.9);
   border: 1px solid rgba(255, 220, 235, 0.45);
@@ -479,11 +494,16 @@ header {
   box-shadow: 0 0 14px #ff68d8;
 }
 .enemy.boss .bar {
-  left: -5px;
-  right: -5px;
-  top: -10px;
   height: 4px;
   border: 1px solid #ffd3e055;
+}
+.enemy.boss .enemy-health {
+  top: -24px;
+  width: 74px;
+}
+.enemy.boss .enemy-hp {
+  font-size: 9px;
+  line-height: 11px;
 }
 .enemy small {
   position: absolute;
@@ -1068,6 +1088,11 @@ header {
 .game-controls button.active {
   outline: 2px solid #ffe590;
   background: #7e662b;
+}
+.context-actions .guardian-light {
+  border-color: #baf5ff99;
+  background: linear-gradient(#4088a8, #285175);
+  color: #f2ffff;
 }
 .hint {
   position: absolute;
