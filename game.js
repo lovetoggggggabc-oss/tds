@@ -59,7 +59,16 @@ const MAP_DEFINITIONS = Object.freeze({
 });
 const MAP_DEFINITION = MAP_DEFINITIONS.cosmic_s_01;
 const CONSTELLATION_ATTACK_SCALING_DESCRIPTION =
-  "연결에 사용한 별들의 단계 합만큼 공격력이 배율 증가합니다.";
+  "연결에 사용한 별들의 단계 합을 4로 나눈 값만큼 기본 공격력에 배율이 적용됩니다. 예: 단계 합 7 → 공격력 ×1.75";
+function getConstellationStageMultiplier(constellation) {
+  return constellation.componentStageSum / 4;
+}
+function getStageScaledDamage(constellation) {
+  return constellation.definition.attackDamage * getConstellationStageMultiplier(constellation);
+}
+function formatMultiplier(value) {
+  return Number(value.toFixed(2)).toString();
+}
 // This is the sole source of truth for recipes, construction, combat stats,
 // contextual actions, effects and the codex. specialDescriptions is shared by
 // the field info and codex so displayed abilities cannot drift apart.
@@ -75,7 +84,7 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     }),
     specialDescriptions: Object.freeze([
       "같은 적을 4회 공격하면 현재 공격력의 1500% 특수 피해",
-      "새벽의 별자리가 몬스터를 3마리 처치할 때마다 모든 적에게 각 적 최대 체력의 25%만큼 피해를 줍니다.",
+      "새벽의 자리가 몬스터를 3마리 처치할 때마다 모든 적에게 각 적의 현재 체력의 20%만큼 피해를 줍니다.",
     ]),
   }),
   [CONSTELLATION_IDS.RADIANCE]: Object.freeze({
@@ -89,7 +98,7 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     }),
     specialDescriptions: Object.freeze([
       "구성 별들의 단계 합만큼 서로 다른 적에게 연쇄 공격. 각 대상은 광휘의 별자리 공격력만큼 피해",
-      "광휘의 별자리가 몬스터를 직접 처치할 때마다 자신의 공격력이 1%씩 영구적으로 증가합니다.",
+      "광휘의 자리가 몬스터를 직접 처치할 때마다 자신의 공격력이 0.2%씩 영구적으로 증가합니다.",
     ]),
   }),
   [CONSTELLATION_IDS.SAGITTARIUS]: Object.freeze({
@@ -126,8 +135,8 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       edges: Object.freeze([[0, 1], [1, 2], [2, 0]]),
     }),
     specialDescriptions: Object.freeze([
-      "수호의 빛: 공격에 성공할 때마다 기지의 체력을 50 + 최대 체력의 1%만큼 회복합니다. 기지의 체력이 가득 차 있다면 대신 기지 최대 체력을 1% 증가시킵니다.",
-      "수호자 소환: 15초마다 기지 최대 체력의 20%만큼의 체력을 가진 수호자를 출구에서 소환합니다. 수호자는 적과 반대 방향으로 이동하며 적을 만나면 길을 막고 전투합니다.",
+      "수호의 빛: 공격에 성공할 때마다 기지의 체력을 50 + 기지 최대 체력의 1%만큼 회복합니다. 기지의 체력이 이미 가득 차 있다면 대신 기지의 최대 체력을 1% 증가시킵니다.",
+      "수호자 소환: 15초마다 기지 최대 체력의 20%만큼의 체력을 가진 수호자를 출구에서 소환합니다. 수호자는 적과 반대 방향으로 출구에서 입구를 향해 이동하며, 적을 만나면 길을 막고 전투합니다.",
     ]),
   }),
 });
@@ -734,12 +743,12 @@ class Constellation {
     const killMultiplier = this.definitionId === CONSTELLATION_IDS.RADIANCE
       ? 1 + this.runtime.radianceKillBonus
       : 1;
-    return this.definition.attackDamage * this.componentStageSum * killMultiplier * allyMultiplier * localMultiplier;
+    return getStageScaledDamage(this) * killMultiplier * allyMultiplier * localMultiplier;
   }
   registerKill() {
     if (this.definitionId === CONSTELLATION_IDS.RADIANCE) {
       this.runtime.radianceKills++;
-      this.runtime.radianceKillBonus = this.runtime.radianceKills * 0.01;
+      this.runtime.radianceKillBonus = this.runtime.radianceKills * 0.002;
       game.markDirty();
       return;
     }
@@ -755,7 +764,7 @@ class Constellation {
     UIManager.dawnMoonfall(origin, livingEnemies);
     // No source is passed for moonfall: its kills receive rewards normally,
     // but cannot count toward (or recursively trigger) DAWN's direct-kill skill.
-    livingEnemies.forEach((enemy) => enemy.hit(enemy.maxHp * 0.25, origin));
+    livingEnemies.forEach((enemy) => enemy.hit(enemy.hp * 0.20, origin));
     game.markDirty();
   }
   effectiveRange() {
@@ -1263,10 +1272,10 @@ class UIManager {
           .join(" + ");
         const specials = zodiac.specialDescriptions;
         const abilities = specials.map((special, index) =>
-          `<p><strong>특수공격${specials.length > 1 ? ` ${index + 1}` : ""}</strong><span>${special}</span></p>`,
+          `<p><strong>특수능력${specials.length > 1 ? ` ${index + 1}` : ""}</strong><span>${special}</span></p>`,
         ).join("");
         const discovered = game?.discoveredConstellations.has(definitionId);
-        return `<article class="zodiac-card ${definitionId.toLowerCase()} ${discovered ? "discovered" : "undiscovered"}" data-constellation="${definitionId}"><h3>${zodiac.name}</h3><div class="codex-preview-wrap"><svg class="codex-preview" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${zodiac.name} 별자리 연결 그림"><g class="codex-edges">${edges}</g><g class="codex-nodes">${stars}</g></svg></div><div class="codex-recipe" aria-label="필요한 별 조합: ${summary}"><h4>STAR RECIPE</h4><div class="codex-recipe-summary"><span>필요한 별</span>${summary}</div></div><dl class="codex-stats"><div class="codex-attack-stat"><dt>기본 공격력</dt><dd>${zodiac.attackDamage}</dd><small>단계 효과: 재료 별 단계 합 × 공격력</small></div><div><dt>공격속도</dt><dd>${zodiac.attackSpeed}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><p class="codex-scaling">${CONSTELLATION_ATTACK_SCALING_DESCRIPTION}</p><div class="codex-special">${abilities}</div></article>`;
+        return `<article class="zodiac-card ${definitionId.toLowerCase()} ${discovered ? "discovered" : "undiscovered"}" data-constellation="${definitionId}"><h3>${zodiac.name}</h3><div class="codex-preview-wrap"><svg class="codex-preview" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${zodiac.name} 별자리 연결 그림"><g class="codex-edges">${edges}</g><g class="codex-nodes">${stars}</g></svg></div><div class="codex-recipe" aria-label="필요한 별 조합: ${summary}"><h4>STAR RECIPE</h4><div class="codex-recipe-summary"><span>필요한 별</span>${summary}</div></div><dl class="codex-stats"><div class="codex-attack-stat"><dt>기본 공격력</dt><dd>${zodiac.attackDamage}</dd><small>단계 효과: 재료 별 단계 합 ÷ 4 × 공격력</small></div><div><dt>공격속도</dt><dd>${zodiac.attackSpeed}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><p class="codex-scaling">${CONSTELLATION_ATTACK_SCALING_DESCRIPTION}</p><div class="codex-special">${abilities}</div></article>`;
       })
       .join("");
   }
@@ -1388,7 +1397,7 @@ class UIManager {
     let constellation = s.constellation;
     const constellationStats = constellation?.definition;
     starInfo.innerHTML = constellation
-      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합 ${constellation.componentStageSum}</span><span>${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? "현재 공격력:" : "공격력"} ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/3</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${constellation.runtime.radianceKills}%</span>` : ""}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
+      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합: ${constellation.componentStageSum}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span><span>현재 공격력: ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/3</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : ""}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
       : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? constellationStats.range : d.range,

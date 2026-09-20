@@ -46,11 +46,11 @@ context.game = {
 };
 const constellation = new Constellation(owner, 0, [0, 1, 2], "GUARDIAN");
 assert.equal(constellation.componentStageSum, 7);
-assert.equal(constellation.currentDamage(), 2100);
+assert.equal(constellation.currentDamage(), 525);
 
 const target = { hit: (damage) => { target.damage = damage; } };
 CONSTELLATION_BEHAVIORS.GUARDIAN.attack(constellation, target, { x: 0, y: 0 });
-assert.equal(target.damage, 2100);
+assert.equal(target.damage, 525);
 assert.equal(context.game.base.hp, 4100, "damaged base heals by 50 + 1% max HP");
 context.game.base.hp = context.game.base.maxHp;
 CONSTELLATION_BEHAVIORS.GUARDIAN.attack(constellation, target, { x: 0, y: 0 });
