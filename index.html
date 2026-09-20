@@ -18,9 +18,9 @@
           <b>WAVE <span id="wave">0</span></b
           ><span>다음 웨이브 <strong id="timer">0.0</strong>초</span>
         </div>
-        <div class="resources" aria-label="1P 보유 자원">
-          <span>별빛 <b id="starlight">0</b></span>
-          <span>신성 <b id="divinity">0</b></span>
+        <div class="resources" aria-label="플레이어별 보유 자원">
+          <span>2P ✦<b id="starlight2">0</b> ◇<b id="divinity2">0</b></span>
+          <span>1P ✦<b id="starlight1">0</b> ◇<b id="divinity1">0</b></span>
         </div>
         <div class="hp">
           <b id="hp">♥♥♥♥♥</b><span>공용 HP</span
@@ -121,28 +121,21 @@
           <div id="zodiacCodexList" class="codex-list"></div>
         </div>
       </section>
-      <section
-        class="game-controls"
-        id="controls"
-        data-player="0"
-        aria-label="1P 게임 조작"
-      >
-        <button
-          type="button"
-          class="zodiac-cancel"
-          data-act="zodiac-cancel"
-          hidden
-        >
-          조디악 실행 취소
-        </button>
-        <button type="button" class="primary" data-act="summon">
-          별 소환 30
-        </button>
-        <button type="button" data-act="zodiac">조디악</button>
-        <button type="button" class="codex-button" data-act="codex">
-          별자리 도감
-        </button>
-      </section>
+      <nav class="control-deck" id="controls" aria-label="플레이어 게임 조작">
+        <section class="game-controls" data-player="1" aria-label="2P 게임 조작">
+          <b class="player-badge">2P</b>
+          <button type="button" class="zodiac-cancel" data-act="zodiac-cancel" hidden>선택 취소</button>
+          <button type="button" class="primary" data-act="summon">별 소환 30</button>
+          <button type="button" data-act="zodiac">조디악</button>
+        </section>
+        <section class="game-controls" data-player="0" aria-label="1P 게임 조작">
+          <b class="player-badge">1P</b>
+          <button type="button" class="zodiac-cancel" data-act="zodiac-cancel" hidden>조디악 실행 취소</button>
+          <button type="button" class="primary" data-act="summon">별 소환 30</button>
+          <button type="button" data-act="zodiac">조디악</button>
+          <button type="button" class="codex-button" data-act="codex">도감</button>
+        </section>
+      </nav>
     </main>
     <script src="game.js"></script>
   </body>

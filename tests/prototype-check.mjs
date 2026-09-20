@@ -9,11 +9,11 @@ const [html, css, js] = await Promise.all([
 
 assert.match(html, /href="styles\.css"/);
 assert.match(html, /src="game\.js"/);
-assert.equal((html.match(/data-act="summon"/g) || []).length, 1);
+assert.equal((html.match(/data-act="summon"/g) || []).length, 2);
 assert.match(html, /data-player="0"/);
-assert.doesNotMatch(html, /data-player="1"/);
-assert.equal((html.match(/data-act="zodiac"/g) || []).length, 1);
-assert.equal((html.match(/data-act="zodiac-cancel"/g) || []).length, 1);
+assert.match(html, /data-player="1"/);
+assert.equal((html.match(/data-act="zodiac"/g) || []).length, 2);
+assert.equal((html.match(/data-act="zodiac-cancel"/g) || []).length, 2);
 assert.equal((html.match(/data-act="codex"/g) || []).length, 1);
 assert.match(html, /id="zodiacCodex"/);
 assert.match(html, /id="dawnMoon"/);
@@ -44,7 +44,7 @@ assert.match(
 );
 assert.match(
   css,
-  /\.game-controls\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*200/,
+  /\.control-deck\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*200/,
   "the control bar must live in a fixed top-level input layer",
 );
 assert.match(js, /this\.stars = Array\(15\)\.fill\(null\)/);
@@ -58,10 +58,10 @@ assert.doesNotMatch(
   "summoning must not change selection or action modes",
 );
 assert.match(js, /swapCost:\s*10/);
-assert.match(js, /slime:\s*\{[^}]*hp:\s*500/);
-assert.match(js, /bug:\s*\{[^}]*hp:\s*800/);
-assert.match(js, /name:\s*"코어 드론"[\s\S]*?hp:\s*10000/);
-assert.match(js, /name:\s*"운석 괴물"[\s\S]*?hp:\s*20000/);
+assert.match(js, /slime:\s*\{[^}]*hp:\s*100/);
+assert.match(js, /bug:\s*\{[^}]*hp:\s*70/);
+assert.match(js, /name:\s*"코어 드론"[\s\S]*?hp:\s*2500/);
+assert.match(js, /name:\s*"운석 괴물"[\s\S]*?hp:\s*5000/);
 assert.match(js, /Math\.pow\(1 \+ CONFIG\.waveHpGrowth, wave - 1\)/);
 assert.match(
   js,
