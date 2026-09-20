@@ -84,6 +84,10 @@ context.game = {
   gameTime: 0,
   attackBuffUntil: 0,
   players: [],
+  discoveredConstellations: new Set(),
+  discoverConstellation(id) {
+    this.discoveredConstellations.add(id);
+  },
   render() {},
   simulationTimeout(callback) {
     callback();
@@ -178,6 +182,7 @@ for (const [index, type] of [
 zodiacManager.zodiacMode = true;
 zodiacManager.selected = [0, 1, 2, 3];
 ZodiacSystem.create(zodiacManager);
+assert.equal(context.game.discoveredConstellations.has(CONSTELLATION_IDS.DAWN), true);
 assert.equal(moonPlays, 1);
 const constellation = zodiacManager.stars[0].constellation;
 assert.equal(CONSTELLATION_DEFINITIONS.DAWN.attackDamage, 500);

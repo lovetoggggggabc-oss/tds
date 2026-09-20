@@ -130,8 +130,8 @@ assert.match(
 );
 assert.match(
   js,
-  /this\.selected = deselect \? \[\] : \[i\]/,
-  "normal selection must stay singular",
+  /this\.selected = \[i\]/,
+  "normal selection must stay singular and remain selected when tapped again",
 );
 assert.match(
   js,
@@ -158,7 +158,12 @@ assert.match(
   "the codex must render the complete shared registry",
 );
 assert.match(js, /flatMap\(\(\[type, amount\]\)/, "the recipe must render one icon per required star");
-assert.match(css, /\.codex-star i\s*\{[^}]*font-size:\s*32px/, "recipe star icons must be prominent");
+assert.match(css, /\.codex-preview\s*\{[^}]*height:\s*150px/, "constellation previews must be prominent");
+assert.match(css, /\.codex-preview \*\s*\{[^}]*pointer-events:\s*none/, "codex decorations must not intercept scrolling");
+assert.match(js, /previewLayout:\s*Object\.freeze/g, "every constellation must define a visual-only layout");
+assert.match(js, /this\.discoveredConstellations = new Set\(\)/);
+assert.match(js, /game\.discoverConstellation\(definitionId\)/);
+assert.match(js, /if \(this\.zodiacMode\) return;[\s\S]*?this\.clearNormalSelection/, "empty zodiac slots must preserve selection");
 assert.match(js, /if \(this\.clearNormalSelection\(\)\) game\.render\(\)/, "empty slots must clear normal selection");
 assert.match(js, /event\.target\.closest\("\.slot, \.context-actions, button, \[role=button\]"\)/, "arena controls must not trigger background deselection");
 assert.match(html, /id="field-1"/, "the 2P field must remain in the game");

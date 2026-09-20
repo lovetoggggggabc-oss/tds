@@ -319,6 +319,8 @@ header {
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
+  /* The button itself—not the small glyph—is the star hit target. */
+  cursor: pointer;
 }
 .slot:after {
   content: "";
@@ -1152,17 +1154,59 @@ body.codex-open {
   border: 1px solid #82dfff55;
   border-radius: 17px;
   background: linear-gradient(135deg, rgba(43, 62, 126, .8), rgba(18, 23, 66, .92));
-  box-shadow: inset 0 0 24px #82ceff12, 0 8px 20px #0006;
+  box-shadow: 0 8px 20px #0006;
+  transition: border-color .2s ease, box-shadow .2s ease;
 }
 .zodiac-card.radiance { border-color: #ffb68a66; background: linear-gradient(135deg, rgba(105, 40, 66, .82), rgba(32, 20, 62, .94)); }
-.zodiac-card h3 { margin: 0 0 10px; color: #effdff; font-size: 19px; text-shadow: 0 0 8px #80dfff; }
+.zodiac-card h3 { margin: 0 0 10px; color: #effdff; font-size: 19px; }
 .codex-combination { padding: 10px 9px 9px; border: 1px solid #9cecff3d; border-radius: 14px; background: radial-gradient(circle at 50% 0, #5ecfff20, transparent 58%), #050a2799; box-shadow: inset 0 0 18px #7ddfff12; }
 .zodiac-card h4 { display: flex; align-items: baseline; gap: 7px; margin: 0 0 8px; color: #78e7ff; font-size: 9px; letter-spacing: .15em; }
 .zodiac-card h4 span { color: #bcc9ee; font-size: 10px; letter-spacing: 0; }
-.codex-recipe { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
-.codex-star { width: 54px; min-width: 0; display: grid; justify-items: center; padding: 4px 2px 5px; border: 1px solid color-mix(in srgb, var(--star-color) 38%, transparent); border-radius: 11px; background: #090e35b8; color: var(--star-color); }
-.codex-star i { font-style: normal; font-size: 32px; line-height: 1; text-shadow: 0 0 5px currentColor, 0 0 13px currentColor; filter: drop-shadow(0 2px 1px #000); }
-.codex-star b { margin-top: 3px; color: #e9f3ff; font-size: 10px; }
+.codex-preview {
+  display: block;
+  width: 100%;
+  height: 150px;
+  overflow: visible;
+  pointer-events: none;
+}
+.codex-preview * { pointer-events: none; }
+.codex-edges line {
+  stroke: #77829f;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.codex-star { color: var(--star-color); }
+.codex-star circle { fill: #8b91a2; opacity: .12; }
+.codex-star text {
+  fill: #8b91a2;
+  font-size: 17px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.zodiac-card.undiscovered {
+  border-color: #66708c55;
+  filter: saturate(.48);
+}
+.zodiac-card.undiscovered .codex-preview { opacity: .55; }
+.zodiac-card.discovered {
+  border-color: #80ddff99;
+  box-shadow: inset 0 0 20px #68d9ff14, 0 0 14px #65cfff26, 0 8px 20px #0006;
+}
+.zodiac-card.discovered h3 { text-shadow: 0 0 8px #80dfff; }
+.zodiac-card.discovered .codex-edges line {
+  stroke: #9eeeff;
+  stroke-width: 2.2;
+  filter: drop-shadow(0 0 2px #55cfff);
+}
+.zodiac-card.discovered .codex-star circle {
+  fill: var(--star-color);
+  opacity: .18;
+}
+.zodiac-card.discovered .codex-star text {
+  fill: var(--star-color);
+  filter: drop-shadow(0 0 3px var(--star-color));
+}
 .codex-recipe-summary { margin-top: 8px; color: #ccd9fb; font-size: 11px; font-weight: 800; text-align: center; }
 .zodiac-card dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
 .zodiac-card dl div { padding: 7px; border-radius: 9px; background: #080c2f99; text-align: center; }
