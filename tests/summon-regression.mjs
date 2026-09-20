@@ -39,8 +39,8 @@ vm.runInContext(
 );
 
 const { CONFIG, PlayerResources, StarManager } = context.testApi;
-const players = [0, 1].map(() => {
-  const player = { resources: new PlayerResources() };
+const players = [0, 1].map((index) => {
+  const player = { index, resources: new PlayerResources() };
   const field = {
     children: [],
     append(element) {
@@ -58,6 +58,38 @@ context.game = {
 };
 
 const [one, two] = players;
+
+// TEST A: tapping a 1P empty slot summons into that exact slot. It clears a
+// normal selection only after payment succeeds and never affects the 2P board.
+one.player.manager.selected = [2];
+one.player.manager.swapMode = true;
+one.player.manager.tap(7);
+assert.ok(one.player.manager.stars[7], "the tapped 1P slot must receive the star");
+assert.equal(one.player.manager.stars[7].tier, 1, "direct summons must be stage 1");
+assert.equal(one.player.manager.selected.length, 0, "a successful direct summon clears selection");
+assert.equal(one.player.manager.swapMode, false);
+assert.equal(one.player.resources.starlight, 5000 - CONFIG.summonCost);
+
+two.player.manager.tap(7);
+assert.equal(two.player.manager.stars[7], null, "an empty 2P slot must remain inert");
+assert.equal(two.player.resources.starlight, 5000);
+
+one.player.manager.zodiacMode = true;
+one.player.manager.selected = [7];
+one.player.manager.tap(8);
+assert.equal(one.player.manager.stars[8], null, "zodiac mode must not summon");
+assert.equal(one.player.manager.selected.join(), "7", "zodiac selection must be preserved");
+one.player.manager.zodiacMode = false;
+
+one.player.resources.starlight = CONFIG.summonCost - 1;
+one.player.manager.selected = [7];
+one.player.manager.tap(8);
+assert.equal(one.player.manager.stars[8], null, "insufficient starlight must not summon");
+assert.equal(one.player.manager.selected.join(), "7", "a failed direct summon preserves selection");
+one.player.manager.stars.fill(null);
+one.player.manager.selected = [];
+one.player.manager.swapMode = false;
+one.player.resources.starlight = 5000;
 
 // TEST B: repeated summons without a selection never auto-select a new star.
 for (let press = 0; press < 5; press++) {

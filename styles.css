@@ -51,9 +51,11 @@ button {
   touch-action: manipulation;
 }
 .app {
-  width: 100vw;
+  width: 100%;
+  max-width: 600px;
   height: 100vh;
   height: 100dvh;
+  margin: 0 auto;
   padding: max(8px, env(safe-area-inset-top)) 10px
     calc(112px + env(safe-area-inset-bottom));
   display: flex;
@@ -1099,11 +1101,11 @@ header {
 }
 .zodiac-codex[hidden] { display: none; }
 .codex-panel {
-  width: min(94vw, 500px);
-  height: min(82vh, 720px);
-  max-height: 85vh;
-  height: min(82dvh, 720px);
-  max-height: 85dvh;
+  width: min(94%, 560px);
+  height: min(88vh, 900px);
+  max-height: 88vh;
+  height: min(88dvh, 900px);
+  max-height: 88dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1143,13 +1145,14 @@ body.codex-open {
 }
 @supports not (height: 1dvh) {
   .codex-panel {
-    height: min(82vh, 720px);
-    max-height: 82vh;
+    height: min(88vh, 900px);
+    max-height: 88vh;
   }
 }
 .zodiac-card {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  min-height: max-content;
   padding: 15px;
   border: 1px solid #82dfff55;
   border-radius: 17px;
@@ -1165,7 +1168,8 @@ body.codex-open {
 .codex-preview {
   display: block;
   width: 100%;
-  height: 150px;
+  min-height: 200px;
+  height: clamp(200px, 28dvh, 240px);
   overflow: visible;
   pointer-events: none;
 }

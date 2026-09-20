@@ -641,12 +641,29 @@ class StarManager {
     game.render();
     UIManager.summonEffect?.(this, i);
   }
+  summonAt(i) {
+    // Direct placement belongs to the locally controlled 1P board only. Keep
+    // failed attempts completely inert so an existing selection is preserved.
+    if (this.player.index !== 0 || this.zodiacMode || this.stars[i]) return false;
+    if (!this.player.resources.can(CONFIG.summonCost)) {
+      UIManager.hint("별빛이 부족합니다.");
+      return false;
+    }
+    this.stars[i] = new Star(
+      STAR_KEYS[Math.floor(Math.random() * STAR_KEYS.length)],
+    );
+    this.player.resources.spend(CONFIG.summonCost);
+    this.clearNormalSelection();
+    game.render();
+    UIManager.summonEffect?.(this, i);
+    return true;
+  }
   tap(i) {
     if (!this.stars[i]) {
       // Empty space is inert while assembling a zodiac. Only the explicit
       // cancel control is allowed to discard that ordered multi-selection.
       if (this.zodiacMode) return;
-      if (this.clearNormalSelection()) game.render();
+      this.summonAt(i);
       return;
     }
     if (this.swapMode && this.selected.length === 1 && this.selected[0] !== i)
@@ -1004,7 +1021,7 @@ class UIManager {
           `<p><strong>특수능력${specials.length > 1 ? ` ${index + 1}` : ""}</strong><span>${special}</span></p>`,
         ).join("");
         const discovered = game?.discoveredConstellations.has(definitionId);
-        return `<article class="zodiac-card ${definitionId.toLowerCase()} ${discovered ? "discovered" : "undiscovered"}" data-constellation="${definitionId}"><h3>${zodiac.name}</h3><section class="codex-combination" aria-label="필요한 별 조합: ${summary}"><h4>STAR RECIPE <span>필요한 별</span></h4><svg class="codex-preview" viewBox="0 0 100 100" role="img" aria-label="${zodiac.name} 별자리 연결 그림"><g class="codex-edges">${edges}</g><g class="codex-nodes">${stars}</g></svg><div class="codex-recipe-summary">${summary}</div></section><dl><div><dt>공격력</dt><dd>${zodiac.attackDamage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.attackSpeed}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><div class="codex-specials">${abilities}</div></article>`;
+        return `<article class="zodiac-card ${definitionId.toLowerCase()} ${discovered ? "discovered" : "undiscovered"}" data-constellation="${definitionId}"><h3>${zodiac.name}</h3><section class="codex-combination" aria-label="필요한 별 조합: ${summary}"><h4>STAR RECIPE <span>필요한 별</span></h4><svg class="codex-preview" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${zodiac.name} 별자리 연결 그림"><g class="codex-edges">${edges}</g><g class="codex-nodes">${stars}</g></svg><div class="codex-recipe-summary">${summary}</div></section><dl><div><dt>공격력</dt><dd>${zodiac.attackDamage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.attackSpeed}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><div class="codex-specials">${abilities}</div></article>`;
       })
       .join("");
   }
@@ -1247,7 +1264,7 @@ class GameManager {
     this.lastHudUpdate = 0;
     window.BOOT_STAGE = "creating-players";
     this.players = [0, 1].map((i) => {
-      let p = { resources: new PlayerResources() };
+      let p = { index: i, resources: new PlayerResources() };
       p.manager = new StarManager(p, getRequiredElement(`field-${i}`));
       return p;
     });
