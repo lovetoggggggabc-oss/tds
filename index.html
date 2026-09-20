@@ -18,6 +18,10 @@
           <b>WAVE <span id="wave">0</span></b
           ><span>다음 웨이브 <strong id="timer">0.0</strong>초</span>
         </div>
+        <div class="resources" aria-label="1P 보유 자원">
+          <span>별빛 <b id="starlight">0</b></span>
+          <span>신성 <b id="divinity">0</b></span>
+        </div>
         <div class="hp">
           <b id="hp">♥♥♥♥♥</b><span>공용 HP</span
           ><button class="speed" id="speed" aria-label="게임 속도 변경">
@@ -64,7 +68,7 @@
         <div class="field p2" id="field-1"></div>
         <span class="field-label one">1P FIELD</span>
         <div class="field p1" id="field-0"></div>
-        <div class="hint" id="hint">별을 소환해 공동 도착지를 지키세요!</div>
+        <div class="hint" id="hint" aria-live="polite">별을 소환해 공동 도착지를 지키세요!</div>
         <div id="dawnMoon" class="dawn-moon" hidden aria-hidden="true">
           <svg viewBox="0 0 200 200" role="presentation">
             <defs>
