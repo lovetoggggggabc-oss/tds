@@ -83,8 +83,6 @@ context.game = {
   enemies: [],
   gameTime: 0,
   attackBuffUntil: 0,
-  rangeBuffUntil: 0,
-  rangeBuffCooldownUntil: 0,
   players: [],
   render() {},
   simulationTimeout(callback) {
@@ -117,10 +115,19 @@ assert.deepEqual([...swapManager.selected], [4]);
 assert.equal(swapManager.stars[4].lock, null);
 assert.equal(swapManager.stars[4].cooldown, 0);
 assert.equal(swapManager.stars[4].burstLeft, 3);
+for (let exchange = 0; exchange < 4; exchange++) {
+  const previousType = swapManager.stars[4].type;
+  const previousStarlight = swapManager.player.resources.starlight;
+  SwapSystem.execute(swapManager, 4);
+  assert.notEqual(swapManager.stars[4].type, previousType);
+  assert.equal(swapManager.stars[4].tier, 3);
+  assert.equal(swapManager.player.resources.starlight, previousStarlight - CONFIG.swapCost);
+  assert.deepEqual([...swapManager.selected], [4]);
+}
 
 const firstReplacement = swapManager.stars[4].type;
 SwapSystem.execute(swapManager, 4);
-assert.equal(swapManager.player.resources.starlight, 100 - CONFIG.swapCost * 2);
+assert.equal(swapManager.player.resources.starlight, 100 - CONFIG.swapCost * 6);
 assert.notEqual(swapManager.stars[4].type, firstReplacement);
 assert.equal(swapManager.stars[4].tier, 3);
 assert.deepEqual([...swapManager.selected], [4]);
@@ -341,8 +348,8 @@ assert.equal(astrologer.definition.attackDamage, 10);
 assert.equal(astrologer.definition.attackSpeed, 1);
 assert.equal(astrologer.definition.range, 3);
 
-// Sagittarius uses simulation time for both ally buffs and freezes focus
-// accumulation during transcendence without introducing per-buff timers.
+// Sagittarius uses simulation time for its attack buff and freezes focus
+// accumulation during transcendence without introducing range-buff state.
 const sagittariusManager = makeManager();
 [[1, "sky"], [5, "blue"], [7, "sky"], [12, "blue"]]
   .forEach(([slot, type]) => { sagittariusManager.stars[slot] = new Star(type); });
@@ -361,12 +368,12 @@ sagittarius.behavior.attack(sagittarius, focusEnemy, { x: 0, y: 0 });
 sagittarius.runtime.focusHits = 39;
 sagittarius.behavior.attack(sagittarius, focusEnemy, { x: 0, y: 0 });
 assert.deepEqual(focusDamage, [4400, 8400], "the 20th and 40th focus hits use 1100% and 2100% damage");
-sagittarius.runtime.totalHits = 0;
-sagittarius.runtime.totalHits = 14;
 sagittarius.runtime.focusHits = 59;
 sagittarius.behavior.attack(sagittarius, enemy, { x: 0, y: 0 });
-assert.equal(context.game.rangeBuffUntil, 5);
-assert.equal(context.game.rangeBuffCooldownUntil, 10);
+assert.equal("totalHits" in sagittarius.runtime, false);
+assert.equal("rangeBuffUntil" in sagittarius.runtime, false);
+assert.equal("rangeBuffCooldownUntil" in sagittarius.runtime, false);
+assert.equal(sagittarius.effectiveRange(), 6);
 assert.equal(context.game.attackBuffUntil, 10);
 assert.equal(sagittarius.runtime.focusHits, 0);
 sagittarius.runtime.focusHits = 59;
