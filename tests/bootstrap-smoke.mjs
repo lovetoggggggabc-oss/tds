@@ -107,6 +107,6 @@ const firstFrame = animationFrames.splice(0);
 firstFrame.forEach((callback) => callback(16));
 assert.ok(game.enemies.length > 0, "the first animation frame must spawn an enemy");
 assert.equal(elements.has("bootError"), false, "successful boot must not display diagnostics");
-assert.equal((html.match(/<script src="game\.js\?v=35" defer><\/script>/g) || []).length, 1);
+assert.equal((html.match(/<script src="game\.js\?v=36" defer><\/script>/g) || []).length, 1);
 
 console.log("Runtime bootstrap smoke passed: DOM ready, 2 players, 30 star positions, resources, wave 1, enemy spawn, and RAF verified.");

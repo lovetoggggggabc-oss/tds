@@ -36,8 +36,9 @@ const CONSTELLATION_IDS = Object.freeze({
   SAGITTARIUS: "SAGITTARIUS",
   ASTROLOGER: "ASTROLOGER",
   GUARDIAN: "GUARDIAN",
+  TWILIGHT: "TWILIGHT",
 });
-const BASE_MAX_HP = 150;
+const BASE_MAX_HP = 400;
 const MAX_STARS_PER_PLAYER = 15;
 // Logical, normalized map data is authoritative for drawing, movement and
 // placement. New stages can provide another definition without changing any
@@ -138,6 +139,20 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     specialDescriptions: Object.freeze([
       "특수능력 1 — 수호의 빛: 별빛 50을 소모하여 기지의 체력을 50 + 기지 최대 체력의 1%만큼 회복합니다. 기지의 체력이 이미 가득 차 있다면 대신 기지의 최대 체력을 1% 증가시킵니다.",
       "수호자 소환: 15초마다 기지 최대 체력의 20%만큼의 체력을 가진 수호자를 출구에서 소환합니다. 수호자는 적과 반대 방향으로 출구에서 입구를 향해 이동하며, 적을 만나면 길을 막고 전투합니다.",
+    ]),
+  }),
+  [CONSTELLATION_IDS.TWILIGHT]: Object.freeze({
+    id: CONSTELLATION_IDS.TWILIGHT, name: "황혼의 자리",
+    recipe: Object.freeze({ red: 2, white: 1, blue: 1 }), attackDamage: 800,
+    attackSpeed: 2, range: 7, targeting: "highest",
+    transcendenceRange: 5, transcendenceKills: 50, transcendenceDuration: 15,
+    previewLayout: Object.freeze({
+      nodes: Object.freeze([[18, 68], [40, 28], [64, 28], [82, 68]]),
+      edges: Object.freeze([[0, 1], [1, 2], [2, 3], [3, 0]]),
+    }),
+    specialDescriptions: Object.freeze([
+      "체력이 50% 이하인 적을 공격할 때 피해량이 100% 증가하고 공격속도가 2배가 됩니다.",
+      "50킬을 달성하면 15초간 초월합니다. 초월 중 사정거리가 5로 고정되며 영역 안의 현재 체력이 최대 체력의 10% 이하인 적을 즉시 처형합니다.",
     ]),
   }),
 });
@@ -341,6 +356,14 @@ class Enemy {
       game.kill(this, sourceConstellation);
     } else this.updateHealthBar();
   }
+  execute(sourceConstellation) {
+    if (this.dead) return false;
+    this.hp = 0;
+    this.dead = true;
+    this.el.remove();
+    game.kill(this, sourceConstellation);
+    return true;
+  }
   updateHealthBar() {
     const hpPercent = Math.max(0, Math.min(100, (this.hp / this.maxHp) * 100));
     const hpText = `${Math.round(Math.max(0, this.hp)).toLocaleString()} / ${Math.round(this.maxHp).toLocaleString()}`;
@@ -369,8 +392,9 @@ class GuardianUnit {
     Object.assign(this, MAP_DEFINITION.destination);
     this.el = document.createElement("div");
     this.el.className = "guardian-unit";
-    this.el.innerHTML = '<div class="bar" aria-hidden="true"><i></i></div><span class="guardian-body"><i></i></span>';
+    this.el.innerHTML = '<div class="guardian-health"><span class="guardian-hp"></span><div class="bar" aria-hidden="true"><i></i></div></div><span class="guardian-body"><i></i></span>';
     this.hpFill = this.el.querySelector(".bar i");
+    this.hpText = this.el.querySelector(".guardian-hp");
     arena.append(this.el);
     this.updateHealthBar();
     this.render();
@@ -436,6 +460,7 @@ class GuardianUnit {
   }
   updateHealthBar() {
     this.hpFill.style.width = `${Math.max(0, this.hp / this.maxHp * 100)}%`;
+    this.hpText.textContent = `${Math.round(Math.max(0, this.hp)).toLocaleString()} / ${Math.round(this.maxHp).toLocaleString()}`;
   }
 }
 class EnemySpawner {
@@ -691,6 +716,34 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
       target.hit(constellation.currentDamage(), origin, constellation);
     },
   }),
+  [CONSTELLATION_IDS.TWILIGHT]: Object.freeze({
+    createRuntime: () => ({ killCount: 0, transcendenceUntil: 0, areaElement: null, lastTimeLabel: null }),
+    update(constellation) {
+      const runtime = constellation.runtime;
+      if (runtime.transcendenceUntil > game.gameTime) {
+        constellation.updateTwilightArea();
+        const timeLabel = Math.ceil((runtime.transcendenceUntil - game.gameTime) * 10);
+        if (timeLabel !== runtime.lastTimeLabel) {
+          runtime.lastTimeLabel = timeLabel;
+          game.markDirty();
+        }
+        for (const enemy of game.spatial.near(constellation.owner.pos(constellation.center), constellation.effectiveRange())) {
+          if (!enemy.dead && enemy.hp <= enemy.maxHp * 0.10 &&
+              RangeSystem.contains(constellation.owner.pos(constellation.center), enemy.position(), constellation.effectiveRange()))
+            enemy.execute(constellation);
+        }
+        return;
+      }
+      if (runtime.transcendenceUntil) constellation.endTwilightTranscendence();
+      if (runtime.killCount >= constellation.definition.transcendenceKills)
+        constellation.startTwilightTranscendence();
+    },
+    attack(constellation, target, origin) {
+      const weakened = target.hp <= target.maxHp * 0.50;
+      target.hit(constellation.currentDamage(weakened ? 2 : 1), origin, constellation);
+    },
+    dispose(constellation) { constellation.endTwilightTranscendence(); },
+  }),
 });
 class Constellation {
   constructor(owner, center, members, definitionId, connectionOrder = members) {
@@ -726,6 +779,13 @@ class Constellation {
     const position = this.owner.pos(this.center);
     if (this.target && (this.target.dead || !RangeSystem.contains(position, this.target.position(), this.effectiveRange())))
       this.resetTarget();
+    if (this.definitionId === CONSTELLATION_IDS.TWILIGHT) {
+      const nextSpeed = this.effectiveAttackSpeed(this.target);
+      const previousSpeed = this.runtime.currentAttackSpeed || this.definition.attackSpeed;
+      if (nextSpeed !== previousSpeed && this.cooldown > 0)
+        this.cooldown *= previousSpeed / nextSpeed;
+      this.runtime.currentAttackSpeed = nextSpeed;
+    }
     if (this.cooldown > 0) return;
     const target = this.target || Targeting.choose({ data: () => ({
       range: this.effectiveRange(), target: this.definition.targeting,
@@ -738,7 +798,8 @@ class Constellation {
     this.behavior.attack(this, target, position);
     if (this.definitionId === CONSTELLATION_IDS.RADIANCE) this.resetTarget();
     else if (target.dead) this.resetTarget();
-    this.cooldown = 1 / this.definition.attackSpeed;
+    const attackSpeed = this.effectiveAttackSpeed(target);
+    this.cooldown = 1 / attackSpeed;
   }
   currentDamage(localMultiplier = 1) {
     const allyMultiplier = game.attackBuffUntil > game.gameTime ? 11 : 1;
@@ -748,6 +809,14 @@ class Constellation {
     return getStageScaledDamage(this) * killMultiplier * allyMultiplier * localMultiplier;
   }
   registerKill() {
+    if (this.definitionId === CONSTELLATION_IDS.TWILIGHT) {
+      this.runtime.killCount++;
+      if (this.runtime.transcendenceUntil <= game.gameTime &&
+          this.runtime.killCount >= this.definition.transcendenceKills)
+        this.startTwilightTranscendence();
+      game.markDirty();
+      return;
+    }
     if (this.definitionId === CONSTELLATION_IDS.RADIANCE) {
       this.runtime.radianceKills++;
       this.runtime.radianceKillBonus = this.runtime.radianceKills * 0.002;
@@ -770,7 +839,49 @@ class Constellation {
     game.markDirty();
   }
   effectiveRange() {
+    if (this.definitionId === CONSTELLATION_IDS.TWILIGHT && this.runtime.transcendenceUntil > game.gameTime)
+      return this.definition.transcendenceRange;
     return this.definition.range;
+  }
+  effectiveAttackSpeed(target = this.target) {
+    if (this.definitionId === CONSTELLATION_IDS.TWILIGHT && target && !target.dead && target.hp <= target.maxHp * 0.50)
+      return this.definition.attackSpeed * 2;
+    return this.definition.attackSpeed;
+  }
+  startTwilightTranscendence() {
+    if (this.definitionId !== CONSTELLATION_IDS.TWILIGHT || this.runtime.transcendenceUntil > game.gameTime) return;
+    this.runtime.killCount = 0;
+    this.runtime.transcendenceUntil = game.gameTime + this.definition.transcendenceDuration;
+    const area = document.createElement("div");
+    area.className = "twilight-area";
+    area.setAttribute("aria-hidden", "true");
+    arena.append(area);
+    this.runtime.areaElement = area;
+    this.centerElement()?.classList.add("twilight-transcending");
+    this.updateTwilightArea();
+    UIManager.alert("황혼의 자리 초월!");
+    game.markDirty();
+  }
+  updateTwilightArea() {
+    const area = this.runtime.areaElement;
+    if (!area) return;
+    const position = this.owner.pos(this.center);
+    const diameter = RangeSystem.radius(this.definition.transcendenceRange) * 2;
+    area.style.left = `${position.x}%`;
+    area.style.top = `${position.y}%`;
+    area.style.width = `${diameter}px`;
+    area.style.height = `${diameter}px`;
+  }
+  endTwilightTranscendence() {
+    if (this.definitionId !== CONSTELLATION_IDS.TWILIGHT) return;
+    this.runtime.transcendenceUntil = 0;
+    this.runtime.areaElement?.remove();
+    this.runtime.areaElement = null;
+    this.centerElement()?.classList.remove("twilight-transcending");
+    game.markDirty();
+  }
+  centerElement() {
+    return this.owner.field.querySelector(`[data-index="${this.center}"]`);
   }
   chainAttack(first, origin) {
     const hit = new Set();
@@ -795,6 +906,7 @@ class Constellation {
     }
   }
   release() {
+    this.behavior.dispose?.(this);
     this.originalComponents.forEach((saved) => {
       const star = this.owner.stars[saved.index];
       Object.assign(star, { type: saved.type, tier: saved.tier, x: saved.x, y: saved.y });
@@ -1422,11 +1534,15 @@ class UIManager {
     starInfo.style.setProperty("--star-color", d.color);
     let constellation = s.constellation;
     const constellationStats = constellation?.definition;
+    const twilightActive = constellation?.definitionId === CONSTELLATION_IDS.TWILIGHT && constellation.runtime.transcendenceUntil > g.gameTime;
+    const twilightInfo = constellation?.definitionId === CONSTELLATION_IDS.TWILIGHT
+      ? `<span>킬 수: ${constellation.runtime.killCount} / ${constellationStats.transcendenceKills}</span>${twilightActive ? `<span class="twilight-time">초월 중: ${Math.max(0, constellation.runtime.transcendenceUntil - g.gameTime).toFixed(1)}초</span>` : ""}`
+      : "";
     starInfo.innerHTML = constellation
-      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합: ${constellation.componentStageSum}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span><span>현재 공격력: ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/3</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : ""}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
+      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합: ${constellation.componentStageSum}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span><span>현재 공격력: ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellation.definitionId === CONSTELLATION_IDS.TWILIGHT && constellation.target?.hp <= constellation.target?.maxHp * .5 ? constellationStats.attackSpeed * 2 : constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellation.effectiveRange()}</span>${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/3</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : ""}${twilightInfo}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
       : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
     ranges.innerHTML = "";
-    let shownRange = constellation ? constellationStats.range : d.range,
+    let shownRange = constellation ? constellation.effectiveRange() : d.range,
       diameter = RangeSystem.radius(shownRange) * 2;
     rangeIndicator.hidden = false;
     rangeIndicator.style.left = p.x + "%";
