@@ -268,10 +268,10 @@ header {
   padding: 4px;
 }
 .field.p1 {
-  bottom: 3%;
+  bottom: 16%;
 }
 .field.p2 {
-  top: 3%;
+  top: 16%;
 }
 .field-label {
   position: absolute;
@@ -282,10 +282,10 @@ header {
   color: #a9b8ef;
 }
 .field-label.one {
-  bottom: 3%;
+  bottom: 15%;
 }
 .field-label.two {
-  top: 3%;
+  top: 15%;
 }
 .slot {
   position: relative;
@@ -376,7 +376,6 @@ header {
   z-index: 12;
   display: grid;
   place-items: center;
-  border-radius: 50%;
   font-size: 16px;
   filter: drop-shadow(0 2px 4px #000);
   pointer-events: none;
@@ -385,7 +384,7 @@ header {
   position: absolute;
   left: -3px;
   right: -3px;
-  top: -6px;
+  top: -8px;
   height: 3px;
   background: #310d25;
   border-radius: 2px;
@@ -396,12 +395,150 @@ header {
   height: 100%;
   background: #ff5e93;
 }
+.enemy-body {
+  position: absolute;
+  inset: 2px;
+}
+.enemy.slime .enemy-body {
+  border-radius: 52% 52% 42% 42%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #c59cff,
+    #5b3da1 48%,
+    #25215e 78%
+  );
+  box-shadow:
+    inset -3px -4px 4px #15143d,
+    0 0 9px #8a62e7;
+  animation: slimeBounce 0.72s ease-in-out infinite;
+}
+.enemy.slime .enemy-body:before {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 4px;
+  left: 7px;
+  top: 9px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 8px 0 #fff;
+}
+.enemy.bug .enemy-body {
+  inset: 7px 1px;
+  border-radius: 50%;
+  background: repeating-linear-gradient(90deg, #2a174d 0 4px, #8a55bc 4px 7px);
+  box-shadow: 0 0 6px #b45dff;
+  animation: bugWiggle 0.38s ease-in-out infinite alternate;
+}
+.enemy.bug .enemy-body:before {
+  content: "";
+  position: absolute;
+  right: 2px;
+  top: 3px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #eaff78;
+  box-shadow: 0 0 4px #eaff78;
+}
+.enemy.drone .enemy-body {
+  inset: 5px;
+  transform: rotate(45deg);
+  border: 3px solid #70788d;
+  background: #111522;
+  box-shadow:
+    -8px 8px 0 -5px #62697a,
+    8px -8px 0 -5px #62697a;
+}
+.enemy.drone .enemy-body:before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: #ff304f;
+  box-shadow: 0 0 9px #ff304f;
+  animation: corePulse 1.2s infinite;
+}
+.enemy.meteor .enemy-body {
+  inset: 2px;
+  border-radius: 43% 57% 48% 52%;
+  background: linear-gradient(
+    125deg,
+    #6f6677,
+    #252431 42%,
+    #72384f 44%,
+    #292733 50%,
+    #171722
+  );
+  box-shadow:
+    inset -6px -7px 7px #080811,
+    0 0 8px #b74770;
+  animation: meteorDrift 2.4s ease-in-out infinite;
+}
+.enemy.meteor .enemy-body:before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 11px;
+  width: 5px;
+  height: 3px;
+  background: #ff6883;
+  box-shadow:
+    13px 3px #ff6883,
+    0 0 6px #ff315b;
+}
+.enemy.meteor .enemy-body:after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #aa7898;
+  left: -5px;
+  top: 25px;
+  box-shadow: -5px -8px 0 #74556f;
+  animation: dust 1.3s linear infinite;
+}
+@keyframes slimeBounce {
+  50% {
+    transform: translateY(-2px) scale(1.06, 0.92);
+  }
+}
+@keyframes bugWiggle {
+  to {
+    transform: translateX(1px) rotate(5deg);
+  }
+}
+@keyframes corePulse {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.72);
+  }
+}
+@keyframes meteorDrift {
+  50% {
+    transform: translateY(-1px) rotate(3deg);
+  }
+}
+@keyframes dust {
+  to {
+    transform: translate(-7px, 5px);
+    opacity: 0;
+  }
+}
 .enemy.boss {
   width: 40px;
   height: 40px;
   margin: -20px;
   font-size: 27px;
   box-shadow: 0 0 14px #ff68d8;
+}
+.enemy.boss .bar {
+  left: -5px;
+  right: -5px;
+  top: -10px;
+  height: 4px;
+  border: 1px solid #ffd3e055;
 }
 .enemy small {
   position: absolute;
@@ -486,6 +623,77 @@ header {
   font-weight: bold;
   animation: float 0.65s forwards;
   pointer-events: none;
+}
+.range-indicator {
+  position: absolute;
+  z-index: 3;
+  border: 2px dashed #b9f5ff;
+  border-radius: 50%;
+  background: rgba(118, 233, 255, 0.1);
+  box-shadow: 0 0 7px #63dcff;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.merge-float {
+  position: absolute;
+  z-index: 35;
+  min-width: 54px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 18px;
+  transform: translate(-50%, -100%);
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid #7a819e;
+  background: #4a4e60;
+  color: #bfc3cf;
+  box-shadow: 0 3px 9px #0008;
+}
+.merge-float.available {
+  color: #15102d;
+  border-color: #fff3ad;
+  background: linear-gradient(#fff3a8, #ffbd55);
+  box-shadow:
+    0 0 7px #fff,
+    0 0 15px #ffca56;
+  animation: mergeReady 0.8s ease-in-out infinite alternate;
+}
+.merge-float.below {
+  transform: translate(-50%, 0);
+}
+@keyframes mergeReady {
+  to {
+    filter: brightness(1.14);
+    box-shadow:
+      0 0 11px #fff,
+      0 0 22px #ffc24b;
+  }
+}
+.merge-particle {
+  position: absolute;
+  z-index: 34;
+  width: 8px;
+  height: 8px;
+  margin: -4px;
+  border-radius: 50%;
+  background: #fff7a0;
+  box-shadow: 0 0 7px 3px #ffd85c;
+  pointer-events: none;
+  transition:
+    transform 0.38s ease-in,
+    opacity 0.38s;
+}
+.arena.speed-2 .merge-particle {
+  transition-duration: 0.19s;
+}
+.slot.merge-flash .star {
+  animation: mergeFlash 0.42s ease-out;
+}
+@keyframes mergeFlash {
+  45% {
+    transform: scale(1.55);
+    filter: drop-shadow(0 0 14px #fff);
+  }
 }
 @keyframes float {
   to {
