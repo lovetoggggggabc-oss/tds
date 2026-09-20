@@ -56,6 +56,17 @@ assert.match(
 assert.match(js, /this\.stars = Array\(15\)\.fill\(null\)/);
 assert.match(js, /startStarlight:\s*5000/);
 assert.match(js, /startDivinity:\s*50/);
+assert.match(js, /bossWaveSeconds:\s*25/);
+assert.match(js, /this\.wave\.update\(0\)/, "wave 1 must start during boot");
+for (const id of [
+  "arena", "controls", "wave", "timer", "hp", "starlight1",
+  "divinity1", "starlight2", "divinity2",
+])
+  assert.match(
+    js,
+    new RegExp(`const ${id} = document\\.getElementById\\("${id}"\\)`),
+    `${id} must not depend on browser-specific named-window globals`,
+  );
 assert.match(js, /summonCost:\s*30/);
 assert.match(js, /emptySlots\(\)/);
 assert.doesNotMatch(
