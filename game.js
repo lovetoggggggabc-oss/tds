@@ -3,6 +3,8 @@ const CONFIG = {
   waveSeconds: 15,
   summonCost: 30,
   swapCost: 10,
+  divinationCost: 30,
+  divinationFailureCost: 15,
   startStarlight: 5000,
   startDivinity: 50,
   startHP: 5,
@@ -129,6 +131,9 @@ class Enemy {
     this.maxHp = this.hp * Math.pow(1 + CONFIG.waveHpGrowth, wave - 1);
     this.hp = this.maxHp;
     this.dead = false;
+    this.x = 8;
+    this.y = lane === 0 ? 7 : 93;
+    this.lastHpPercent = -1;
     this.el = document.createElement("div");
     this.el.className = `enemy ${this.type}${this.boss ? " boss" : ""}`;
     this.el.innerHTML = `<div class="bar" aria-hidden="true"><i></i></div><span class="enemy-body"></span><small>${this.boss ? this.name : ""}</small>`;
@@ -136,20 +141,28 @@ class Enemy {
     this.render();
   }
   position() {
+    return { x: this.x, y: this.y };
+  }
+  calculatePosition() {
     let p = this.progress;
     // lane 0 starts beside 2P and travels down; lane 1 starts beside 1P and travels up.
     if (p < 43) return { x: 8, y: this.lane === 0 ? 7 + p : 93 - p };
     return { x: 8 + ((p - 43) * 81) / 57, y: 50 };
   }
   render() {
-    let p = this.position();
-    this.el.style.left = p.x + "%";
-    this.el.style.top = p.y + "%";
-    this.el.querySelector("i").style.width =
-      Math.max(0, (this.hp / this.maxHp) * 100) + "%";
+    const metrics = RangeSystem.metrics();
+    this.el.style.transform = `translate3d(${(this.x * metrics.width) / 100}px, ${(this.y * metrics.height) / 100}px, 0)`;
+    const hpPercent = Math.max(0, (this.hp / this.maxHp) * 100);
+    if (hpPercent !== this.lastHpPercent) {
+      this.el.firstElementChild.firstElementChild.style.width = `${hpPercent}%`;
+      this.lastHpPercent = hpPercent;
+    }
   }
   update(dt) {
     this.progress += this.speed * dt;
+    const position = this.calculatePosition();
+    this.x = position.x;
+    this.y = position.y;
     if (this.progress >= 100) {
       this.dead = true;
       this.el.remove();
@@ -163,6 +176,13 @@ class Enemy {
       this.dead = true;
       this.el.remove();
       game.kill(this);
+    } else this.renderHealth();
+  }
+  renderHealth() {
+    const hpPercent = Math.max(0, (this.hp / this.maxHp) * 100);
+    if (hpPercent !== this.lastHpPercent) {
+      this.el.firstElementChild.firstElementChild.style.width = `${hpPercent}%`;
+      this.lastHpPercent = hpPercent;
     }
   }
 }
@@ -234,7 +254,7 @@ class Star {
 }
 class Targeting {
   static choose(star, enemies, pos) {
-    let targets = enemies.filter(
+    let targets = (game.spatial?.near(pos, star.data().range) || enemies).filter(
       (e) =>
         !e.dead &&
         RangeSystem.contains(pos, e.position(), star.data().range),
@@ -245,25 +265,24 @@ class Targeting {
     if (star.data().target === "random")
       return targets[Math.floor(Math.random() * targets.length)];
     if (star.data().target === "nearest")
-      return targets.sort(
-        (a, b) =>
-          Targeting.dist(pos, a.position()) - Targeting.dist(pos, b.position()),
-      )[0];
+      return targets.reduce((best, enemy) =>
+        !best || Targeting.dist(pos, enemy.position()) < Targeting.dist(pos, best.position()) ? enemy : best, null);
     if (star.data().target === "highest")
-      return targets.sort((a, b) => b.hp - a.hp)[0];
-    return targets.sort((a, b) => b.progress - a.progress)[0];
+      return targets.reduce((best, enemy) => !best || enemy.hp > best.hp ? enemy : best, null);
+    return targets.reduce((best, enemy) => !best || enemy.progress > best.progress ? enemy : best, null);
   }
   static dist(a, b) {
     return RangeSystem.distance(a, b);
   }
 }
 class RangeSystem {
+  static refresh() {
+    const rect = arena.getBoundingClientRect();
+    this.cachedMetrics = { width: rect.width, height: rect.height };
+  }
   static metrics() {
-    if (typeof arena !== "undefined" && arena.getBoundingClientRect) {
-      const rect = arena.getBoundingClientRect();
-      return { width: rect.width, height: rect.height };
-    }
-    return { width: 100, height: 100 };
+    if (!this.cachedMetrics) this.refresh();
+    return this.cachedMetrics || { width: 100, height: 100 };
   }
   static radius(range) {
     return (this.metrics().width * CONFIG.rangeUnit * range) / 100;
@@ -277,6 +296,39 @@ class RangeSystem {
   }
   static contains(a, b, range) {
     return this.distance(a, b) <= this.radius(range);
+  }
+}
+class SpatialGrid {
+  constructor(cellSize = 10) {
+    this.cellSize = cellSize;
+    this.cells = new Map();
+  }
+  key(x, y) { return `${x}|${y}`; }
+  rebuild(enemies) {
+    this.cells.clear();
+    for (const enemy of enemies) {
+      if (enemy.dead) continue;
+      const key = this.key(Math.floor(enemy.x / this.cellSize), Math.floor(enemy.y / this.cellSize));
+      let cell = this.cells.get(key);
+      if (!cell) this.cells.set(key, (cell = []));
+      cell.push(enemy);
+    }
+  }
+  near(position, range) {
+    const { width, height } = RangeSystem.metrics();
+    const xRadius = CONFIG.rangeUnit * range;
+    const yRadius = (xRadius * width) / height;
+    const minX = Math.floor((position.x - xRadius) / this.cellSize);
+    const maxX = Math.floor((position.x + xRadius) / this.cellSize);
+    const minY = Math.floor((position.y - yRadius) / this.cellSize);
+    const maxY = Math.floor((position.y + yRadius) / this.cellSize);
+    const candidates = [];
+    for (let x = minX; x <= maxX; x++)
+      for (let y = minY; y <= maxY; y++) {
+        const cell = this.cells.get(this.key(x, y));
+        if (cell) candidates.push(...cell);
+      }
+    return candidates;
   }
 }
 class Constellation {
@@ -360,13 +412,16 @@ class Constellation {
       if (hit.size) UIManager.chainBeam(from, targetPosition);
       hit.add(target);
       from = targetPosition;
-      target = game.enemies
-        .filter((enemy) => !enemy.dead && !hit.has(enemy))
-        .sort(
-          (a, b) =>
-            RangeSystem.distance(from, a.position()) -
-            RangeSystem.distance(from, b.position()),
-        )[0];
+      let nearestDistance = Infinity;
+      target = null;
+      for (const enemy of game.enemies) {
+        if (enemy.dead || hit.has(enemy)) continue;
+        const distance = RangeSystem.distance(from, enemy.position());
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          target = enemy;
+        }
+      }
     }
   }
   release() {
@@ -384,6 +439,7 @@ class StarManager {
     this.selected = [];
     this.swapMode = false;
     this.zodiacMode = false;
+    this.positions = [];
     for (let i = 0; i < 15; i++) {
       let b = document.createElement("button");
       b.className = "slot";
@@ -392,15 +448,20 @@ class StarManager {
       b.addEventListener("pointerup", () => this.tap(i));
       field.append(b);
     }
+    if (typeof requestAnimationFrame === "function")
+      requestAnimationFrame(() => this.refreshPositions());
+  }
+  refreshPositions() {
+    const a = arena.getBoundingClientRect();
+    this.positions = [...this.field.children].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { x: ((r.left + r.width / 2 - a.left) / a.width) * 100,
+        y: ((r.top + r.height / 2 - a.top) / a.height) * 100 };
+    });
   }
   pos(i) {
-    let el = this.field.children[i],
-      a = arena.getBoundingClientRect(),
-      r = el.getBoundingClientRect();
-    return {
-      x: ((r.left + r.width / 2 - a.left) / a.width) * 100,
-      y: ((r.top + r.height / 2 - a.top) / a.height) * 100,
-    };
+    if (!this.positions[i]) this.refreshPositions();
+    return this.positions[i] || { x: 0, y: 0 };
   }
   clearOthers() {
     game.players.forEach((p) => {
@@ -464,11 +525,14 @@ class StarManager {
       }
       s.cooldown -= dt;
       if (s.cooldown > 0) return;
-      let t = Targeting.choose(s, game.enemies, this.pos(i));
+      const position = this.pos(i);
+      if (s.lock && (s.lock.dead || !RangeSystem.contains(position, s.lock.position(), s.data().range)))
+        s.lock = null;
+      let t = s.lock || Targeting.choose(s, game.enemies, position);
       if (t) {
         s.lock = t;
         let damage = s.data().damage * CONFIG.tierDamage[s.tier - 1];
-        t.hit(damage, this.pos(i));
+        t.hit(damage, position);
         if (s.data().target === "burst") {
           s.burstLeft--;
           if (s.burstLeft > 0) s.cooldown = CONFIG.whiteBurstInterval;
@@ -477,6 +541,7 @@ class StarManager {
             s.cooldown = CONFIG.whiteBurstRest;
           }
         } else s.cooldown = 1 / s.data().rate;
+        if (t.dead || s.data().target === "random") s.lock = null;
       }
     });
   }
@@ -663,7 +728,37 @@ class ZodiacSystem {
     game.render();
   }
 }
+class DivinationSystem {
+  static execute(manager, index) {
+    const star = manager.stars[index];
+    if (!star?.constellation || star.constellation.center !== index)
+      return UIManager.hint("점성술자리를 선택하세요.");
+    const resources = manager.player.resources;
+    if (!resources.spend(CONFIG.divinationCost))
+      return UIManager.hint("별빛이 부족합니다.");
+    const success = Math.random() < 0.5;
+    if (success) resources.starlight += 60;
+    else resources.starlight = Math.max(
+      0,
+      resources.starlight - CONFIG.divinationFailureCost,
+    );
+    UIManager.divinationEffect(manager.pos(index), success);
+    UIManager.hint(success ? "점술 성공! +60" : "점술 실패... -15");
+    game.markDirty();
+  }
+}
 class UIManager {
+  static addTransient(element, parent, milliseconds, limit = 120) {
+    this.activeEffects ||= 0;
+    if (this.activeEffects >= limit) return false;
+    this.activeEffects++;
+    parent.append(element);
+    game.simulationTimeout(() => {
+      element.remove();
+      this.activeEffects = Math.max(0, this.activeEffects - 1);
+    }, milliseconds);
+    return true;
+  }
   static hint(t) {
     hint.textContent = t;
     clearTimeout(this.ht);
@@ -685,8 +780,7 @@ class UIManager {
     ["x1", "y1", "x2", "y2"].forEach((k, i) =>
       line.setAttribute(k, [a.x, a.y, b.x, b.y][i]),
     );
-    effects.append(line);
-    game.simulationTimeout(() => line.remove(), 170);
+    this.addTransient(line, effects, 170);
   }
   static chainBeam(a, b) {
     let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -694,8 +788,7 @@ class UIManager {
     ["x1", "y1", "x2", "y2"].forEach((key, index) =>
       line.setAttribute(key, [a.x, a.y, b.x, b.y][index]),
     );
-    effects.append(line);
-    game.simulationTimeout(() => line.remove(), 230);
+    this.addTransient(line, effects, 230);
   }
   static dawnSpecial(position, damage) {
     const burst = document.createElement("div");
@@ -704,8 +797,16 @@ class UIManager {
     burst.style.top = `${position.y}%`;
     burst.setAttribute("aria-hidden", "true");
     burst.innerHTML = `<i class="dawn-flash"></i><i class="dawn-shockwave"></i><svg viewBox="0 0 100 70"><path d="M87 9C65 58 29 69 7 46c28 11 55-3 80-37Z"/></svg>${Array.from({ length: 8 }, (_, i) => `<i class="dawn-spark" style="--angle:${i * 45}deg"></i>`).join("")}<b>${Math.round(damage).toLocaleString()}</b>`;
-    arena.append(burst);
-    game.simulationTimeout(() => burst.remove(), 480);
+    this.addTransient(burst, arena, 480);
+  }
+  static divinationEffect(position, success) {
+    const effect = document.createElement("div");
+    effect.className = `divination-effect ${success ? "success" : "failure"}`;
+    effect.style.left = `${position.x}%`;
+    effect.style.top = `${position.y}%`;
+    effect.textContent = success ? "점술 성공! +60" : "점술 실패... -15";
+    effect.setAttribute("aria-hidden", "true");
+    this.addTransient(effect, arena, 900);
   }
   static renderCodex() {
     zodiacCodexList.innerHTML = Object.entries(ZODIAC_RECIPES)
@@ -844,18 +945,20 @@ class UIManager {
     rangeIndicator.style.top = p.y + "%";
     rangeIndicator.style.width = diameter + "px";
     rangeIndicator.style.height = diameter + "px";
-    let slot = pick.m.field.children[pick.index].getBoundingClientRect(),
-      ar = arena.getBoundingClientRect();
     contextActions.hidden = false;
-    contextActions.classList.toggle("below", slot.top - ar.top < 55);
+    const placeBelow = p.y < 10;
+    contextActions.classList.toggle("below", placeBelow);
     contextActions.style.left = p.x + "%";
-    contextActions.style.top = `${((slot.top - ar.top + (slot.top - ar.top < 55 ? slot.height + 5 : -5)) / ar.height) * 100}%`;
+    contextActions.style.top = `${p.y}%`;
     if (constellation) {
       let enabled = pick.m.player.resources.divinity >= 1;
-      let actionKey = `${pick.player}:${pick.index}:release:${enabled}`;
+      const canDivine = pick.m.player.resources.can(CONFIG.divinationCost);
+      let actionKey = `${pick.player}:${pick.index}:constellation:${enabled}:${canDivine}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `<button data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
-        contextActions.querySelector("button").onclick = () =>
+        contextActions.innerHTML = `<button class="divination" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button><button data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
+        contextActions.querySelector('[data-context="divination"]').onclick = () =>
+          DivinationSystem.execute(pick.m, pick.index);
+        contextActions.querySelector('[data-context="release"]').onclick = () =>
           ZodiacSystem.release(pick.m, pick.index);
         this.actionKey = actionKey;
       }
@@ -877,9 +980,7 @@ class UIManager {
     }
   }
   static render(g) {
-    wave.textContent = g.wave.wave;
-    timer.textContent = Math.max(0, g.wave.left).toFixed(1);
-    hp.textContent = "♥".repeat(g.hp) + "♡".repeat(CONFIG.startHP - g.hp);
+    this.renderHud(g, true);
     let drawn = new Set(),
       lines = [];
     g.players.forEach((p) =>
@@ -923,6 +1024,22 @@ class UIManager {
       : "조디악";
     this.renderInfo(g);
   }
+  static renderHud(g, force = false) {
+    const values = {
+      wave: String(g.wave.wave),
+      timer: Math.max(0, g.wave.left).toFixed(1),
+      hp: "♥".repeat(g.hp) + "♡".repeat(CONFIG.startHP - g.hp),
+      starlight: String(g.players[0].resources.starlight),
+      divinity: String(g.players[0].resources.divinity),
+    };
+    const elements = { wave, timer, hp, starlight, divinity };
+    this.hudValues ||= {};
+    for (const [key, value] of Object.entries(values)) {
+      if (force || this.hudValues[key] !== value)
+        elements[key].textContent = value;
+      this.hudValues[key] = value;
+    }
+  }
 }
 class GameManager {
   constructor() {
@@ -931,6 +1048,11 @@ class GameManager {
     this.speed = 1;
     this.hp = CONFIG.startHP;
     this.enemies = [];
+    this.spatial = new SpatialGrid();
+    this.gameTime = 0;
+    this.tasks = [];
+    this.dirty = true;
+    this.lastHudUpdate = 0;
     this.wave = new WaveManager(this);
     this.spawner = new EnemySpawner(this);
     this.players = [0, 1].map((i) => {
@@ -939,6 +1061,12 @@ class GameManager {
       return p;
     });
     this.buildControls();
+    RangeSystem.refresh();
+    window.addEventListener("resize", () => {
+      RangeSystem.refresh();
+      this.players.forEach((player) => player.manager.refreshPositions());
+      this.markDirty();
+    }, { passive: true });
     this.render();
     requestAnimationFrame((t) => this.loop(t));
   }
@@ -962,39 +1090,73 @@ class GameManager {
     });
   }
   simulationTimeout(callback, milliseconds) {
-    return setTimeout(callback, milliseconds / this.speed);
+    const task = { at: this.gameTime + milliseconds / 1000, callback };
+    this.tasks.push(task);
+    return task;
+  }
+  updateTasks() {
+    for (let index = this.tasks.length - 1; index >= 0; index--) {
+      if (this.tasks[index].at > this.gameTime) continue;
+      const [task] = this.tasks.splice(index, 1);
+      task.callback();
+    }
+  }
+  markDirty() {
+    this.dirty = true;
   }
   kill(e) {
     this.players.forEach((p) => {
       p.resources.starlight += e.reward;
       if (e.boss) p.resources.divinity++;
     });
-    this.render();
+    this.clearEnemyReferences(e);
+    this.markDirty();
   }
-  leak() {
+  leak(e) {
+    this.clearEnemyReferences(e);
     if (--this.hp <= 0) {
       this.running = false;
       finalWave.textContent = this.wave.wave;
       gameover.hidden = false;
     }
-    this.render();
+    this.markDirty();
+  }
+  clearEnemyReferences(enemy) {
+    this.players.forEach((player) => player.manager.stars.forEach((star) => {
+      if (!star) return;
+      if (star.lock === enemy) star.lock = null;
+      if (star.constellation?.target === enemy) {
+        star.constellation.target = null;
+        star.constellation.hitCount = 0;
+      }
+    }));
   }
   loop(t) {
     if (!this.last) this.last = t;
-    let dt = Math.min((t - this.last) / 1000, 0.05) * this.speed;
+    const frameMs = t - this.last;
+    this.frameMs = this.frameMs ? this.frameMs * 0.9 + frameMs * 0.1 : frameMs;
+    let dt = Math.min(frameMs / 1000, 0.05) * this.speed;
     this.last = t;
     if (this.running) {
+      this.gameTime += dt;
       this.wave.update(dt);
       this.spawner.update(dt);
       this.enemies.forEach((e) => e.update(dt));
       this.enemies = this.enemies.filter((e) => !e.dead);
+      this.spatial.rebuild(this.enemies);
       this.players.forEach((p) => p.manager.update(dt));
-      this.render();
+      this.updateTasks();
+      if (this.dirty) this.render();
+      else if (t - this.lastHudUpdate >= 100) {
+        UIManager.renderHud(this);
+        this.lastHudUpdate = t;
+      }
     }
     requestAnimationFrame((x) => this.loop(x));
   }
   render() {
     UIManager.render(this);
+    this.dirty = false;
   }
 }
 let game = new GameManager();
@@ -1010,5 +1172,11 @@ window.__TDS__ = {
   CONFIG,
   ZODIAC_RECIPES,
   game,
-  classes: { Enemy, WaveManager, Star, Targeting, RangeSystem, Constellation },
+  classes: { Enemy, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
+  performance: () => ({
+    activeEnemies: game.enemies.length,
+    activeEffects: UIManager.activeEffects || 0,
+    frameMs: game.frameMs || 0,
+    fps: game.frameMs ? 1000 / game.frameMs : 0,
+  }),
 };

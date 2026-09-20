@@ -7,6 +7,7 @@ const definitions = source.slice(0, source.indexOf("class UIManager"));
 const hints = [];
 let moonPlays = 0;
 const dawnBursts = [];
+const divinationResults = [];
 
 const context = {
   Math: Object.create(Math),
@@ -19,6 +20,7 @@ const context = {
     zodiacComplete: () => {},
     showDawnMoon: () => moonPlays++,
     dawnSpecial: (position, damage) => dawnBursts.push({ position, damage }),
+    divinationEffect: (position, success) => divinationResults.push({ position, success }),
   },
   effects: { querySelectorAll: () => [] },
 };
@@ -27,11 +29,11 @@ context.arena = {
 };
 vm.createContext(context);
 vm.runInContext(
-  `${definitions}\nthis.testApi = { CONFIG, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem };`,
+  `${definitions}\nthis.testApi = { CONFIG, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem };`,
   context,
 );
 
-const { CONFIG, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem } =
+const { CONFIG, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem } =
   context.testApi;
 
 const makeManager = () => {
@@ -71,6 +73,7 @@ context.game = {
   simulationTimeout(callback) {
     callback();
   },
+  markDirty() {},
 };
 
 // Merge is immediate, retains the selected slot, and empties one material slot.
@@ -209,6 +212,23 @@ assert.equal(ZodiacSystem.exactMatch({ white: 1, blue: 3 }), "dawn");
 assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 2 })], ["radiance"]);
 assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 3 })], []);
 
+// Divination replaces exchange for a constellation: 30 is paid first, then
+// success grants 60 while failure removes at most another 15.
+const divineManager = makeManager();
+divineManager.stars[0] = new Star("blue");
+divineManager.stars[0].constellation = { center: 0 };
+divineManager.selected = [0];
+context.Math.random = () => 0.49;
+DivinationSystem.execute(divineManager, 0);
+assert.equal(divineManager.player.resources.starlight, 130);
+context.Math.random = () => 0.51;
+DivinationSystem.execute(divineManager, 0);
+assert.equal(divineManager.player.resources.starlight, 85);
+divineManager.player.resources.starlight = 31;
+DivinationSystem.execute(divineManager, 0);
+assert.equal(divineManager.player.resources.starlight, 0);
+assert.deepEqual(divinationResults.map((result) => result.success), [true, false, false]);
+
 // The same pixel conversion defines visual radius and gameplay inclusion.
 assert.equal(RangeSystem.radius(4), 100.8);
 assert.equal(RangeSystem.contains({ x: 0, y: 0 }, { x: 25.2, y: 0 }, 4), true);
@@ -216,6 +236,7 @@ assert.equal(RangeSystem.contains({ x: 0, y: 0 }, { x: 25.21, y: 0 }, 4), false)
 assert.equal(RangeSystem.contains({ x: 0, y: 0 }, { x: 0, y: 12.6 }, 4), true);
 assert.equal(RangeSystem.contains({ x: 0, y: 0 }, { x: 0, y: 12.61 }, 4), false);
 context.arena.getBoundingClientRect = () => ({ width: 1024, height: 768 });
+RangeSystem.refresh();
 assert.ok(Math.abs(RangeSystem.radius(6) - 387.072) < 1e-9);
 assert.equal(RangeSystem.contains({ x: 10, y: 10 }, { x: 47.8, y: 10 }, 6), true);
 assert.equal(RangeSystem.contains({ x: 10, y: 10 }, { x: 47.81, y: 10 }, 6), false);

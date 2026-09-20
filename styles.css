@@ -62,7 +62,7 @@ button {
 }
 header {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr auto auto 1fr;
   align-items: center;
   padding: 7px 10px;
   background: var(--panel);
@@ -91,6 +91,14 @@ header {
   font-size: 11px;
   color: var(--muted);
 }
+.resources {
+  display: grid;
+  gap: 2px;
+  margin-left: 10px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.resources b { color: #ffe595; font-size: 12px; }
 .hp {
   text-align: right;
 }
@@ -384,8 +392,9 @@ header {
   display: grid;
   place-items: center;
   font-size: 16px;
-  filter: drop-shadow(0 2px 4px #000);
   pointer-events: none;
+  will-change: transform;
+  contain: layout style paint;
 }
 .enemy .bar {
   position: absolute;
@@ -534,6 +543,7 @@ header {
   }
 }
 .enemy.boss {
+  filter: drop-shadow(0 2px 4px #000);
   width: 40px;
   height: 40px;
   margin: -20px;
@@ -799,6 +809,34 @@ header {
     0 0 7px #fff,
     0 0 15px #ffca56;
   animation: mergeReady 0.8s ease-in-out infinite alternate;
+}
+.context-actions .divination {
+  color: #17102d;
+  border-color: #ffe6a1;
+  background: linear-gradient(135deg, #fff0a8, #be8cff);
+  box-shadow: 0 0 12px #dca9ff99;
+}
+.divination-effect {
+  position: absolute;
+  z-index: 96;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  padding: 7px 12px;
+  border: 1px solid #fff8;
+  border-radius: 18px;
+  color: #fff;
+  background: #31235ee8;
+  font-size: 13px;
+  font-weight: 900;
+  pointer-events: none;
+  animation: divinationResult .9s ease-out forwards;
+}
+.divination-effect.success { box-shadow: 0 0 18px #ffe97b; }
+.divination-effect.failure { box-shadow: 0 0 15px #a16bff; color: #e5d7ff; }
+@keyframes divinationResult {
+  from { opacity: 0; transform: translate(-50%, -25%) scale(.8); }
+  20%, 65% { opacity: 1; transform: translate(-50%, -75%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -115%) scale(.95); }
 }
 .context-actions.below {
   transform: translate(-50%, 0);
