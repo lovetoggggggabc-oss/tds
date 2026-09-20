@@ -9,6 +9,9 @@ const [html, css, js] = await Promise.all([
 
 assert.match(html, /href="styles\.css"/);
 assert.match(html, /src="game\.js"/);
+assert.equal((html.match(/data-act="summon"/g) || []).length, 2);
+assert.match(html, /data-player="0"/);
+assert.match(html, /data-player="1"/);
 assert.ok(
   html.indexOf('class="field-label two"') <
     html.indexOf('class="field-label one"'),
@@ -29,6 +32,7 @@ assert.match(js, /this\.stars = Array\(15\)\.fill\(null\)/);
 assert.match(js, /startStarlight:\s*5000/);
 assert.match(js, /startDivinity:\s*50/);
 assert.match(js, /summonCost:\s*30/);
+assert.match(js, /emptySlots\(\)/);
 assert.match(js, /swapCost:\s*10/);
 assert.match(js, /slime:\s*\{[^}]*hp:\s*500/);
 assert.match(js, /bug:\s*\{[^}]*hp:\s*800/);

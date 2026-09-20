@@ -302,17 +302,24 @@ class StarManager {
       if (p.manager !== this) p.manager.exitModes();
     });
   }
+  emptySlots() {
+    return this.stars.reduce((empty, star, index) => {
+      if (!star) empty.push(index);
+      return empty;
+    }, []);
+  }
   summon() {
-    let empty = this.stars
-      .map((s, i) => (s ? null : i))
-      .filter((i) => i !== null);
+    // Never cache availability: merges and every summon can change the board.
+    // Selection/action modes are UI state only and must not gate summoning.
+    let empty = this.emptySlots();
     if (!empty.length) return UIManager.hint("빈 슬롯이 없습니다.");
-    if (!this.player.resources.spend(CONFIG.summonCost))
+    if (!this.player.resources.can(CONFIG.summonCost))
       return UIManager.hint("별빛이 부족합니다.");
     let i = empty[Math.floor(Math.random() * empty.length)];
     this.stars[i] = new Star(
       STAR_KEYS[Math.floor(Math.random() * STAR_KEYS.length)],
     );
+    this.player.resources.spend(CONFIG.summonCost);
     this.exitModes();
     this.clearOthers();
     this.selectOnly(i);
@@ -714,13 +721,13 @@ class GameManager {
   }
   buildControls() {
     this.players.forEach((p, i) => {
-      let el = document.createElement("div");
-      el.className = "player";
-      el.innerHTML = `<div class="player-head"><b>${i + 1}P 마법사</b><span class="wallet"></span></div><div class="actions"><button class="primary" data-act="summon">✦ 별 소환 30</button><button data-act="zodiac">조디악</button></div>`;
-      controls.append(el);
-      el.querySelector("[data-act=summon]").onclick = () => p.manager.summon();
-      el.querySelector("[data-act=zodiac]").onclick = () =>
-        ZodiacSystem.toggle(p.manager);
+      let el = controls.querySelector(`[data-player="${i}"]`);
+      el.querySelector("[data-act=summon]").addEventListener("click", () =>
+        p.manager.summon(),
+      );
+      el.querySelector("[data-act=zodiac]").addEventListener("click", () =>
+        ZodiacSystem.toggle(p.manager),
+      );
     });
   }
   simulationTimeout(callback, milliseconds) {
