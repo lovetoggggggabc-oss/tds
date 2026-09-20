@@ -13,18 +13,23 @@ const context = {
   UIManager: {
     hint: (message) => hints.push(message),
     mergeEffect: () => {},
+    swapEffect: () => {},
+    chainBeam: () => {},
     zodiacComplete: () => {},
     showDawnMoon: () => moonPlays++,
   },
   effects: { querySelectorAll: () => [] },
 };
+context.arena = {
+  getBoundingClientRect: () => ({ width: 400, height: 800 }),
+};
 vm.createContext(context);
 vm.runInContext(
-  `${definitions}\nthis.testApi = { CONFIG, Star, Constellation, MergeSystem, SwapSystem, ZodiacSystem };`,
+  `${definitions}\nthis.testApi = { CONFIG, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem };`,
   context,
 );
 
-const { CONFIG, Star, Constellation, MergeSystem, SwapSystem, ZodiacSystem } =
+const { CONFIG, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem } =
   context.testApi;
 
 const makeManager = () => {
@@ -109,7 +114,7 @@ const zodiacManager = makeManager();
 for (const [index, type] of [
   [0, "blue"],
   [1, "blue"],
-  [2, "red"],
+  [2, "blue"],
   [3, "white"],
 ])
   zodiacManager.stars[index] = new Star(type);
@@ -118,9 +123,9 @@ zodiacManager.selected = [0, 1, 2, 3];
 ZodiacSystem.create(zodiacManager);
 assert.equal(moonPlays, 1);
 const constellation = zodiacManager.stars[0].constellation;
-assert.equal(CONFIG.constellation.damage, 500);
-assert.equal(CONFIG.constellation.rate, 4);
-assert.equal(CONFIG.constellation.range, 4);
+assert.equal(CONFIG.constellations.dawn.damage, 500);
+assert.equal(CONFIG.constellations.dawn.rate, 4);
+assert.equal(CONFIG.constellations.dawn.range, 4);
 
 const damage = [];
 const enemy = {
@@ -133,13 +138,56 @@ const enemy = {
   },
 };
 context.game.enemies = [enemy];
-for (let hit = 0; hit < 3; hit++) {
+for (let hit = 0; hit < 4; hit++) {
   constellation.cooldown = 0;
   constellation.attack(0);
 }
-assert.deepEqual(damage, [500, 500, 500, 500 * 15]);
+assert.deepEqual(damage, [500, 500, 500, 500, 500 * 15]);
 assert.equal(constellation.hitCount, 0);
 assert.equal(moonPlays, 1, "special attack must not replay the moon");
+
+// Radiance accepts red x2 + white x1, saves the real stage sum and chains once
+// per stage across distinct nearest enemies.
+const radianceManager = makeManager();
+for (const [index, type, tier] of [
+  [0, "red", 2],
+  [1, "red", 1],
+  [2, "white", 1],
+]) radianceManager.stars[index] = new Star(type, tier);
+radianceManager.zodiacMode = true;
+radianceManager.selected = [0, 1, 2];
+ZodiacSystem.create(radianceManager);
+const radiance = radianceManager.stars[0].constellation;
+assert.equal(radiance.kind, "radiance");
+assert.equal(radiance.componentStageSum, 4);
+assert.equal(moonPlays, 1, "radiance must not play the dawn moon");
+const chained = Array.from({ length: 5 }, (_, index) => ({
+  dead: false,
+  hp: 10000,
+  position: () => ({ x: index + 1, y: 0 }),
+  hit(amount) { this.hp -= amount; this.received = (this.received || []).concat(amount); },
+}));
+context.game.enemies = chained;
+radiance.cooldown = 0;
+radiance.attack(0);
+assert.deepEqual(chained.map((enemy) => enemy.received || []), [
+  [950], [950], [950], [950], [],
+]);
+context.game.enemies = chained.slice(0, 2).map((enemy) => ({ ...enemy, hp: 10000, received: [], hit: enemy.hit }));
+radiance.cooldown = 0;
+radiance.attack(0);
+assert.deepEqual(context.game.enemies.map((enemy) => enemy.received), [[950], [950]]);
+
+// The same pixel conversion defines visual radius and gameplay inclusion.
+assert.equal(RangeSystem.radius(4), 100.8);
+assert.equal(RangeSystem.contains({ x: 0, y: 0 }, { x: 25.2, y: 0 }, 4), true);
+assert.equal(RangeSystem.contains({ x: 0, y: 0 }, { x: 25.21, y: 0 }, 4), false);
+assert.equal(RangeSystem.contains({ x: 0, y: 0 }, { x: 0, y: 12.6 }, 4), true);
+assert.equal(RangeSystem.contains({ x: 0, y: 0 }, { x: 0, y: 12.61 }, 4), false);
+context.arena.getBoundingClientRect = () => ({ width: 1024, height: 768 });
+assert.ok(Math.abs(RangeSystem.radius(6) - 387.072) < 1e-9);
+assert.equal(RangeSystem.contains({ x: 10, y: 10 }, { x: 47.8, y: 10 }, 6), true);
+assert.equal(RangeSystem.contains({ x: 10, y: 10 }, { x: 47.81, y: 10 }, 6), false);
 
 console.log(
   "Zodiac cancel, dawn constellation, merge, and exchange regressions passed.",
