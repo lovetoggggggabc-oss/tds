@@ -7,8 +7,8 @@ const [html, css, js] = await Promise.all([
   readFile("game.js", "utf8"),
 ]);
 
-assert.match(html, /href="styles\.css"/);
-assert.match(html, /<script src="game\.js" defer><\/script>/);
+assert.match(html, /href="styles\.css\?v=26"/);
+assert.match(html, /<script src="game\.js\?v=26" defer><\/script>/);
 assert.equal((html.match(/data-act="summon"/g) || []).length, 1);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/, "2P's direct controls must not be rendered");
@@ -21,7 +21,7 @@ assert.match(css, /\.codex-panel\s*\{[\s\S]*?display:\s*flex;[\s\S]*?overflow:\s
 assert.match(css, /\.codex-list\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto/);
 assert.match(css, /-webkit-overflow-scrolling:\s*touch/);
 assert.match(css, /\.codex-panel\s*\{[\s\S]*?height:\s*min\(88dvh,\s*900px\)/);
-assert.match(css, /\.app\s*\{[\s\S]*?max-width:\s*600px;[\s\S]*?margin:\s*0 auto/);
+assert.match(css, /#game-shell\s*\{[\s\S]*?max-width:\s*600px;[\s\S]*?margin:\s*0 auto/);
 assert.match(css, /\.codex-preview\s*\{[\s\S]*?min-height:\s*200px/);
 assert.match(js, /preserveAspectRatio="xMidYMid meet"/);
 assert.match(css, /body\.codex-open\s*\{[\s\S]*?overflow:\s*hidden/);
@@ -40,11 +40,11 @@ assert.match(
   /M8 7V50H89 M8 93V50/,
   "two starts must join a straight finish path",
 );
-assert.match(css, /grid-template-columns:\s*repeat\(5,\s*1fr\)/);
-assert.match(css, /grid-template-rows:\s*repeat\(3,\s*1fr\)/);
+assert.match(css, /grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
+assert.match(css, /grid-template-rows:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
 assert.match(css, /\.road\s*\{[\s\S]*?stroke-width:\s*1\.35px/);
-assert.match(css, /\.field\.p2\s*\{\s*top:\s*9%/);
-assert.match(css, /\.field\.p1\s*\{\s*bottom:\s*9%/);
+assert.match(css, /\.field\.p2\s*\{\s*top:\s*5%/);
+assert.match(css, /\.field\.p1\s*\{\s*bottom:\s*5%/);
 assert.match(css, /\.range-indicator\s*\{[\s\S]*?border-radius:\s*50%/);
 assert.match(
   css,
@@ -189,10 +189,13 @@ for (const [type, damage] of [["slime", 100], ["bug", 150]])
   assert.match(js, new RegExp(`${type}: \\{[^}]*baseDamage: ${damage}`));
 for (const [name, damage] of [["코어 드론", 500], ["운석 괴물", 1000]])
   assert.match(js, new RegExp(`name: "${name}"[\\s\\S]*?baseDamage: ${damage}`));
-assert.match(css, /\.slot\s*\{[\s\S]*?min-height:\s*44px/);
-assert.match(css, /\.slot\s*\{[\s\S]*?min-width:\s*44px/);
+assert.match(css, /\.slot\s*\{[\s\S]*?aspect-ratio:\s*1\s*\/\s*1/);
 assert.match(js, /function bindPointerTap/);
-assert.match(css, /\.app\s*\{[\s\S]*?width:\s*100%;[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
+assert.match(html, /<main class="app" id="game-shell">/);
+assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*600px\);[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
+assert.match(css, /\.field\s*\{[\s\S]*?grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
+assert.match(html, /styles\.css\?v=26/, "the deployed stylesheet URL must change when its layout changes");
+assert.match(html, /game\.js\?v=26/, "the deployed script URL must not reuse the pre-direct-summon cache entry");
 assert.match(css, /\.star-info\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?z-index:\s*160/);
 
 const isBoss = (n) =>

@@ -50,8 +50,8 @@ button {
   border: 0;
   touch-action: manipulation;
 }
-.app {
-  width: 100%;
+#game-shell {
+  width: min(100%, 600px);
   max-width: 600px;
   height: 100vh;
   height: 100dvh;
@@ -62,6 +62,7 @@ button {
   flex-direction: column;
   gap: 7px;
   position: relative;
+  overflow: hidden;
 }
 header {
   display: grid;
@@ -280,20 +281,21 @@ header {
 }
 .field {
   position: absolute;
-  left: 10%;
-  width: 80%;
-  height: 36%;
+  left: 12%;
+  width: 76%;
+  height: auto;
+  aspect-ratio: 5 / 3;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(3, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: 3px;
   padding: 3px;
 }
 .field.p1 {
-  bottom: 9%;
+  bottom: 5%;
 }
 .field.p2 {
-  top: 9%;
+  top: 5%;
 }
 .field-label {
   position: absolute;
@@ -304,10 +306,10 @@ header {
   color: #a9b8ef;
 }
 .field-label.one {
-  bottom: 8%;
+  bottom: 4%;
 }
 .field-label.two {
-  top: 8%;
+  top: 4%;
 }
 .slot {
   position: relative;
@@ -315,9 +317,10 @@ header {
   border-radius: 10px;
   border: 1px solid rgba(127, 150, 225, 0.18);
   background: rgba(54, 64, 119, 0.18);
-  min-width: 44px;
+  min-width: 0;
   overflow: visible;
-  min-height: 44px;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
