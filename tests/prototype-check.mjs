@@ -20,7 +20,10 @@ assert.match(html, />별자리 도감<\/button>/);
 assert.match(css, /\.codex-panel\s*\{[\s\S]*?display:\s*flex;[\s\S]*?overflow:\s*hidden/);
 assert.match(css, /\.codex-list\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto/);
 assert.match(css, /-webkit-overflow-scrolling:\s*touch/);
-assert.match(css, /\.codex-panel\s*\{[\s\S]*?height:\s*min\(82dvh,\s*720px\)/);
+assert.match(css, /\.codex-panel\s*\{[\s\S]*?height:\s*min\(88dvh,\s*900px\)/);
+assert.match(css, /\.app\s*\{[\s\S]*?max-width:\s*600px;[\s\S]*?margin:\s*0 auto/);
+assert.match(css, /\.codex-preview\s*\{[\s\S]*?min-height:\s*200px/);
+assert.match(js, /preserveAspectRatio="xMidYMid meet"/);
 assert.match(css, /body\.codex-open\s*\{[\s\S]*?overflow:\s*hidden/);
 assert.match(html, /id="dawnMoon"/);
 assert.match(css, /\.dawn-moon\s*\{[\s\S]*?pointer-events:\s*none/);
@@ -158,13 +161,13 @@ assert.match(
   "the codex must render the complete shared registry",
 );
 assert.match(js, /flatMap\(\(\[type, amount\]\)/, "the recipe must render one icon per required star");
-assert.match(css, /\.codex-preview\s*\{[^}]*height:\s*150px/, "constellation previews must be prominent");
+assert.match(css, /\.codex-preview\s*\{[^}]*min-height:\s*200px/, "constellation previews must be prominent");
 assert.match(css, /\.codex-preview \*\s*\{[^}]*pointer-events:\s*none/, "codex decorations must not intercept scrolling");
 assert.match(js, /previewLayout:\s*Object\.freeze/g, "every constellation must define a visual-only layout");
 assert.match(js, /this\.discoveredConstellations = new Set\(\)/);
 assert.match(js, /game\.discoverConstellation\(definitionId\)/);
-assert.match(js, /if \(this\.zodiacMode\) return;[\s\S]*?this\.clearNormalSelection/, "empty zodiac slots must preserve selection");
-assert.match(js, /if \(this\.clearNormalSelection\(\)\) game\.render\(\)/, "empty slots must clear normal selection");
+assert.match(js, /if \(this\.zodiacMode\) return;[\s\S]*?this\.summonAt\(i\)/, "empty zodiac slots must preserve selection");
+assert.match(js, /summonAt\(i\)[\s\S]*?this\.clearNormalSelection\(\)/, "successful direct summons must clear normal selection");
 assert.match(js, /event\.target\.closest\("\.slot, \.context-actions, button, \[role=button\]"\)/, "arena controls must not trigger background deselection");
 assert.match(html, /id="field-1"/, "the 2P field must remain in the game");
 assert.match(html, /M8 7V50H89 M8 93V50/, "both enemy paths must remain in the arena");
@@ -189,7 +192,7 @@ for (const [name, damage] of [["코어 드론", 500], ["운석 괴물", 1000]])
 assert.match(css, /\.slot\s*\{[\s\S]*?min-height:\s*44px/);
 assert.match(css, /\.slot\s*\{[\s\S]*?min-width:\s*44px/);
 assert.match(js, /function bindPointerTap/);
-assert.match(css, /\.app\s*\{[\s\S]*?width:\s*100vw;[\s\S]*?height:\s*100dvh/);
+assert.match(css, /\.app\s*\{[\s\S]*?width:\s*100%;[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
 assert.match(css, /\.star-info\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?z-index:\s*160/);
 
 const isBoss = (n) =>
