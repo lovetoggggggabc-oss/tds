@@ -172,7 +172,8 @@ header {
 }
 .arena {
   position: relative;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-height: 360px;
   width: 100%;
   align-self: center;
   border-radius: 22px;
@@ -183,153 +184,65 @@ header {
     inset 0 0 50px #0008,
     0 14px 32px #0005;
 }
-.arena-layout {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-rows: auto 120px auto;
-  gap: 10px;
-  width: 100%;
-  padding: 18px 0 22px;
-  pointer-events: none;
-}
-.field-zone { position: relative; width: 100%; }
-.path-zone { min-height: 120px; }
-.planet {
+.planet { position: absolute; border-radius: 50%; opacity: .35; pointer-events: none; }
+.planet.a { width: 55px; height: 55px; right: -18px; top: 8%; background: radial-gradient(circle at 35% 35%, #93dfff, #624eb9 55%, #1d225e); }
+.planet.b { width: 32px; height: 32px; left: 12%; bottom: 4%; background: #b55e76; box-shadow: inset -9px -7px #54264b; }
+#paths, #links, #ranges, #effects { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#links *, #ranges *, #effects * { pointer-events: none; }
+.range { fill: rgba(118, 233, 255, .1); stroke: #b9f5ff; stroke-width: 1.25px; vector-effect: non-scaling-stroke; stroke-dasharray: 5 4; filter: drop-shadow(0 0 3px #63dcff); }
+.road { fill: none; stroke: #fff; stroke-width: 1.35px; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px #9edbff); }
+.roadGlow { fill: none; stroke: #fff; stroke-opacity: .18; stroke-width: 5px; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.arrow { fill: #fff; opacity: .88; filter: drop-shadow(0 0 2px #9edbff); }
+.start { fill: #12173e; stroke: #fff; stroke-width: 1.2px; vector-effect: non-scaling-stroke; }
+.start-label { fill: #fff; font-size: 3px; font-weight: 900; text-anchor: middle; }
+.goal { fill: #211d4b; stroke: #f1c6ff; stroke-width: 1.2px; vector-effect: non-scaling-stroke; }
+.goalPulse { animation: pulse 1.4s infinite; transform-origin: 92px 50px; }
+@keyframes pulse { 50% { opacity: .35; transform: scale(1.1); } }
+.free-field {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(0.1px);
-  opacity: 0.35;
-  pointer-events: none;
-}
-.planet.a {
-  width: 55px;
-  height: 55px;
-  right: -18px;
-  top: 8%;
-  background: radial-gradient(circle at 35% 35%, #93dfff, #624eb9 55%, #1d225e);
-}
-.planet.b {
-  width: 32px;
-  height: 32px;
-  left: 12%;
-  bottom: 4%;
-  background: #b55e76;
-  box-shadow: inset -9px -7px #54264b;
-}
-#paths,
-#links,
-#ranges,
-#effects {
-  position: absolute;
+  z-index: 3;
   inset: 0;
-  width: 100%;
-  height: 100%;
   pointer-events: none;
 }
-#links *,
-#ranges *,
-#effects * {
-  pointer-events: none;
-}
-.range {
-  fill: rgba(118, 233, 255, 0.1);
-  stroke: #b9f5ff;
-  stroke-width: 1.25px;
-  vector-effect: non-scaling-stroke;
-  stroke-dasharray: 5 4;
-  filter: drop-shadow(0 0 3px #63dcff);
-}
-.road {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 1.35px;
-  vector-effect: non-scaling-stroke;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 3px #9edbff);
-}
-.roadGlow {
-  fill: none;
-  stroke: #fff;
-  stroke-opacity: 0.18;
-  stroke-width: 5px;
-  vector-effect: non-scaling-stroke;
-  stroke-linecap: round;
-}
-.arrow {
-  fill: #fff;
-  opacity: 0.88;
-  filter: drop-shadow(0 0 2px #9edbff);
-}
-.start {
-  fill: #12173e;
-  stroke: #fff;
-  stroke-width: 1.2px;
-  vector-effect: non-scaling-stroke;
-}
-.start-label {
-  fill: #fff;
-  font-size: 3px;
-  font-weight: 900;
-  text-anchor: middle;
-}
-.goal {
-  fill: #211d4b;
-  stroke: #f1c6ff;
-  stroke-width: 1.2px;
-  vector-effect: non-scaling-stroke;
-}
-.goalPulse {
-  animation: pulse 1.4s infinite;
-  transform-origin: 89px 50px;
-}
-@keyframes pulse {
-  50% {
-    opacity: 0.35;
-    transform: scale(1.1);
-  }
-}
-.field {
-  position: relative;
-  margin: 0 auto;
-  width: 76%;
-  height: auto;
-  aspect-ratio: 5 / 3;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  grid-template-rows: repeat(3, minmax(0, 1fr));
-  gap: 3px;
-  padding: 3px;
+.free-field.placing {
   pointer-events: auto;
+  cursor: crosshair;
+  background: radial-gradient(circle at center, rgba(98, 218, 255, 0.06), transparent 68%);
 }
-.field-label {
+.free-field.placing::after {
+  content: "길을 피해 원하는 위치를 터치하세요";
   position: absolute;
-  z-index: 2;
-  top: 0;
-  right: 2%;
+  left: 50%;
+  bottom: 42px;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  border: 1px solid #7deaff88;
+  border-radius: 999px;
+  color: #e9fbff;
+  background: #11183ddd;
   font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  color: #a9b8ef;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
 }
-.slot {
-  position: relative;
-  padding: 0;
-  border-radius: 10px;
-  border: 1px solid rgba(127, 150, 225, 0.18);
-  background: rgba(54, 64, 119, 0.18);
-  min-width: 0;
-  overflow: visible;
-  min-height: 0;
+.star-node {
+  position: absolute;
+  width: clamp(38px, 11vw, 54px);
   aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(127, 150, 225, 0.24);
+  background: rgba(35, 45, 96, 0.42);
+  overflow: visible;
+  pointer-events: auto;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
   /* The button itself—not the small glyph—is the star hit target. */
   cursor: pointer;
 }
-.slot:after {
+.star-node:after {
   content: "";
   position: absolute;
   inset: 20%;
@@ -337,13 +250,13 @@ header {
   border: 1px dashed #7380b333;
   pointer-events: none;
 }
-.slot.selected {
+.star-node.selected {
   outline: 2px solid #fff;
   outline-offset: 1px;
   background: #8ca5ff33;
 }
-.slot.selected:has(.star) { box-shadow: 0 0 12px #8feaff88; }
-.slot.zodiac-picked {
+.star-node.selected:has(.star) { box-shadow: 0 0 12px #8feaff88; }
+.star-node.zodiac-picked {
   outline: 2px solid #ffe485;
   outline-offset: 2px;
   background: #ffd75c25;
@@ -353,16 +266,16 @@ header {
     inset 0 0 10px #fff5;
   animation: zodiacGlow 0.8s ease-in-out infinite alternate;
 }
-.slot.support {
+.star-node.support {
   border-color: #f8d884aa;
 }
-.slot.constellation.selected,
-.slot.support.constellation-linked {
+.star-node.constellation.selected,
+.star-node.support.constellation-linked {
   outline: 2px solid #ffe485;
   background: #ffd75c25;
   box-shadow: 0 0 16px #ffe16d99;
 }
-.slot.support:before {
+.star-node.support:before {
   content: "지원";
   position: absolute;
   z-index: 5;
@@ -973,7 +886,7 @@ header {
 .arena.speed-2 .merge-particle {
   transition-duration: 0.19s;
 }
-.slot.merge-flash .star {
+.star-node.merge-flash .star {
   animation: mergeFlash 0.42s ease-out;
 }
 @keyframes mergeFlash {
@@ -1310,9 +1223,6 @@ body.codex-open {
   }
   .game-controls button {
     font-size: 13px;
-  }
-  .field {
-    gap: 3px;
   }
   .hint {
     font-size: 9px;
