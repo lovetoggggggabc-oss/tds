@@ -25,6 +25,7 @@ class Element {
     this.textContent = "";
   }
   append(...children) { this.children.push(...children); }
+  remove() {}
   addEventListener() {}
   setAttribute() {}
   getBoundingClientRect() {
@@ -83,8 +84,13 @@ vm.runInContext(source, context, { filename: "game.js" });
 assert.equal(window.__TDS__, undefined, "loading documents must wait for DOMContentLoaded");
 listeners.DOMContentLoaded();
 
-const game = window.__TDS__.game;
 assert.equal(window.BOOT_STAGE, "complete");
+assert.equal(window.__TDS__.currentScreen, "MAIN_MENU");
+assert.equal(window.__TDS__.game, null, "combat must not begin from the main menu");
+window.__TDS__.showBattleMenu();
+assert.equal(window.__TDS__.currentScreen, "BATTLE_MENU");
+window.__TDS__.startBattle();
+const game = window.__TDS__.game;
 assert.equal(game.players.length, 2);
 assert.deepEqual(JSON.parse(JSON.stringify(game.players.map((player) => [
   player.resources.starlight,
@@ -106,7 +112,14 @@ assert.equal(game.wave.left, 20, "boss waves use the 20-second game-time interva
 const firstFrame = animationFrames.splice(0);
 firstFrame.forEach((callback) => callback(16));
 assert.ok(game.enemies.length > 0, "the first animation frame must spawn an enemy");
+window.__TDS__.leaveBattle();
+assert.equal(game.rafRunning, false, "leaving combat must stop its animation loop");
+assert.equal(window.__TDS__.currentScreen, "MAIN_MENU");
+window.__TDS__.showBattleMenu();
+window.__TDS__.startBattle();
+assert.notEqual(window.__TDS__.game, game, "re-entry must create a fresh combat state");
+assert.equal(window.__TDS__.game.wave.wave, 1, "re-entry must begin from wave 1");
 assert.equal(elements.has("bootError"), false, "successful boot must not display diagnostics");
-assert.equal((html.match(/<script src="game\.js\?v=36" defer><\/script>/g) || []).length, 1);
+assert.equal((html.match(/<script src="game\.js\?v=37" defer><\/script>/g) || []).length, 1);
 
 console.log("Runtime bootstrap smoke passed: DOM ready, 2 players, 30 star positions, resources, wave 1, enemy spawn, and RAF verified.");

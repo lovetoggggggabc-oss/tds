@@ -30,6 +30,9 @@ let dawnMoon, starInfo, controls, zodiacCodex, zodiacCodexList;
 let wave, timer, hp, starlight1, divinity1, starlight2, divinity2, nextEnemies;
 let speed, restart, finalWave, gameover;
 let game = null;
+let controlsBound = false;
+let toastTimer = 0;
+const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", BATTLE_GAME: "BATTLE_GAME" });
 const CONSTELLATION_IDS = Object.freeze({
   DAWN: "DAWN",
   RADIANCE: "RADIANCE",
@@ -1698,12 +1701,11 @@ class GameManager {
     this.wave = new WaveManager(this);
     this.spawner = new EnemySpawner(this);
     window.BOOT_STAGE = "building-controls";
-    this.buildControls();
+    if (!controlsBound) {
+      this.buildControls();
+      controlsBound = true;
+    }
     RangeSystem.refresh();
-    window.addEventListener("resize", () => {
-      RangeSystem.refresh();
-      this.markDirty();
-    }, { passive: true });
   }
   start() {
     // Start simulation only after every manager, control and listener exists.
@@ -1711,7 +1713,7 @@ class GameManager {
     this.render();
     window.BOOT_STAGE = "starting-loop";
     this.rafRunning = true;
-    requestAnimationFrame((t) => this.loop(t));
+    this.rafId = requestAnimationFrame((t) => this.loop(t));
   }
   discoverConstellation(definitionId) {
     if (this.discoveredConstellations.has(definitionId)) return;
@@ -1724,29 +1726,29 @@ class GameManager {
       // ended on bare map space may summon, so one pointer gesture can never
       // select a star and also create another one behind it.
       if (event.target.closest(".star-node, .context-actions, .star-info, .overlay, button, [role=button]")) return;
-      const manager = this.players[0].manager;
-      if (!this.running || !zodiacCodex.hidden || this.players.some((player) => player.manager.zodiacMode)) return;
+      const manager = game.players[0].manager;
+      if (!game.running || !zodiacCodex.hidden || game.players.some((player) => player.manager.zodiacMode)) return;
       const rect = arena.getBoundingClientRect();
       manager.summonAt(
         ((event.clientX - rect.left) / rect.width) * 100,
         ((event.clientY - rect.top) / rect.height) * 100,
       );
     }, (event) => {
-      if (!zodiacCodex.hidden || this.players.some((player) => player.manager.zodiacMode)) return false;
+      if (!zodiacCodex.hidden || game.players.some((player) => player.manager.zodiacMode)) return false;
       return !event.target.closest(".star-node, .context-actions, .star-info, .overlay, button, [role=button]");
     });
     bindPointerTap(arena, (event) => {
       if (event.target.closest(".star-node, .context-actions, .star-info, .overlay, button, [role=button]")) return;
       let changed = false;
-      this.players.forEach((player) => {
+      game.players.forEach((player) => {
         changed = player.manager.clearNormalSelection() || changed;
       });
-      if (changed) this.render();
+      if (changed) game.render();
     }, (event) => !event.target.closest(".star-node, .context-actions, .star-info, .overlay, button, [role=button]"));
     controls.querySelectorAll(".game-controls").forEach((panel) => {
-      const p = this.players[Number(panel.dataset.player)];
-      panel.querySelector("[data-act=zodiac]").addEventListener("click", () => ZodiacSystem.toggle(p.manager));
-      panel.querySelector("[data-act=zodiac-cancel]").addEventListener("click", () => ZodiacSystem.cancel(p.manager));
+      const playerIndex = Number(panel.dataset.player);
+      panel.querySelector("[data-act=zodiac]").addEventListener("click", () => ZodiacSystem.toggle(game.players[playerIndex].manager));
+      panel.querySelector("[data-act=zodiac-cancel]").addEventListener("click", () => ZodiacSystem.cancel(game.players[playerIndex].manager));
     });
     const codexButton = controls.querySelector("[data-act=codex]");
     const closeCodex = () => {
@@ -1818,6 +1820,7 @@ class GameManager {
     }));
   }
   loop(t) {
+    if (!this.rafRunning) return;
     if (!this.last) this.last = t;
     const frameMs = t - this.last;
     this.frameMs = this.frameMs ? this.frameMs * 0.9 + frameMs * 0.1 : frameMs;
@@ -1840,7 +1843,25 @@ class GameManager {
         this.lastHudUpdate = t;
       }
     }
-    requestAnimationFrame((x) => this.loop(x));
+    this.rafId = requestAnimationFrame((x) => this.loop(x));
+  }
+  destroy() {
+    this.running = false;
+    this.rafRunning = false;
+    if (typeof cancelAnimationFrame === "function" && this.rafId) cancelAnimationFrame(this.rafId);
+    this.tasks.length = 0;
+    this.enemies.forEach((enemy) => enemy.el?.remove());
+    this.alliedUnits.forEach((unit) => unit.el?.remove());
+    this.players.forEach((player) => { player.manager.field.innerHTML = ""; });
+    this.enemies.length = 0;
+    this.alliedUnits.length = 0;
+    effects.innerHTML = "";
+    links.innerHTML = "";
+    ranges.innerHTML = "";
+    contextActions.hidden = true;
+    starInfo.hidden = true;
+    zodiacCodex.hidden = true;
+    document.body.classList.remove("codex-open");
   }
   render() {
     UIManager.render(this);
@@ -1901,27 +1922,78 @@ function bootstrapGame() {
   finalWave = getRequiredElement("finalWave");
   gameover = getRequiredElement("gameover");
 
-  window.BOOT_STAGE = "creating-game";
-  game = new GameManager();
+  const mainMenu = getRequiredElement("main-menu");
+  const battleMenu = getRequiredElement("battle-menu");
+  const gameShell = getRequiredElement("game-shell");
+  const exitDialog = getRequiredElement("exit-dialog");
+  const toast = getRequiredElement("game-toast");
+  let currentScreen = SCREEN_STATES.MAIN_MENU;
+  const showScreen = (screen) => {
+    currentScreen = screen;
+    mainMenu.hidden = screen !== SCREEN_STATES.MAIN_MENU;
+    battleMenu.hidden = screen !== SCREEN_STATES.BATTLE_MENU;
+    gameShell.hidden = screen !== SCREEN_STATES.BATTLE_GAME;
+    exitDialog.hidden = true;
+  };
+  const showMainMenu = () => showScreen(SCREEN_STATES.MAIN_MENU);
+  const showBattleMenu = () => showScreen(SCREEN_STATES.BATTLE_MENU);
+  const startBattle = () => {
+    if (game) game.destroy();
+    gameover.hidden = true;
+    speed.textContent = "×1";
+    speed.classList.remove("active");
+    arena.classList.remove("speed-2");
+    showScreen(SCREEN_STATES.BATTLE_GAME);
+    window.BOOT_STAGE = "creating-game";
+    game = new GameManager();
+    game.start();
+  };
+  const leaveBattle = () => {
+    if (game) game.destroy();
+    game = null;
+    showMainMenu();
+  };
+  getRequiredElement("open-battle-menu").onclick = showBattleMenu;
+  getRequiredElement("battle-back").onclick = showMainMenu;
+  getRequiredElement("play-battle").onclick = startBattle;
+  getRequiredElement("battle-exit").onclick = () => { exitDialog.hidden = false; };
+  getRequiredElement("exit-cancel").onclick = () => { exitDialog.hidden = true; };
+  getRequiredElement("exit-confirm").onclick = leaveBattle;
+  document.querySelectorAll?.("[data-coming-soon]").forEach((button) => {
+    button.addEventListener("click", () => {
+      toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.hidden = true; }, 1800);
+    });
+  });
   speed.onclick = () => {
+    if (!game) return;
     game.speed = game.speed === 1 ? 2 : 1;
     speed.textContent = `×${game.speed}`;
     speed.classList.toggle("active", game.speed === 2);
     arena.classList.toggle("speed-2", game.speed === 2);
   };
-  restart.onclick = () => location.reload();
+  restart.onclick = startBattle;
+  window.addEventListener("resize", () => {
+    RangeSystem.refresh();
+    game?.markDirty();
+  }, { passive: true });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
-  game.start();
-  window.__TDS__ = {
-    CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, game,
+  showMainMenu();
+  const diagnostics = {
+    CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, SCREEN_STATES,
+    get game() { return game; },
+    get currentScreen() { return currentScreen; },
+    showMainMenu, showBattleMenu, startBattle, leaveBattle,
     classes: { Enemy, GuardianUnit, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
     performance: () => ({
-      activeEnemies: game.enemies.length,
+      activeEnemies: game?.enemies.length || 0,
       activeEffects: UIManager.activeEffects || 0,
-      frameMs: game.frameMs || 0,
-      fps: game.frameMs ? 1000 / game.frameMs : 0,
+      frameMs: game?.frameMs || 0,
+      fps: game?.frameMs ? 1000 / game.frameMs : 0,
     }),
   };
+  window.__TDS__ = diagnostics;
   window.BOOT_STAGE = "complete";
 }
 
