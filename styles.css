@@ -784,6 +784,7 @@ header {
   display: flex;
   gap: 5px;
   transform: translate(-50%, -100%);
+  pointer-events: auto;
 }
 .context-actions[hidden] {
   display: none;
@@ -799,6 +800,7 @@ header {
   background: #4a4e60;
   color: #bfc3cf;
   box-shadow: 0 3px 9px #0008;
+  touch-action: manipulation;
 }
 .context-actions button:disabled {
   opacity: 0.55;

@@ -75,6 +75,9 @@ assert.doesNotMatch(
   "summoning must not change selection or action modes",
 );
 assert.match(js, /swapCost:\s*10/);
+assert.match(js, /const nextTypes = STAR_KEYS\.filter\(\(type\) => type !== oldType\)/);
+assert.match(js, /SwapSystem\.execute\(pick\.m, pick\.index\)/);
+assert.match(css, /\.context-actions button\s*\{[\s\S]*?touch-action:\s*manipulation/);
 assert.match(js, /slime:\s*\{[^}]*hp:\s*500/);
 assert.match(js, /bug:\s*\{[^}]*hp:\s*800/);
 assert.match(js, /name:\s*"코어 드론"[\s\S]*?hp:\s*10000/);

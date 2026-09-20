@@ -106,15 +106,41 @@ assert.deepEqual([...mergeManager.selected], [2]);
 // Exchange changes only type, charges exactly 10, and preserves tier/slot/selection.
 const swapManager = makeManager();
 swapManager.stars[4] = new Star("blue", 3);
-swapManager.stars[7] = new Star("red", 2);
+const swappedStar = swapManager.stars[4];
 swapManager.selected = [4];
-SwapSystem.begin(swapManager);
-SwapSystem.execute(swapManager, 4, 7);
+SwapSystem.execute(swapManager, 4);
 assert.equal(swapManager.player.resources.starlight, 100 - CONFIG.swapCost);
-assert.equal(swapManager.stars[4].type, "red");
-assert.equal(swapManager.stars[7].type, "blue");
-assert.equal(swapManager.stars[7].tier, 3);
-assert.deepEqual([...swapManager.selected], [7]);
+assert.equal(swapManager.stars[4], swappedStar);
+assert.notEqual(swapManager.stars[4].type, "blue");
+assert.equal(swapManager.stars[4].tier, 3);
+assert.deepEqual([...swapManager.selected], [4]);
+assert.equal(swapManager.stars[4].lock, null);
+assert.equal(swapManager.stars[4].cooldown, 0);
+assert.equal(swapManager.stars[4].burstLeft, 3);
+
+const firstReplacement = swapManager.stars[4].type;
+SwapSystem.execute(swapManager, 4);
+assert.equal(swapManager.player.resources.starlight, 100 - CONFIG.swapCost * 2);
+assert.notEqual(swapManager.stars[4].type, firstReplacement);
+assert.equal(swapManager.stars[4].tier, 3);
+assert.deepEqual([...swapManager.selected], [4]);
+
+swapManager.player.resources.starlight = CONFIG.swapCost - 1;
+const typeBeforeRejectedSwap = swapManager.stars[4].type;
+SwapSystem.execute(swapManager, 4);
+assert.equal(swapManager.player.resources.starlight, CONFIG.swapCost - 1);
+assert.equal(swapManager.stars[4].type, typeBeforeRejectedSwap);
+
+const constellationSwapManager = makeManager();
+constellationSwapManager.stars[0] = new Star("orange");
+constellationSwapManager.stars[0].constellation = {
+  center: 0,
+  definitionId: CONSTELLATION_IDS.ASTROLOGER,
+};
+constellationSwapManager.selected = [0];
+SwapSystem.execute(constellationSwapManager, 0);
+assert.equal(constellationSwapManager.player.resources.starlight, 100);
+assert.equal(constellationSwapManager.stars[0].type, "orange");
 
 // Cancelling selection exits zodiac mode without consuming either resource.
 const cancelManager = makeManager();
