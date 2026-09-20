@@ -91,7 +91,7 @@ context.game = {
   markDirty() {},
 };
 
-// Merge is immediate, retains the selected slot, and empties one material slot.
+// Merge is immediate, clears the successful result selection, and empties one material slot.
 const mergeManager = makeManager();
 mergeManager.stars[2] = new Star("blue", 1);
 mergeManager.stars[8] = new Star("blue", 1);
@@ -99,7 +99,7 @@ mergeManager.selected = [2];
 MergeSystem.execute(mergeManager);
 assert.equal(mergeManager.stars[2].tier, 2);
 assert.equal(mergeManager.stars[8], null);
-assert.deepEqual([...mergeManager.selected], [2]);
+assert.deepEqual([...mergeManager.selected], []);
 
 // Exchange changes only type, charges exactly 10, and preserves tier/slot/selection.
 const swapManager = makeManager();

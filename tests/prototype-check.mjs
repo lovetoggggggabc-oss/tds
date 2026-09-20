@@ -69,10 +69,10 @@ for (const id of [
   );
 assert.match(js, /summonCost:\s*30/);
 assert.match(js, /emptySlots\(\)/);
-assert.doesNotMatch(
+assert.match(
   js.slice(js.indexOf("  summon() {"), js.indexOf("  tap(i) {")),
-  /exitModes|clearOthers|selectOnly/,
-  "summoning must not change selection or action modes",
+  /this\.clearNormalSelection\(\)/,
+  "successful summoning must clear normal selection",
 );
 assert.match(js, /swapCost:\s*10/);
 assert.match(js, /const nextTypes = STAR_KEYS\.filter\(\(type\) => type !== oldType\)/);
@@ -157,6 +157,10 @@ assert.match(
   /Object\.entries\(ZODIAC_RECIPES\)/,
   "the codex must render the complete shared registry",
 );
+assert.match(js, /flatMap\(\(\[type, amount\]\)/, "the recipe must render one icon per required star");
+assert.match(css, /\.codex-star i\s*\{[^}]*font-size:\s*32px/, "recipe star icons must be prominent");
+assert.match(js, /if \(this\.clearNormalSelection\(\)\) game\.render\(\)/, "empty slots must clear normal selection");
+assert.match(js, /event\.target\.closest\("\.slot, \.context-actions, button, \[role=button\]"\)/, "arena controls must not trigger background deselection");
 assert.match(html, /id="field-1"/, "the 2P field must remain in the game");
 assert.match(html, /M8 7V50H89 M8 93V50/, "both enemy paths must remain in the arena");
 assert.match(js, /this\.connectionOrder = \[\.\.\.connectionOrder\]/);
