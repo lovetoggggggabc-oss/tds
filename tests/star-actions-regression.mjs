@@ -89,13 +89,15 @@ assert.deepEqual([...mergeManager.selected], [2]);
 // Exchange changes only type, charges exactly 10, and preserves tier/slot/selection.
 const swapManager = makeManager();
 swapManager.stars[4] = new Star("blue", 3);
+swapManager.stars[7] = new Star("red", 2);
 swapManager.selected = [4];
-context.Math.random = () => 0;
-SwapSystem.execute(swapManager);
+SwapSystem.begin(swapManager);
+SwapSystem.execute(swapManager, 4, 7);
 assert.equal(swapManager.player.resources.starlight, 100 - CONFIG.swapCost);
-assert.notEqual(swapManager.stars[4].type, "blue");
-assert.equal(swapManager.stars[4].tier, 3);
-assert.deepEqual([...swapManager.selected], [4]);
+assert.equal(swapManager.stars[4].type, "red");
+assert.equal(swapManager.stars[7].type, "blue");
+assert.equal(swapManager.stars[7].tier, 3);
+assert.deepEqual([...swapManager.selected], [7]);
 
 // Cancelling selection exits zodiac mode without consuming either resource.
 const cancelManager = makeManager();
@@ -119,7 +121,7 @@ const zodiacManager = makeManager();
 for (const [index, type] of [
   [0, "blue"],
   [1, "blue"],
-  [2, "blue"],
+  [2, "red"],
   [3, "white"],
 ])
   zodiacManager.stars[index] = new Star(type);
@@ -187,13 +189,14 @@ const chained = Array.from({ length: 5 }, (_, index) => ({
 context.game.enemies = chained;
 radiance.cooldown = 0;
 radiance.attack(0);
+const radianceDamage = 950 * radiance.powerMultiplier;
 assert.deepEqual(chained.map((enemy) => enemy.received || []), [
-  [950], [950], [950], [950], [],
+  [radianceDamage], [radianceDamage], [radianceDamage], [radianceDamage], [],
 ]);
 context.game.enemies = chained.slice(0, 2).map((enemy) => ({ ...enemy, hp: 10000, received: [], hit: enemy.hit }));
 radiance.cooldown = 0;
 radiance.attack(0);
-assert.deepEqual(context.game.enemies.map((enemy) => enemy.received), [[950], [950]]);
+assert.deepEqual(context.game.enemies.map((enemy) => enemy.received), [[radianceDamage], [radianceDamage]]);
 
 // Recipe matching is count-based: selection order and star tier never affect it.
 for (const tiers of [[1, 1, 1], [2, 4, 3]]) {
@@ -207,8 +210,8 @@ for (const tiers of [[1, 1, 1], [2, 4, 3]]) {
   assert.equal(manager.stars[7].constellation.kind, "radiance");
   assert.equal(manager.stars[7].constellation.componentStageSum, tiers.reduce((a, b) => a + b, 0));
 }
-assert.equal(ZodiacSystem.exactMatch({ blue: 3, white: 1 }), "dawn");
-assert.equal(ZodiacSystem.exactMatch({ white: 1, blue: 3 }), "dawn");
+assert.equal(ZodiacSystem.exactMatch({ blue: 2, red: 1, white: 1 }), "dawn");
+assert.equal(ZodiacSystem.exactMatch({ white: 1, red: 1, blue: 2 }), "dawn");
 assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 2 })], ["radiance"]);
 assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 3 })], []);
 

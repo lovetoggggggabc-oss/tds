@@ -13,12 +13,13 @@ const CONFIG = {
   rangeUnit: 6.3,
   waveHpGrowth: 0.12,
   tierDamage: [1, 1.7, 2.8, 4.4],
+  constellationTierPower: [1, 1.25, 1.55, 1.9],
   whiteBurstInterval: 0.16,
   whiteBurstRest: 2,
   constellations: {
     dawn: {
       name: "새벽의 별자리",
-      recipe: { blue: 3, white: 1 },
+      recipe: { blue: 2, red: 1, white: 1 },
       range: 4,
       damage: 500,
       rate: 4,
@@ -36,18 +37,18 @@ const CONFIG = {
     },
   },
   monsters: {
-    slime: { name: "어둠 슬라임", hp: 500, speed: 4.6, reward: 1 },
-    bug: { name: "암흑 벌레", hp: 800, speed: 7, reward: 2 },
+    slime: { name: "어둠 슬라임", hp: 100, speed: 4.6, reward: 1 },
+    bug: { name: "암흑 벌레", hp: 70, speed: 7, reward: 2 },
     drone: {
       name: "코어 드론",
-      hp: 10000,
+      hp: 2500,
       speed: 2.8,
       reward: 30,
       boss: true,
     },
     meteor: {
       name: "운석 괴물",
-      hp: 20000,
+      hp: 5000,
       speed: 1.8,
       reward: 50,
       boss: true,
@@ -342,6 +343,9 @@ class Constellation {
       (sum, index) => sum + owner.stars[index].tier,
       0,
     );
+    this.powerMultiplier = members.reduce(
+      (sum, index) => sum + CONFIG.constellationTierPower[owner.stars[index].tier - 1], 0,
+    ) / members.length;
     this.cooldown = 0;
     this.target = null;
     this.hitCount = 0;
@@ -377,7 +381,7 @@ class Constellation {
         this.target = target;
         this.hitCount = 0;
       }
-      const currentAttackDamage = this.stats.damage;
+      const currentAttackDamage = this.stats.damage * this.powerMultiplier;
       if (this.kind === "radiance") {
         this.chainAttack(target, position);
         this.target = null;
@@ -408,7 +412,7 @@ class Constellation {
     let from = origin;
     while (target && hit.size < this.componentStageSum) {
       const targetPosition = target.position();
-      target.hit(this.stats.damage, from);
+      target.hit(this.stats.damage * this.powerMultiplier, from);
       if (hit.size) UIManager.chainBeam(from, targetPosition);
       hit.add(target);
       from = targetPosition;
@@ -563,7 +567,7 @@ class StarManager {
           ? " constellation-linked"
           : "");
       el.innerHTML = s
-        ? `<span class="star" style="color:${s.data().color}">✦<b class="star-level">${s.tier}</b></span>`
+        ? `<span class="star" style="color:${s.data().color}">✦<b class="star-level">${s.tier}</b>${picked && this.zodiacMode ? `<em class="pick-order">${this.selected.indexOf(i) + 1}</em>` : ""}</span>`
         : "";
       el.setAttribute(
         "aria-label",
@@ -618,29 +622,27 @@ class MergeSystem {
   }
 }
 class SwapSystem {
-  static execute(m) {
-    if (!m.player.resources.can(CONFIG.swapCost))
-      return UIManager.hint("별빛이 부족합니다.");
-    if (m.zodiacMode)
-      return UIManager.hint("먼저 조디악 선택을 완료하거나 취소하세요.");
-    if (m.selected.length !== 1)
-      return UIManager.hint("교환할 별을 먼저 선택하세요.");
-    let a = m.selected[0],
-      star = m.stars[a];
-    if (!star || star.support || star.constellation)
-      return UIManager.hint("별자리 구성원은 교환할 수 없습니다.");
-    if (!m.player.resources.spend(CONFIG.swapCost)) return;
-    const oldType = star.type;
-    let candidates = STAR_KEYS.filter((type) => type !== oldType);
-    star.type = candidates[Math.floor(Math.random() * candidates.length)];
-    star.cooldown = 0;
-    star.burstLeft = 3;
-    star.lock = null;
-    m.selected = [a];
-    m.swapMode = false;
-    UIManager.hint(`${star.data().name} 별로 교환했습니다.`);
+  static begin(m) {
+    if (m.zodiacMode) return UIManager.hint("먼저 조디악 선택을 완료하거나 취소하세요.");
+    if (m.selected.length !== 1) return UIManager.hint("교환할 첫 별을 선택하세요.");
+    const star = m.stars[m.selected[0]];
+    if (!star || star.support || star.constellation) return UIManager.hint("별자리 구성원은 교환할 수 없습니다.");
+    if (!m.player.resources.can(CONFIG.swapCost)) return UIManager.hint("별빛이 부족합니다.");
+    m.swapMode = true;
+    UIManager.hint("교환할 상대 별을 선택하세요 · 비용 별빛 10");
     game.render();
-    UIManager.swapEffect(m, a, oldType);
+  }
+  static execute(m, a, b) {
+    if (!m.swapMode || a === b) return;
+    const other = m.stars[b];
+    if (!other || other.support || other.constellation) return UIManager.hint("일반 별을 교환 대상으로 선택하세요.");
+    if (!m.player.resources.spend(CONFIG.swapCost)) return UIManager.hint("별빛이 부족합니다.");
+    [m.stars[a], m.stars[b]] = [m.stars[b], m.stars[a]];
+    m.selected = [b];
+    m.swapMode = false;
+    UIManager.hint("두 별의 슬롯을 교환했습니다.");
+    game.render();
+    UIManager.swapEffect(m, b, m.stars[b].type);
   }
 }
 class ZodiacSystem {
@@ -683,7 +685,7 @@ class ZodiacSystem {
       m.swapMode = false;
       m.zodiacMode = true;
       m.selected = [];
-      UIManager.hint("조디악 선택 모드 · 원하는 재료 별을 고르세요.");
+      UIManager.hint("조디악 선택 중 · 중심 별을 먼저, 지원 별을 이어서 고르세요.");
       return game.render();
     }
     this.create(m);
@@ -935,7 +937,7 @@ class UIManager {
     let constellation = s.constellation;
     const constellationStats = constellation?.stats;
     starInfo.innerHTML = constellation
-      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>공격력 ${constellationStats.damage}</span><span>공격속도 ${constellationStats.rate}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.kind === "radiance" ? `<span>단계 합 ${constellation.componentStageSum}</span><span>최대 연쇄 대상 ${constellation.componentStageSum}</span>` : ""}</div><div class="trait">${constellation.kind === "radiance" ? "특수공격 · 연결된 별들의 단계 합만큼 연쇄 공격" : "같은 적 4회 타격 시 공격력의 1500% 특수공격"}</div>`
+      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>공격력 ${Math.round(constellationStats.damage * constellation.powerMultiplier)}</span><span>공격속도 ${constellationStats.rate}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.kind === "radiance" ? `<span>단계 합 ${constellation.componentStageSum}</span><span>최대 연쇄 대상 ${constellation.componentStageSum}</span>` : ""}</div><div class="trait">${constellation.kind === "radiance" ? "특수공격 · 연결된 별들의 단계 합만큼 연쇄 공격" : "같은 적 4회 타격 시 공격력의 1500% 특수공격"}</div>`
       : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? constellationStats.range : d.range,
@@ -969,7 +971,7 @@ class UIManager {
       if (this.actionKey !== actionKey) {
         contextActions.innerHTML = `<button data-context="swap"${canSwap ? "" : " disabled"}>교환</button><button class="merge${partner >= 0 ? " available" : ""}" data-context="merge"${partner >= 0 ? "" : " disabled"}>합성</button>`;
         contextActions.querySelector('[data-context="swap"]').onclick = () =>
-          SwapSystem.execute(pick.m);
+          SwapSystem.begin(pick.m);
         contextActions.querySelector('[data-context="merge"]').onclick = () =>
           MergeSystem.execute(pick.m);
         this.actionKey = actionKey;
@@ -1003,25 +1005,17 @@ class UIManager {
     );
     links.innerHTML = lines.join("");
     g.players.forEach((p) => p.manager.render());
-    let p = g.players[0],
-      z = controls.querySelector("[data-act=zodiac]"),
-      cancel = controls.querySelector("[data-act=zodiac-cancel]");
-    controls.classList.toggle(
-      "active-player",
-      p.manager.selected.length > 0 ||
-        p.manager.swapMode ||
-        p.manager.zodiacMode,
-    );
-    controls.querySelector("[data-act=summon]").disabled =
-      !p.resources.can(CONFIG.summonCost) || p.manager.stars.every(Boolean);
-    z.classList.toggle("active", p.manager.zodiacMode);
-    cancel.hidden = !p.manager.zodiacMode;
-    const match = ZodiacSystem.exactMatch(ZodiacSystem.counts(p.manager));
-    z.textContent = p.manager.zodiacMode
-      ? match
-        ? `${ZODIAC_RECIPES[match].name} 연결`
-        : "별자리 재료 선택 중"
-      : "조디악";
+    g.players.forEach((p, playerIndex) => {
+      const panel = controls.querySelector(`[data-player="${playerIndex}"]`);
+      const z = panel.querySelector("[data-act=zodiac]");
+      const cancel = panel.querySelector("[data-act=zodiac-cancel]");
+      panel.classList.toggle("active-player", p.manager.selected.length > 0 || p.manager.swapMode || p.manager.zodiacMode);
+      panel.querySelector("[data-act=summon]").disabled = !p.resources.can(CONFIG.summonCost) || p.manager.stars.every(Boolean);
+      z.classList.toggle("active", p.manager.zodiacMode);
+      cancel.hidden = !p.manager.zodiacMode;
+      const match = ZodiacSystem.exactMatch(ZodiacSystem.counts(p.manager));
+      z.textContent = p.manager.zodiacMode ? (match ? `${ZODIAC_RECIPES[match].name} 연결` : "조디악 선택 중") : "조디악";
+    });
     this.renderInfo(g);
   }
   static renderHud(g, force = false) {
@@ -1029,10 +1023,12 @@ class UIManager {
       wave: String(g.wave.wave),
       timer: Math.max(0, g.wave.left).toFixed(1),
       hp: "♥".repeat(g.hp) + "♡".repeat(CONFIG.startHP - g.hp),
-      starlight: String(g.players[0].resources.starlight),
-      divinity: String(g.players[0].resources.divinity),
+      starlight1: String(g.players[0].resources.starlight),
+      divinity1: String(g.players[0].resources.divinity),
+      starlight2: String(g.players[1].resources.starlight),
+      divinity2: String(g.players[1].resources.divinity),
     };
-    const elements = { wave, timer, hp, starlight, divinity };
+    const elements = { wave, timer, hp, starlight1, divinity1, starlight2, divinity2 };
     this.hudValues ||= {};
     for (const [key, value] of Object.entries(values)) {
       if (force || this.hudValues[key] !== value)
@@ -1071,16 +1067,12 @@ class GameManager {
     requestAnimationFrame((t) => this.loop(t));
   }
   buildControls() {
-    let p = this.players[0];
-    controls
-      .querySelector("[data-act=summon]")
-      .addEventListener("click", () => p.manager.summon());
-    controls
-      .querySelector("[data-act=zodiac]")
-      .addEventListener("click", () => ZodiacSystem.toggle(p.manager));
-    controls
-      .querySelector("[data-act=zodiac-cancel]")
-      .addEventListener("click", () => ZodiacSystem.cancel(p.manager));
+    controls.querySelectorAll(".game-controls").forEach((panel) => {
+      const p = this.players[Number(panel.dataset.player)];
+      panel.querySelector("[data-act=summon]").addEventListener("click", () => p.manager.summon());
+      panel.querySelector("[data-act=zodiac]").addEventListener("click", () => ZodiacSystem.toggle(p.manager));
+      panel.querySelector("[data-act=zodiac-cancel]").addEventListener("click", () => ZodiacSystem.cancel(p.manager));
+    });
     controls.querySelector("[data-act=codex]").addEventListener("click", () => {
       UIManager.renderCodex();
       zodiacCodex.hidden = false;
