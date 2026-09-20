@@ -37,6 +37,7 @@ const CONSTELLATION_IDS = Object.freeze({
   ASTROLOGER: "ASTROLOGER",
 });
 const BASE_MAX_HP = 5000;
+const MAX_STARS_PER_PLAYER = 15;
 // This is the sole source of truth for recipes, construction, combat stats,
 // contextual actions, effects and the codex.
 const CONSTELLATION_DEFINITIONS = Object.freeze({
@@ -228,7 +229,7 @@ class Enemy {
     this.hp = this.maxHp;
     this.dead = false;
     this.x = 8;
-    this.y = lane === 0 ? 7 : 93;
+    this.y = lane === 0 ? 10 : 90;
     this.lastHpPercent = -1;
     this.el = document.createElement("div");
     this.el.className = `enemy ${this.type}${this.boss ? " boss" : ""}`;
@@ -242,10 +243,7 @@ class Enemy {
     return { x: this.x, y: this.y };
   }
   calculatePosition() {
-    let p = this.progress;
-    // lane 0 starts beside 2P and travels down; lane 1 starts beside 1P and travels up.
-    if (p < 43) return { x: 8, y: this.lane === 0 ? 7 + p : 93 - p };
-    return { x: 8 + ((p - 43) * 81) / 57, y: 50 };
+    return routePoint(this.lane, Math.min(1, this.progress / 100));
   }
   render() {
     const metrics = RangeSystem.metrics();
@@ -334,7 +332,7 @@ class WaveManager {
   }
 }
 class Star {
-  constructor(type, tier = 1) {
+  constructor(type, tier = 1, x = 50, y = 50) {
     this.type = type;
     this.tier = tier;
     this.cooldown = Math.random() * 0.3;
@@ -342,10 +340,33 @@ class Star {
     this.lock = null;
     this.constellation = null;
     this.support = false;
+    this.x = x;
+    this.y = y;
   }
   data() {
     return CONFIG.stars[this.type];
   }
+}
+function curvePoint(points, t) {
+  const u = 1 - t;
+  if (points.length === 3)
+    return { x: u * u * points[0].x + 2 * u * t * points[1].x + t * t * points[2].x,
+      y: u * u * points[0].y + 2 * u * t * points[1].y + t * t * points[2].y };
+  return { x: u ** 3 * points[0].x + 3 * u * u * t * points[1].x + 3 * u * t * t * points[2].x + t ** 3 * points[3].x,
+    y: u ** 3 * points[0].y + 3 * u * u * t * points[1].y + 3 * u * t * t * points[2].y + t ** 3 * points[3].y };
+}
+function routePoint(lane, progress) {
+  const top = lane === 0;
+  const a = top ? 10 : 90;
+  const b = top ? 90 : 10;
+  const sections = [
+    [{ x: 8, y: a }, { x: 76, y: a }, { x: 76, y: 50 }, { x: 50, y: 50 }],
+    [{ x: 50, y: 50 }, { x: 24, y: 50 }, { x: 24, y: b }, { x: 92, y: b }],
+    [{ x: 92, y: b }, { x: 98, y: top ? 70 : 30 }, { x: 92, y: 50 }],
+  ];
+  const scaled = Math.min(progress, .999999) * sections.length;
+  const section = Math.floor(scaled);
+  return curvePoint(sections[section], scaled - section);
 }
 class Targeting {
   static choose(star, enemies, pos) {
@@ -568,16 +589,16 @@ class StarManager {
   constructor(player, field) {
     this.player = player;
     this.field = field;
-    this.stars = Array(15).fill(null);
+    this.stars = Array(MAX_STARS_PER_PLAYER).fill(null);
     this.selected = [];
     this.swapMode = false;
     this.zodiacMode = false;
-    this.positions = [];
-    for (let i = 0; i < 15; i++) {
+    this.placementMode = false;
+    for (let i = 0; i < MAX_STARS_PER_PLAYER; i++) {
       let b = document.createElement("button");
-      b.className = "slot";
+      b.className = "star-node";
       b.dataset.index = i;
-      b.setAttribute("aria-label", `빈 슬롯 ${i + 1}`);
+      b.hidden = true;
       bindPointerTap(b, (event) => {
         event.stopPropagation();
         this.tap(i);
@@ -590,20 +611,19 @@ class StarManager {
       });
       field.append(b);
     }
-    if (typeof requestAnimationFrame === "function")
-      requestAnimationFrame(() => this.refreshPositions());
-  }
-  refreshPositions() {
-    const a = arena.getBoundingClientRect();
-    this.positions = [...this.field.children].map((el) => {
-      const r = el.getBoundingClientRect();
-      return { x: ((r.left + r.width / 2 - a.left) / a.width) * 100,
-        y: ((r.top + r.height / 2 - a.top) / a.height) * 100 };
-    });
+    bindPointerTap(field, (event) => {
+      if (!this.placementMode || event.target !== field) return;
+      event.stopPropagation();
+      const rect = arena.getBoundingClientRect();
+      this.summonAt(
+        ((event.clientX - rect.left) / rect.width) * 100,
+        ((event.clientY - rect.top) / rect.height) * 100,
+      );
+    }, (event) => this.placementMode && event.target === field);
   }
   pos(i) {
-    if (!this.positions[i]) this.refreshPositions();
-    return this.positions[i] || { x: 0, y: 0 };
+    const star = this.stars[i];
+    return star ? { x: star.x, y: star.y } : { x: 0, y: 0 };
   }
   activeConstellations() {
     return this.stars.reduce((constellations, star) => {
@@ -624,48 +644,57 @@ class StarManager {
     }, []);
   }
   summon() {
-    // Never cache availability: merges and every summon can change the board.
-    // Selection/action modes are UI state only and must not gate summoning.
-    let empty = this.emptySlots();
-    if (!empty.length) return UIManager.hint("빈 슬롯이 없습니다.");
+    if (this.placementMode) return this.cancelPlacement();
+    if (!this.emptySlots().length) return UIManager.hint("더 이상 별을 배치할 수 없습니다.");
     if (!this.player.resources.can(CONFIG.summonCost))
       return UIManager.hint("별빛이 부족합니다.");
-    let i = empty[Math.floor(Math.random() * empty.length)];
-    this.stars[i] = new Star(
-      STAR_KEYS[Math.floor(Math.random() * STAR_KEYS.length)],
-    );
-    this.player.resources.spend(CONFIG.summonCost);
-    // A successful summon dismisses normal contextual UI. Zodiac selection is
-    // intentionally independent and remains active until its explicit cancel.
-    this.clearNormalSelection();
+    this.placementMode = true;
+    this.field.classList.add("placing");
+    UIManager.hint("길을 피해 별을 배치할 위치를 선택하세요.");
     game.render();
-    UIManager.summonEffect?.(this, i);
   }
-  summonAt(i) {
-    // Direct placement belongs to the locally controlled 1P board only. Keep
-    // failed attempts completely inert so an existing selection is preserved.
-    if (this.player.index !== 0 || this.zodiacMode || this.stars[i]) return false;
+  isValidPlacement(x, y) {
+    const metrics = RangeSystem.metrics();
+    const edge = 28;
+    const px = (x * metrics.width) / 100, py = (y * metrics.height) / 100;
+    if (px < edge || px > metrics.width - edge || py < edge || py > metrics.height - edge) return false;
+    for (let lane = 0; lane < 2; lane++)
+      for (let step = 0; step <= 120; step++) {
+        const point = routePoint(lane, step / 120);
+        if (RangeSystem.distance({ x, y }, point) < 32) return false;
+      }
+    return !game.players.some((player) => player.manager.stars.some((star) =>
+      star && RangeSystem.distance({ x, y }, star) < 46));
+  }
+  summonAt(x, y) {
+    if (!this.placementMode || !this.isValidPlacement(x, y)) {
+      if (this.placementMode) UIManager.hint("길과 다른 별을 피해 배치하세요.");
+      return false;
+    }
     if (!this.player.resources.can(CONFIG.summonCost)) {
       UIManager.hint("별빛이 부족합니다.");
       return false;
     }
-    this.stars[i] = new Star(
-      STAR_KEYS[Math.floor(Math.random() * STAR_KEYS.length)],
-    );
+    const i = this.emptySlots()[0];
+    if (i === undefined) return false;
+    this.stars[i] = new Star(STAR_KEYS[Math.floor(Math.random() * STAR_KEYS.length)], 1, x, y);
     this.player.resources.spend(CONFIG.summonCost);
+    this.placementMode = false;
+    this.field.classList.remove("placing");
     this.clearNormalSelection();
     game.render();
     UIManager.summonEffect?.(this, i);
     return true;
   }
+  cancelPlacement() {
+    if (!this.placementMode) return;
+    this.placementMode = false;
+    this.field.classList.remove("placing");
+    UIManager.hint("별 배치를 취소했습니다.");
+    game.render();
+  }
   tap(i) {
-    if (!this.stars[i]) {
-      // Empty space is inert while assembling a zodiac. Only the explicit
-      // cancel control is allowed to discard that ordered multi-selection.
-      if (this.zodiacMode) return;
-      this.summonAt(i);
-      return;
-    }
+    if (!this.stars[i]) return;
     if (this.swapMode && this.selected.length === 1 && this.selected[0] !== i)
       return SwapSystem.execute(this, this.selected[0], i);
     if (this.zodiacMode) {
@@ -691,6 +720,7 @@ class StarManager {
     return true;
   }
   exitModes() {
+    this.cancelPlacement();
     this.swapMode = false;
     this.zodiacMode = false;
     this.selected = [];
@@ -734,8 +764,13 @@ class StarManager {
     [...this.field.children].forEach((el, i) => {
       let s = this.stars[i],
         picked = this.selected.includes(i);
+      el.hidden = !s;
+      if (s) {
+        el.style.left = `${s.x}%`;
+        el.style.top = `${s.y}%`;
+      }
       el.className =
-        "slot" +
+        "star-node" +
         (picked && !this.zodiacMode ? " selected" : "") +
         (picked && this.zodiacMode ? " zodiac-picked" : "") +
         (s && s.support ? " support" : "") +
@@ -750,7 +785,7 @@ class StarManager {
         "aria-label",
         s
           ? `${s.data().name} 별 ${s.tier}단계${picked ? " 선택됨" : ""}`
-          : `빈 슬롯 ${i + 1}`,
+          : `빈 별 위치 ${i + 1}`,
       );
       el.setAttribute("aria-pressed", picked);
     });
@@ -1218,8 +1253,13 @@ class UIManager {
       const p = g.players[Number(panel.dataset.player)];
       const z = panel.querySelector("[data-act=zodiac]");
       const cancel = panel.querySelector("[data-act=zodiac-cancel]");
-      panel.classList.toggle("active-player", p.manager.selected.length > 0 || p.manager.swapMode || p.manager.zodiacMode);
-      panel.querySelector("[data-act=summon]").disabled = !p.resources.can(CONFIG.summonCost) || p.manager.stars.every(Boolean);
+      panel.classList.toggle("active-player", p.manager.selected.length > 0 || p.manager.swapMode || p.manager.zodiacMode || p.manager.placementMode);
+      const summon = panel.querySelector("[data-act=summon]");
+      const summonCancel = panel.querySelector("[data-act=summon-cancel]");
+      summon.disabled = !p.manager.placementMode && (!p.resources.can(CONFIG.summonCost) || p.manager.stars.every(Boolean));
+      summon.classList.toggle("active", p.manager.placementMode);
+      summon.textContent = p.manager.placementMode ? "배치 위치 선택 중" : `별 소환 ${CONFIG.summonCost}`;
+      if (summonCancel) summonCancel.hidden = !p.manager.placementMode;
       z.classList.toggle("active", p.manager.zodiacMode);
       cancel.hidden = !p.manager.zodiacMode;
       const match = ZodiacSystem.exactMatch(ZodiacSystem.counts(p.manager));
@@ -1276,7 +1316,6 @@ class GameManager {
     RangeSystem.refresh();
     window.addEventListener("resize", () => {
       RangeSystem.refresh();
-      this.players.forEach((player) => player.manager.refreshPositions());
       this.markDirty();
     }, { passive: true });
   }
@@ -1297,16 +1336,17 @@ class GameManager {
     bindPointerTap(arena, (event) => {
       // Slots handle their own taps, while every in-arena contextual control
       // must remain actionable without a bubbling event clearing its target.
-      if (event.target.closest(".slot, .context-actions, button, [role=button]")) return;
+      if (event.target.closest(".star-node, .free-field.placing, .context-actions, button, [role=button]")) return;
       let changed = false;
       this.players.forEach((player) => {
         changed = player.manager.clearNormalSelection() || changed;
       });
       if (changed) this.render();
-    }, (event) => !event.target.closest(".slot, .context-actions, button, [role=button]"));
+    }, (event) => !event.target.closest(".star-node, .free-field.placing, .context-actions, button, [role=button]"));
     controls.querySelectorAll(".game-controls").forEach((panel) => {
       const p = this.players[Number(panel.dataset.player)];
       panel.querySelector("[data-act=summon]").addEventListener("click", () => p.manager.summon());
+      panel.querySelector("[data-act=summon-cancel]")?.addEventListener("click", () => p.manager.cancelPlacement());
       panel.querySelector("[data-act=zodiac]").addEventListener("click", () => ZodiacSystem.toggle(p.manager));
       panel.querySelector("[data-act=zodiac-cancel]").addEventListener("click", () => ZodiacSystem.cancel(p.manager));
     });
