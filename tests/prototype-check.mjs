@@ -78,6 +78,10 @@ assert.match(js, /swapCost:\s*10/);
 assert.match(js, /const nextTypes = STAR_KEYS\.filter\(\(type\) => type !== oldType\)/);
 assert.match(js, /SwapSystem\.execute\(pick\.m, pick\.index\)/);
 assert.match(css, /\.context-actions button\s*\{[\s\S]*?touch-action:\s*manipulation/);
+assert.match(css, /\.context-actions \.action-above\s*\{[\s\S]*?translate\(-50%,\s*calc\(-100% - 18px\)\)/);
+assert.match(css, /\.context-actions \.action-below\s*\{[\s\S]*?translate\(-50%,\s*18px\)/);
+assert.match(js, /class="action-above" data-context="swap"/);
+assert.match(js, /class="merge available action-below" data-context="merge"/);
 assert.match(js, /slime:\s*\{[^}]*hp:\s*500/);
 assert.match(js, /bug:\s*\{[^}]*hp:\s*800/);
 assert.match(js, /name:\s*"코어 드론"[\s\S]*?hp:\s*10000/);
@@ -146,6 +150,8 @@ assert.match(js, /constellation:\$\{constellation\.definitionId\}/,
 assert.doesNotMatch(js, /display:\s*none[^}]*data-player/, "2P controls must not be hidden with CSS");
 for (const name of ["새벽의 별자리", "광휘의 별자리", "궁수자리", "점성술자리"])
   assert.match(js, new RegExp(`name:\\s*"${name}"`), `${name} must remain in the registry`);
+assert.doesNotMatch(js, /rangeBuffUntil|rangeBuffCooldownUntil|totalHits/);
+assert.doesNotMatch(js, /사거리 \+1/);
 assert.match(
   js.slice(js.indexOf("static renderCodex()"), js.indexOf("static zodiacComplete")),
   /Object\.entries\(ZODIAC_RECIPES\)/,

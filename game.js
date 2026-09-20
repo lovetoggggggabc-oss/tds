@@ -58,7 +58,6 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     attackSpeed: 6, range: 6, targeting: "highest",
     abilities: Object.freeze([
       "같은 적 집중 공격: 20타 공격력 +1000%, 40타 +2000%, 60타에 모든 아군 공격력 +1000% (10초). 타겟 변경 시 집중 초기화",
-      "누적 15회 적중 시 모든 아군 사거리 +1 (5초), 종료 후 5초 대기",
     ]),
   }),
   [CONSTELLATION_IDS.ASTROLOGER]: Object.freeze({
@@ -411,8 +410,7 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
   }),
   [CONSTELLATION_IDS.SAGITTARIUS]: Object.freeze({
     createRuntime: () => ({
-      focusTargetId: null, focusHits: 0, totalHits: 0,
-      transcendenceUntil: 0, rangeBuffUntil: 0, rangeBuffCooldownUntil: 0,
+      focusTargetId: null, focusHits: 0, transcendenceUntil: 0,
     }),
     onTargetChanged(constellation, target) {
       constellation.runtime.focusTargetId = target;
@@ -426,16 +424,6 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
       const focusMultiplier = transcending ? 1 : nextFocusHit >= 40 ? 21 : nextFocusHit >= 20 ? 11 : 1;
       target.hit(constellation.currentDamage(focusMultiplier), origin);
       if (!transcending) runtime.focusHits = nextFocusHit;
-      if (runtime.rangeBuffUntil <= now && runtime.rangeBuffCooldownUntil <= now) {
-        runtime.totalHits++;
-        if (runtime.totalHits >= 15) {
-          runtime.totalHits = 0;
-          runtime.rangeBuffUntil = now + 5;
-          runtime.rangeBuffCooldownUntil = now + 10;
-          game.rangeBuffUntil = Math.max(game.rangeBuffUntil, runtime.rangeBuffUntil);
-          game.rangeBuffCooldownUntil = Math.max(game.rangeBuffCooldownUntil, runtime.rangeBuffCooldownUntil);
-        }
-      }
       if (runtime.focusHits >= 60 && runtime.transcendenceUntil <= now) {
         runtime.transcendenceUntil = now + 10;
         runtime.focusHits = 0;
@@ -500,7 +488,7 @@ class Constellation {
     return this.definition.attackDamage * allyMultiplier * localMultiplier;
   }
   effectiveRange() {
-    return this.definition.range + (game.rangeBuffUntil > game.gameTime ? 1 : 0);
+    return this.definition.range;
   }
   chainAttack(first, origin) {
     const hit = new Set();
@@ -634,14 +622,10 @@ class StarManager {
       s.cooldown -= dt;
       if (s.cooldown > 0) return;
       const position = this.pos(i);
-      const effectiveRange =
-        s.data().range + (game.rangeBuffUntil > game.gameTime ? 1 : 0);
+      const effectiveRange = s.data().range;
       if (s.lock && (s.lock.dead || !RangeSystem.contains(position, s.lock.position(), effectiveRange)))
         s.lock = null;
-      const targetableStar = effectiveRange === s.data().range
-        ? s
-        : { data: () => ({ ...s.data(), range: effectiveRange }), lock: s.lock };
-      let t = s.lock || Targeting.choose(targetableStar, game.enemies, position);
+      let t = s.lock || Targeting.choose(s, game.enemies, position);
       if (t) {
         s.lock = t;
         let damage = s.data().damage * CONFIG.tierDamage[s.tier - 1] *
@@ -1068,10 +1052,11 @@ class UIManager {
     rangeIndicator.style.width = diameter + "px";
     rangeIndicator.style.height = diameter + "px";
     contextActions.hidden = false;
-    const placeBelow = p.y < 10;
-    contextActions.classList.toggle("below", placeBelow);
-    contextActions.style.left = p.x + "%";
-    contextActions.style.top = `${p.y}%`;
+    const arenaRect = arena.getBoundingClientRect();
+    const actionX = Math.min(arenaRect.width - 54, Math.max(54, arenaRect.width * p.x / 100));
+    const actionY = Math.min(arenaRect.height - 42, Math.max(42, arenaRect.height * p.y / 100));
+    contextActions.style.left = `${actionX}px`;
+    contextActions.style.top = `${actionY}px`;
     if (constellation) {
       let enabled = pick.m.player.resources.divinity >= 1;
       const isAstrologer = constellation.definitionId === CONSTELLATION_IDS.ASTROLOGER;
@@ -1080,7 +1065,7 @@ class UIManager {
       // previous tower type must never survive a selection/type change.
       let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `${isAstrologer ? `<button class="divination" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}<button data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
+        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}<button class="${isAstrologer ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
         if (isAstrologer)
           contextActions.querySelector('[data-context="divination"]').onclick = () =>
             DivinationSystem.execute(pick.m, pick.index);
@@ -1093,7 +1078,7 @@ class UIManager {
         canSwap = pick.m.player.resources.can(CONFIG.swapCost) && !s.support;
       let actionKey = `${pick.player}:${pick.index}:star:${s.type}:${s.tier}:${canSwap}:${partner}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `<button data-context="swap"${canSwap ? "" : " disabled"}>교환 10</button>${partner >= 0 ? `<button class="merge available" data-context="merge">합성</button>` : ""}`;
+        contextActions.innerHTML = `<button class="action-above" data-context="swap"${canSwap ? "" : " disabled"}>교환 10</button>${partner >= 0 ? `<button class="merge available action-below" data-context="merge">합성</button>` : ""}`;
         contextActions.querySelector('[data-context="swap"]').onclick = () =>
           SwapSystem.execute(pick.m, pick.index);
         contextActions.querySelector('[data-context="merge"]')?.addEventListener("click", () =>
@@ -1169,8 +1154,6 @@ class GameManager {
     this.spatial = new SpatialGrid();
     this.gameTime = 0;
     this.attackBuffUntil = 0;
-    this.rangeBuffUntil = 0;
-    this.rangeBuffCooldownUntil = 0;
     this.tasks = [];
     this.dirty = true;
     this.lastHudUpdate = 0;

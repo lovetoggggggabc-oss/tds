@@ -781,15 +781,15 @@ header {
 .context-actions {
   position: absolute;
   z-index: 35;
-  display: flex;
-  gap: 5px;
-  transform: translate(-50%, -100%);
+  width: 0;
+  height: 0;
   pointer-events: auto;
 }
 .context-actions[hidden] {
   display: none;
 }
 .context-actions button {
+  position: absolute;
   white-space: nowrap;
   min-height: 34px;
   padding: 7px 11px;
@@ -801,6 +801,12 @@ header {
   color: #bfc3cf;
   box-shadow: 0 3px 9px #0008;
   touch-action: manipulation;
+}
+.context-actions .action-above {
+  transform: translate(-50%, calc(-100% - 18px));
+}
+.context-actions .action-below {
+  transform: translate(-50%, 18px);
 }
 .context-actions button:disabled {
   opacity: 0.55;
@@ -842,9 +848,6 @@ header {
   from { opacity: 0; transform: translate(-50%, -25%) scale(.8); }
   20%, 65% { opacity: 1; transform: translate(-50%, -75%) scale(1); }
   to { opacity: 0; transform: translate(-50%, -115%) scale(.95); }
-}
-.context-actions.below {
-  transform: translate(-50%, 0);
 }
 @keyframes mergeReady {
   to {
