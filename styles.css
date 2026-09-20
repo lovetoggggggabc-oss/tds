@@ -1159,13 +1159,16 @@ body.codex-open {
 }
 .codex-recipe-summary { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px 8px; margin-top: 8px; color: #ccd9fb; font-size: 11px; font-weight: 800; text-align: center; }
 .codex-recipe-summary span { color: #78e7ff; }
-.zodiac-card dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+.zodiac-card dl { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin: 10px 0; }
 .zodiac-card dl div { padding: 7px; border-radius: 9px; background: #080c2f99; text-align: center; }
+.zodiac-card dl .codex-attack-stat { grid-column: 1 / -1; }
 .zodiac-card dt { color: #9face0; font-size: 9px; }
 .zodiac-card dd { margin: 2px 0 0; font-weight: 900; font-size: 12px; }
+.codex-attack-stat small { display: block; margin-top: 4px; color: #aeefff; font-size: 10px; }
 .zodiac-card p { margin: 7px 0 0; color: #dbe8ff; font-size: 11px; line-height: 1.55; }
 .zodiac-card p strong { display: block; color: #8be9ff; margin-bottom: 2px; }
 .zodiac-card p span { white-space: normal; overflow-wrap: anywhere; }
+.zodiac-card .codex-scaling { margin-top: 0; padding: 8px 9px; border-radius: 9px; background: #16275c99; color: #d9f7ff; }
 .codex-special { flex: 0 0 auto; }
 .overlay[hidden] {
   display: none;
