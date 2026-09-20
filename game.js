@@ -1,4 +1,35 @@
 "use strict";
+// Keep boot diagnostics independent from the game object so failures during
+// top-level initialization are visible on devices without a Web Inspector.
+window.BOOT_STAGE = "script-start";
+
+function showBootError(error, source, line, column) {
+  const value = error instanceof Error ? error : new Error(String(error));
+  let panel = document.getElementById("bootError");
+  if (!panel) {
+    panel = document.createElement("pre");
+    panel.id = "bootError";
+    panel.setAttribute("role", "alert");
+    panel.style.cssText = "position:fixed;z-index:99999;top:8px;left:8px;right:8px;max-height:45vh;overflow:auto;margin:0;padding:10px;background:#24050e;color:#fff;border:1px solid #ff5064;border-radius:6px;font:12px/1.4 monospace;white-space:pre-wrap";
+    (document.body || document.documentElement).append(panel);
+  }
+  const location = source ? `${source.split("/").pop()}:${line || 0}:${column || 0}` : "unknown:0:0";
+  panel.textContent = `BOOT ERROR\nStage: ${window.BOOT_STAGE}\n${value.name}: ${value.message}\n${location}`;
+}
+
+window.addEventListener("error", (event) => {
+  showBootError(event.error || event.message, event.filename, event.lineno, event.colno);
+});
+window.addEventListener("unhandledrejection", (event) => {
+  const reason = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
+  showBootError(reason, reason.fileName, reason.lineNumber, reason.columnNumber);
+});
+
+let arena, effects, links, ranges, rangeIndicator, contextActions, hint;
+let dawnMoon, starInfo, controls, zodiacCodex, zodiacCodexList;
+let wave, timer, hp, starlight1, divinity1, starlight2, divinity2;
+let speed, restart, finalWave, gameover;
+let game = null;
 const CONSTELLATION_IDS = Object.freeze({
   DAWN: "DAWN",
   RADIANCE: "RADIANCE",
@@ -1145,16 +1176,16 @@ class GameManager {
     this.tasks = [];
     this.dirty = true;
     this.lastHudUpdate = 0;
+    window.BOOT_STAGE = "creating-players";
     this.players = [0, 1].map((i) => {
       let p = { resources: new PlayerResources() };
-      p.manager = new StarManager(p, document.getElementById(`field-${i}`));
+      p.manager = new StarManager(p, getRequiredElement(`field-${i}`));
       return p;
     });
+    window.BOOT_STAGE = "creating-wave";
     this.wave = new WaveManager(this);
     this.spawner = new EnemySpawner(this);
-    // Start wave 1 synchronously. The first animation frame then spawns its
-    // first queued monster, rather than leaving a freshly loaded game at wave 0.
-    this.wave.update(0);
+    window.BOOT_STAGE = "building-controls";
     this.buildControls();
     RangeSystem.refresh();
     window.addEventListener("resize", () => {
@@ -1162,7 +1193,13 @@ class GameManager {
       this.players.forEach((player) => player.manager.refreshPositions());
       this.markDirty();
     }, { passive: true });
+  }
+  start() {
+    // Start simulation only after every manager, control and listener exists.
+    this.wave.update(0);
     this.render();
+    window.BOOT_STAGE = "starting-loop";
+    this.rafRunning = true;
     requestAnimationFrame((t) => this.loop(t));
   }
   buildControls() {
@@ -1263,53 +1300,64 @@ class GameManager {
     this.dirty = false;
   }
 }
-// Do not rely on HTML-id-to-window-name reflection here. WebKit does not
-// guarantee that every id becomes a JavaScript global, and a missing reflected
-// name aborts the first HUD render before the game loop can start.
-const arena = document.getElementById("arena");
-const effects = document.getElementById("effects");
-const links = document.getElementById("links");
-const ranges = document.getElementById("ranges");
-const rangeIndicator = document.getElementById("rangeIndicator");
-const contextActions = document.getElementById("contextActions");
-const hint = document.getElementById("hint");
-const dawnMoon = document.getElementById("dawnMoon");
-const starInfo = document.getElementById("starInfo");
-const controls = document.getElementById("controls");
-const zodiacCodex = document.getElementById("zodiacCodex");
-const zodiacCodexList = document.getElementById("zodiacCodexList");
-const wave = document.getElementById("wave");
-const timer = document.getElementById("timer");
-const hp = document.getElementById("hp");
-const starlight1 = document.getElementById("starlight1");
-const divinity1 = document.getElementById("divinity1");
-const starlight2 = document.getElementById("starlight2");
-const divinity2 = document.getElementById("divinity2");
-const speed = document.getElementById("speed");
-const restart = document.getElementById("restart");
-const finalWave = document.getElementById("finalWave");
-const gameover = document.getElementById("gameover");
+function getRequiredElement(id) {
+  const element = document.getElementById(id);
+  if (!element) throw new Error(`Missing required DOM element: ${id}`);
+  return element;
+}
 
-let game = new GameManager();
-speed.onclick = () => {
-  game.speed = game.speed === 1 ? 2 : 1;
-  speed.textContent = `${game.speed}× 속도`;
-  speed.classList.toggle("active", game.speed === 2);
-  arena.classList.toggle("speed-2", game.speed === 2);
-};
-restart.onclick = () => location.reload();
-document.addEventListener("contextmenu", (e) => e.preventDefault());
-window.__TDS__ = {
-  CONFIG,
-  CONSTELLATION_IDS,
-  CONSTELLATION_DEFINITIONS,
-  ZODIAC_RECIPES,
-  game,
-  classes: { Enemy, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
-  performance: () => ({
-    activeEnemies: game.enemies.length,
-    activeEffects: UIManager.activeEffects || 0,
-    frameMs: game.frameMs || 0,
-    fps: game.frameMs ? 1000 / game.frameMs : 0,
-  }),
-};
+function bootstrapGame() {
+  // This function is the only place where required page elements are bound.
+  // Assignments are intentionally explicit so missing IDs identify themselves.
+  window.BOOT_STAGE = "dom-ready";
+  arena = getRequiredElement("arena");
+  effects = getRequiredElement("effects");
+  links = getRequiredElement("links");
+  ranges = getRequiredElement("ranges");
+  rangeIndicator = getRequiredElement("rangeIndicator");
+  contextActions = getRequiredElement("contextActions");
+  hint = getRequiredElement("hint");
+  dawnMoon = getRequiredElement("dawnMoon");
+  starInfo = getRequiredElement("starInfo");
+  controls = getRequiredElement("controls");
+  zodiacCodex = getRequiredElement("zodiacCodex");
+  zodiacCodexList = getRequiredElement("zodiacCodexList");
+  wave = getRequiredElement("wave");
+  timer = getRequiredElement("timer");
+  hp = getRequiredElement("hp");
+  starlight1 = getRequiredElement("starlight1");
+  divinity1 = getRequiredElement("divinity1");
+  starlight2 = getRequiredElement("starlight2");
+  divinity2 = getRequiredElement("divinity2");
+  speed = getRequiredElement("speed");
+  restart = getRequiredElement("restart");
+  finalWave = getRequiredElement("finalWave");
+  gameover = getRequiredElement("gameover");
+
+  window.BOOT_STAGE = "creating-game";
+  game = new GameManager();
+  speed.onclick = () => {
+    game.speed = game.speed === 1 ? 2 : 1;
+    speed.textContent = `${game.speed}× 속도`;
+    speed.classList.toggle("active", game.speed === 2);
+    arena.classList.toggle("speed-2", game.speed === 2);
+  };
+  restart.onclick = () => location.reload();
+  document.addEventListener("contextmenu", (event) => event.preventDefault());
+  game.start();
+  window.__TDS__ = {
+    CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, game,
+    classes: { Enemy, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
+    performance: () => ({
+      activeEnemies: game.enemies.length,
+      activeEffects: UIManager.activeEffects || 0,
+      frameMs: game.frameMs || 0,
+      fps: game.frameMs ? 1000 / game.frameMs : 0,
+    }),
+  };
+  window.BOOT_STAGE = "complete";
+}
+
+if (document.readyState === "loading")
+  document.addEventListener("DOMContentLoaded", bootstrapGame, { once: true });
+else bootstrapGame();
