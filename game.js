@@ -582,13 +582,17 @@ class StarManager {
       STAR_KEYS[Math.floor(Math.random() * STAR_KEYS.length)],
     );
     this.player.resources.spend(CONFIG.summonCost);
-    // A summon changes only the board and resources. In particular, it must
-    // not replace the current selection or cancel swap/zodiac target picking.
+    // A successful summon dismisses normal contextual UI. Zodiac selection is
+    // intentionally independent and remains active until its explicit cancel.
+    this.clearNormalSelection();
     game.render();
     UIManager.summonEffect?.(this, i);
   }
   tap(i) {
-    if (!this.stars[i]) return;
+    if (!this.stars[i]) {
+      if (this.clearNormalSelection()) game.render();
+      return;
+    }
     if (this.swapMode && this.selected.length === 1 && this.selected[0] !== i)
       return SwapSystem.execute(this, this.selected[0], i);
     if (this.zodiacMode) {
@@ -606,6 +610,12 @@ class StarManager {
   }
   selectOnly(i) {
     this.selected = [i];
+  }
+  clearNormalSelection() {
+    if (this.zodiacMode || (!this.selected.length && !this.swapMode)) return false;
+    this.selected = [];
+    this.swapMode = false;
+    return true;
   }
   exitModes() {
     this.swapMode = false;
@@ -705,7 +715,8 @@ class MergeSystem {
     UIManager.mergeEffect(m, b, a);
     s.tier++;
     m.stars[b] = null;
-    m.selectOnly(a);
+    m.selected = [];
+    m.swapMode = false;
     UIManager.hint(`${s.data().name} 별 ${s.tier}단계 완성!`);
     game.render();
     m.field.children[a].classList.add("merge-flash");
@@ -912,14 +923,20 @@ class UIManager {
   static renderCodex() {
     zodiacCodexList.innerHTML = Object.entries(ZODIAC_RECIPES)
       .map(([definitionId, zodiac]) => {
-        const requirements = Object.entries(zodiac.recipe)
-          .map(([type, amount]) => `<span class="codex-requirement"><i style="--star-color:${CONFIG.stars[type].color};color:${CONFIG.stars[type].color}">✦</i>${CONFIG.stars[type].name} ×${amount}</span>`)
+        const recipeEntries = Object.entries(zodiac.recipe);
+        const stars = recipeEntries
+          .flatMap(([type, amount]) => Array.from({ length: amount }, () =>
+            `<span class="codex-star" style="--star-color:${CONFIG.stars[type].color}"><i aria-hidden="true">✦</i><b>${CONFIG.stars[type].name}</b></span>`,
+          ))
           .join("");
+        const summary = recipeEntries
+          .map(([type, amount]) => `${CONFIG.stars[type].name} ×${amount}`)
+          .join(" / ");
         const specials = zodiac.abilities;
         const abilities = specials.map((special, index) =>
           `<p><strong>특수능력${specials.length > 1 ? ` ${index + 1}` : ""}</strong><span>${special}</span></p>`,
         ).join("");
-        return `<article class="zodiac-card ${definitionId.toLowerCase()}"><h3>${zodiac.name}</h3><h4>필요 별</h4><div class="codex-recipe">${requirements}</div><dl><div><dt>공격력</dt><dd>${zodiac.attackDamage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.attackSpeed}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><div class="codex-specials">${abilities}</div></article>`;
+        return `<article class="zodiac-card ${definitionId.toLowerCase()}"><h3>${zodiac.name}</h3><section class="codex-combination" aria-label="필요한 별 조합: ${summary}"><h4>STAR RECIPE <span>필요한 별 조합</span></h4><div class="codex-recipe">${stars}</div><div class="codex-recipe-summary">${summary}</div></section><dl><div><dt>공격력</dt><dd>${zodiac.attackDamage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.attackSpeed}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><div class="codex-specials">${abilities}</div></article>`;
       })
       .join("");
   }
@@ -1184,6 +1201,16 @@ class GameManager {
     requestAnimationFrame((t) => this.loop(t));
   }
   buildControls() {
+    arena.addEventListener("pointerup", (event) => {
+      // Slots handle their own taps, while every in-arena contextual control
+      // must remain actionable without a bubbling event clearing its target.
+      if (event.target.closest(".slot, .context-actions, button, [role=button]")) return;
+      let changed = false;
+      this.players.forEach((player) => {
+        changed = player.manager.clearNormalSelection() || changed;
+      });
+      if (changed) this.render();
+    });
     controls.querySelectorAll(".game-controls").forEach((panel) => {
       const p = this.players[Number(panel.dataset.player)];
       panel.querySelector("[data-act=summon]").addEventListener("click", () => p.manager.summon());
