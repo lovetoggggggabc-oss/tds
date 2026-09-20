@@ -57,8 +57,11 @@ const MAP_DEFINITIONS = Object.freeze({
   }),
 });
 const MAP_DEFINITION = MAP_DEFINITIONS.cosmic_s_01;
+const CONSTELLATION_ATTACK_SCALING_DESCRIPTION =
+  "연결에 사용한 별들의 단계 합만큼 공격력이 배율 증가합니다.";
 // This is the sole source of truth for recipes, construction, combat stats,
-// contextual actions, effects and the codex.
+// contextual actions, effects and the codex. specialDescriptions is shared by
+// the field info and codex so displayed abilities cannot drift apart.
 const CONSTELLATION_DEFINITIONS = Object.freeze({
   [CONSTELLATION_IDS.DAWN]: Object.freeze({
     id: CONSTELLATION_IDS.DAWN, name: "새벽의 별자리",
@@ -69,9 +72,9 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       nodes: Object.freeze([[18, 67], [36, 42], [61, 28], [82, 48]]),
       edges: Object.freeze([[0, 1], [1, 2], [2, 3]]),
     }),
-    abilities: Object.freeze([
+    specialDescriptions: Object.freeze([
       "같은 적을 4회 공격하면 현재 공격력의 1500% 특수 피해",
-      "직접 3킬마다 모든 살아있는 적에게 각 적 최대 체력의 25% 피해",
+      "새벽의 별자리가 몬스터를 3마리 처치할 때마다 모든 적에게 각 적 최대 체력의 25%만큼 피해를 줍니다.",
     ]),
   }),
   [CONSTELLATION_IDS.RADIANCE]: Object.freeze({
@@ -83,9 +86,9 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       edges: Object.freeze([[0, 1], [1, 2], [2, 0]]),
       order: Object.freeze([0, 2, 1]),
     }),
-    abilities: Object.freeze([
+    specialDescriptions: Object.freeze([
       "구성 별들의 단계 합만큼 서로 다른 적에게 연쇄 공격. 각 대상은 광휘의 별자리 공격력만큼 피해",
-      "직접 처치할 때마다 이 별자리의 공격력 영구 +1%",
+      "광휘의 별자리가 몬스터를 직접 처치할 때마다 자신의 공격력이 1%씩 영구적으로 증가합니다.",
     ]),
   }),
   [CONSTELLATION_IDS.SAGITTARIUS]: Object.freeze({
@@ -96,7 +99,7 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       nodes: Object.freeze([[18, 68], [43, 48], [67, 25], [58, 76]]),
       edges: Object.freeze([[0, 1], [1, 2], [1, 3], [3, 2]]),
     }),
-    abilities: Object.freeze([
+    specialDescriptions: Object.freeze([
       "같은 적 집중 공격: 20타 공격력 +1000%, 40타 +2000%, 60타에 모든 아군 공격력 +1000% (10초). 타겟 변경 시 집중 초기화",
     ]),
   }),
@@ -108,7 +111,7 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       nodes: Object.freeze([[24, 68], [76, 30]]),
       edges: Object.freeze([[0, 1]]),
     }),
-    abilities: Object.freeze([
+    specialDescriptions: Object.freeze([
       "공격 성공 시 별빛 1 + 현재 활성화된 완성 별자리 수 획득",
       "별빛 점술 30: 50% 확률로 +60, 실패 시 추가 -15 (별빛은 0 미만이 되지 않음)",
     ]),
@@ -1119,12 +1122,12 @@ class UIManager {
         const summary = recipeEntries
           .map(([type, amount]) => `${CONFIG.stars[type].name} ×${amount}`)
           .join(" + ");
-        const specials = zodiac.abilities;
+        const specials = zodiac.specialDescriptions;
         const abilities = specials.map((special, index) =>
-          `<p><strong>특수능력${specials.length > 1 ? ` ${index + 1}` : ""}</strong><span>${special}</span></p>`,
+          `<p><strong>특수공격${specials.length > 1 ? ` ${index + 1}` : ""}</strong><span>${special}</span></p>`,
         ).join("");
         const discovered = game?.discoveredConstellations.has(definitionId);
-        return `<article class="zodiac-card ${definitionId.toLowerCase()} ${discovered ? "discovered" : "undiscovered"}" data-constellation="${definitionId}"><h3>${zodiac.name}</h3><div class="codex-preview-wrap"><svg class="codex-preview" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${zodiac.name} 별자리 연결 그림"><g class="codex-edges">${edges}</g><g class="codex-nodes">${stars}</g></svg></div><div class="codex-recipe" aria-label="필요한 별 조합: ${summary}"><h4>STAR RECIPE</h4><div class="codex-recipe-summary"><span>필요한 별</span>${summary}</div></div><dl class="codex-stats"><div><dt>공격력</dt><dd>${zodiac.attackDamage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.attackSpeed}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><div class="codex-special">${abilities}</div></article>`;
+        return `<article class="zodiac-card ${definitionId.toLowerCase()} ${discovered ? "discovered" : "undiscovered"}" data-constellation="${definitionId}"><h3>${zodiac.name}</h3><div class="codex-preview-wrap"><svg class="codex-preview" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${zodiac.name} 별자리 연결 그림"><g class="codex-edges">${edges}</g><g class="codex-nodes">${stars}</g></svg></div><div class="codex-recipe" aria-label="필요한 별 조합: ${summary}"><h4>STAR RECIPE</h4><div class="codex-recipe-summary"><span>필요한 별</span>${summary}</div></div><dl class="codex-stats"><div class="codex-attack-stat"><dt>기본 공격력</dt><dd>${zodiac.attackDamage}</dd><small>단계 효과: 재료 별 단계 합 × 공격력</small></div><div><dt>공격속도</dt><dd>${zodiac.attackSpeed}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><p class="codex-scaling">${CONSTELLATION_ATTACK_SCALING_DESCRIPTION}</p><div class="codex-special">${abilities}</div></article>`;
       })
       .join("");
   }
@@ -1246,7 +1249,7 @@ class UIManager {
     let constellation = s.constellation;
     const constellationStats = constellation?.definition;
     starInfo.innerHTML = constellation
-      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합 ${constellation.componentStageSum}</span><span>공격력 ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/3</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>처치 공격력 보너스 +${constellation.runtime.radianceKills}%</span><span>광휘 처치 수 ${constellation.runtime.radianceKills}</span>` : ""}</div><div class="trait">${constellationStats.abilities.join(" · ")}</div>`
+      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합 ${constellation.componentStageSum}</span><span>${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? "현재 공격력:" : "공격력"} ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/3</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${constellation.runtime.radianceKills}%</span>` : ""}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
       : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? constellationStats.range : d.range,
