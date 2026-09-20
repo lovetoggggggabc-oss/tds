@@ -19,13 +19,13 @@ const CONFIG = {
   constellations: {
     dawn: {
       name: "새벽의 별자리",
-      recipe: { blue: 2, red: 1, white: 1 },
+      recipe: { blue: 3, white: 1 },
       range: 4,
       damage: 500,
       rate: 4,
       specialMultiplier: 15,
       specialHits: 4,
-      special: "같은 적 4회 타격 시 공격력의 1500% 피해",
+      special: "같은 적을 4회 공격하면 현재 공격력의 1500% 특수 피해 (기본 공격력 기준 7,500)",
     },
     radiance: {
       name: "광휘의 별자리",
@@ -33,7 +33,29 @@ const CONFIG = {
       range: 6,
       damage: 950,
       rate: 1,
-      special: "연결된 별들의 단계 합만큼 서로 다른 적에게 연쇄 공격",
+      special: "구성 별들의 단계 합만큼 서로 다른 적에게 연쇄 공격. 각 대상은 광휘의 별자리 공격력만큼 피해",
+    },
+    sagittarius: {
+      name: "궁수자리",
+      recipe: { sky: 2, blue: 2 },
+      range: 6,
+      damage: 400,
+      rate: 6,
+      specials: [
+        "같은 적 집중 공격: 20타 공격력 +1000%, 40타 +2000%, 60타에 모든 아군 공격력 +1000% (10초). 타겟 변경 시 집중 초기화",
+        "누적 15회 적중 시 모든 아군 사거리 +1 (5초), 종료 후 5초 대기",
+      ],
+    },
+    astrologer: {
+      name: "점성술자리",
+      recipe: { orange: 2 },
+      range: 3,
+      damage: 10,
+      rate: 1,
+      specials: [
+        "공격 성공 시 별빛 1 + 현재 활성화된 완성 별자리 수 획득",
+        "별빛 점술 30: 50% 확률로 +60, 실패 시 추가 -15 (별빛은 0 미만이 되지 않음)",
+      ],
     },
   },
   monsters: {
@@ -333,10 +355,13 @@ class SpatialGrid {
   }
 }
 class Constellation {
-  constructor(owner, center, members, kind) {
+  constructor(owner, center, members, kind, connectionOrder = members) {
     this.owner = owner;
     this.center = center;
     this.members = members;
+    // Combat membership and the player's visual path are intentionally kept
+    // separate so recipe/slot processing cannot reorder the connection.
+    this.connectionOrder = [...connectionOrder];
     this.kind = kind;
     this.stats = CONFIG.constellations[kind];
     this.componentStageSum = members.reduce(
@@ -349,6 +374,7 @@ class Constellation {
     this.cooldown = 0;
     this.target = null;
     this.hitCount = 0;
+    this.rangeHitCount = 0;
     members.forEach((i) => (owner.stars[i].support = i !== center));
     owner.stars[center].constellation = this;
   }
@@ -358,7 +384,7 @@ class Constellation {
     if (
       this.target &&
       (this.target.dead ||
-        !RangeSystem.contains(position, this.target.position(), this.stats.range))
+        !RangeSystem.contains(position, this.target.position(), this.effectiveRange()))
     ) {
       this.target = null;
       this.hitCount = 0;
@@ -369,7 +395,7 @@ class Constellation {
       Targeting.choose(
         {
           data: () => ({
-            range: this.stats.range,
+            range: this.effectiveRange(),
             target: "highest",
           }),
         },
@@ -381,14 +407,17 @@ class Constellation {
         this.target = target;
         this.hitCount = 0;
       }
-      const currentAttackDamage = this.stats.damage * this.powerMultiplier;
+      const currentAttackDamage =
+        this.stats.damage * this.powerMultiplier * this.attackMultiplier();
       if (this.kind === "radiance") {
         this.chainAttack(target, position);
         this.target = null;
         this.hitCount = 0;
       } else {
         target.hit(currentAttackDamage, position);
-        this.hitCount++;
+        if (this.kind !== "sagittarius" || game.attackBuffUntil <= game.gameTime)
+          this.hitCount++;
+        this.afterHit();
       }
       if (this.kind === "dawn" && this.hitCount === this.stats.specialHits) {
         if (!target.dead) {
@@ -406,13 +435,46 @@ class Constellation {
       this.cooldown = 1 / this.stats.rate;
     }
   }
+  effectiveRange() {
+    return this.stats.range + (game.rangeBuffUntil > game.gameTime ? 1 : 0);
+  }
+  attackMultiplier() {
+    const allyMultiplier = game.attackBuffUntil > game.gameTime ? 11 : 1;
+    if (this.kind !== "sagittarius") return allyMultiplier;
+    return allyMultiplier * (this.hitCount >= 40 ? 21 : this.hitCount >= 20 ? 11 : 1);
+  }
+  afterHit() {
+    if (this.kind === "astrologer") {
+      const active = game.players.reduce(
+        (total, player) => total + player.manager.activeConstellations().length,
+        0,
+      );
+      this.owner.player.resources.starlight += 1 + active;
+      game.markDirty();
+      return;
+    }
+    if (this.kind !== "sagittarius") return;
+    const now = game.gameTime;
+    if (game.rangeBuffUntil <= now && game.rangeBuffCooldownUntil <= now) {
+      this.rangeHitCount++;
+      if (this.rangeHitCount >= 15) {
+        this.rangeHitCount = 0;
+        game.rangeBuffUntil = now + 5;
+        game.rangeBuffCooldownUntil = now + 10;
+      }
+    }
+    if (this.hitCount >= 60 && game.attackBuffUntil <= now) {
+      game.attackBuffUntil = now + 10;
+      this.hitCount = 0;
+    }
+  }
   chainAttack(first, origin) {
     const hit = new Set();
     let target = first;
     let from = origin;
     while (target && hit.size < this.componentStageSum) {
       const targetPosition = target.position();
-      target.hit(this.stats.damage * this.powerMultiplier, from);
+      target.hit(this.stats.damage * this.powerMultiplier * this.attackMultiplier(), from);
       if (hit.size) UIManager.chainBeam(from, targetPosition);
       hit.add(target);
       from = targetPosition;
@@ -433,6 +495,7 @@ class Constellation {
       this.owner.stars[i].support = false;
       this.owner.stars[i].constellation = null;
     });
+    this.connectionOrder.length = 0;
   }
 }
 class StarManager {
@@ -466,6 +529,13 @@ class StarManager {
   pos(i) {
     if (!this.positions[i]) this.refreshPositions();
     return this.positions[i] || { x: 0, y: 0 };
+  }
+  activeConstellations() {
+    return this.stars.reduce((constellations, star) => {
+      if (star?.constellation && !constellations.includes(star.constellation))
+        constellations.push(star.constellation);
+      return constellations;
+    }, []);
   }
   clearOthers() {
     game.players.forEach((p) => {
@@ -530,12 +600,18 @@ class StarManager {
       s.cooldown -= dt;
       if (s.cooldown > 0) return;
       const position = this.pos(i);
-      if (s.lock && (s.lock.dead || !RangeSystem.contains(position, s.lock.position(), s.data().range)))
+      const effectiveRange =
+        s.data().range + (game.rangeBuffUntil > game.gameTime ? 1 : 0);
+      if (s.lock && (s.lock.dead || !RangeSystem.contains(position, s.lock.position(), effectiveRange)))
         s.lock = null;
-      let t = s.lock || Targeting.choose(s, game.enemies, position);
+      const targetableStar = effectiveRange === s.data().range
+        ? s
+        : { data: () => ({ ...s.data(), range: effectiveRange }), lock: s.lock };
+      let t = s.lock || Targeting.choose(targetableStar, game.enemies, position);
       if (t) {
         s.lock = t;
-        let damage = s.data().damage * CONFIG.tierDamage[s.tier - 1];
+        let damage = s.data().damage * CONFIG.tierDamage[s.tier - 1] *
+          (game.attackBuffUntil > game.gameTime ? 11 : 1);
         t.hit(damage, position);
         if (s.data().target === "burst") {
           s.burstLeft--;
@@ -691,7 +767,9 @@ class ZodiacSystem {
     this.create(m);
   }
   static create(m) {
-    let picks = m.selected;
+    // Capture the input order before any recipe/combat work or mode cleanup.
+    const connectionOrder = [...m.selected];
+    const picks = [...m.selected];
     const counts = this.counts(m);
     const kind = this.exactMatch(counts);
     if (
@@ -701,9 +779,9 @@ class ZodiacSystem {
       return UIManager.hint("선택한 별과 정확히 일치하는 별자리가 없습니다.");
     let center = picks[0],
       points = picks.map((i) => m.pos(i));
-    new Constellation(m, center, [...picks], kind);
+    new Constellation(m, center, [...picks], kind, connectionOrder);
     m.exitModes();
-    UIManager.zodiacComplete(points[0], points.slice(1));
+    UIManager.zodiacComplete(points);
     if (kind === "dawn") UIManager.showDawnMoon();
     UIManager.hint(`✨ ${CONFIG.constellations[kind].name} 완성!`);
     game.render();
@@ -733,7 +811,11 @@ class ZodiacSystem {
 class DivinationSystem {
   static execute(manager, index) {
     const star = manager.stars[index];
-    if (!star?.constellation || star.constellation.center !== index)
+    if (
+      !star?.constellation ||
+      star.constellation.center !== index ||
+      star.constellation.kind !== "astrologer"
+    )
       return UIManager.hint("점성술자리를 선택하세요.");
     const resources = manager.player.resources;
     if (!resources.spend(CONFIG.divinationCost))
@@ -814,31 +896,36 @@ class UIManager {
     zodiacCodexList.innerHTML = Object.entries(ZODIAC_RECIPES)
       .map(([kind, zodiac]) => {
         const requirements = Object.entries(zodiac.recipe)
-          .map(([type, amount]) => `<span class="codex-requirement"><i style="color:${CONFIG.stars[type].color}">✦</i>${CONFIG.stars[type].name} ${"★".repeat(amount)}</span>`)
+          .map(([type, amount]) => `<span class="codex-requirement"><i style="--star-color:${CONFIG.stars[type].color};color:${CONFIG.stars[type].color}">✦</i>${CONFIG.stars[type].name} ×${amount}</span>`)
           .join("");
-        return `<article class="zodiac-card ${kind}"><h3>${zodiac.name}</h3><div class="codex-recipe">${requirements}</div><dl><div><dt>공격력</dt><dd>${zodiac.damage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.rate}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><p><strong>특수</strong> ${zodiac.special}</p></article>`;
+        const specials = zodiac.specials || [zodiac.special];
+        const abilities = specials.map((special, index) =>
+          `<p><strong>특수능력${specials.length > 1 ? ` ${index + 1}` : ""}</strong><span>${special}</span></p>`,
+        ).join("");
+        return `<article class="zodiac-card ${kind}"><h3>${zodiac.name}</h3><h4>필요 별</h4><div class="codex-recipe">${requirements}</div><dl><div><dt>공격력</dt><dd>${zodiac.damage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.rate}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><div class="codex-specials">${abilities}</div></article>`;
       })
       .join("");
   }
-  static zodiacComplete(center, members) {
-    members.forEach((p, i) =>
+  static zodiacComplete(points) {
+    points.slice(0, -1).forEach((from, i) => {
+      const to = points[i + 1];
       game.simulationTimeout(() => {
         effects.insertAdjacentHTML(
           "beforeend",
-          `<line class="link-form" x1="${center.x}" y1="${center.y}" x2="${p.x}" y2="${p.y}"/>`,
+          `<line class="link-form" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/>`,
         );
         for (let n = 0; n < 4; n++)
           effects.insertAdjacentHTML(
             "beforeend",
-            `<circle class="spark" cx="${center.x + ((p.x - center.x) * (n + 1)) / 5}" cy="${center.y + ((p.y - center.y) * (n + 1)) / 5}" r="${0.35 + n * 0.06}"/>`,
+            `<circle class="spark" cx="${from.x + ((to.x - from.x) * (n + 1)) / 5}" cy="${from.y + ((to.y - from.y) * (n + 1)) / 5}" r="${0.35 + n * 0.06}"/>`,
           );
       }, i * 90),
-    );
+    });
     game.simulationTimeout(
       () =>
         effects.insertAdjacentHTML(
           "beforeend",
-          `<circle class="complete-wave" cx="${center.x}" cy="${center.y}" r="2.5"/>`,
+          `<circle class="complete-wave" cx="${points[0].x}" cy="${points[0].y}" r="2.5"/>`,
         ),
       380,
     );
@@ -937,7 +1024,7 @@ class UIManager {
     let constellation = s.constellation;
     const constellationStats = constellation?.stats;
     starInfo.innerHTML = constellation
-      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>공격력 ${Math.round(constellationStats.damage * constellation.powerMultiplier)}</span><span>공격속도 ${constellationStats.rate}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.kind === "radiance" ? `<span>단계 합 ${constellation.componentStageSum}</span><span>최대 연쇄 대상 ${constellation.componentStageSum}</span>` : ""}</div><div class="trait">${constellation.kind === "radiance" ? "특수공격 · 연결된 별들의 단계 합만큼 연쇄 공격" : "같은 적 4회 타격 시 공격력의 1500% 특수공격"}</div>`
+      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>공격력 ${Math.round(constellationStats.damage * constellation.powerMultiplier)}</span><span>공격속도 ${constellationStats.rate}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.kind === "radiance" ? `<span>단계 합 ${constellation.componentStageSum}</span><span>최대 연쇄 대상 ${constellation.componentStageSum}</span>` : ""}</div><div class="trait">${(constellationStats.specials || [constellationStats.special]).join(" · ")}</div>`
       : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? constellationStats.range : d.range,
@@ -954,12 +1041,14 @@ class UIManager {
     contextActions.style.top = `${p.y}%`;
     if (constellation) {
       let enabled = pick.m.player.resources.divinity >= 1;
-      const canDivine = pick.m.player.resources.can(CONFIG.divinationCost);
+      const isAstrologer = constellation.kind === "astrologer";
+      const canDivine = isAstrologer && pick.m.player.resources.can(CONFIG.divinationCost);
       let actionKey = `${pick.player}:${pick.index}:constellation:${enabled}:${canDivine}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `<button class="divination" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button><button data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
-        contextActions.querySelector('[data-context="divination"]').onclick = () =>
-          DivinationSystem.execute(pick.m, pick.index);
+        contextActions.innerHTML = `${isAstrologer ? `<button class="divination" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}<button data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
+        if (isAstrologer)
+          contextActions.querySelector('[data-context="divination"]').onclick = () =>
+            DivinationSystem.execute(pick.m, pick.index);
         contextActions.querySelector('[data-context="release"]').onclick = () =>
           ZodiacSystem.release(pick.m, pick.index);
         this.actionKey = actionKey;
@@ -990,11 +1079,9 @@ class UIManager {
         let c = s?.constellation;
         if (c && !drawn.has(c)) {
           drawn.add(c);
-          let a = c.owner.pos(c.center);
-          c.members
-            .filter((i) => i !== c.center)
-            .forEach((i) => {
-              let b = c.owner.pos(i);
+          c.connectionOrder.slice(0, -1).forEach((fromIndex, index) => {
+              const a = c.owner.pos(fromIndex);
+              const b = c.owner.pos(c.connectionOrder[index + 1]);
               let selected = c.owner.selected[0] === c.center;
               lines.push(
                 `<line class="link${selected ? " selected" : ""}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`,
@@ -1046,6 +1133,9 @@ class GameManager {
     this.enemies = [];
     this.spatial = new SpatialGrid();
     this.gameTime = 0;
+    this.attackBuffUntil = 0;
+    this.rangeBuffUntil = 0;
+    this.rangeBuffCooldownUntil = 0;
     this.tasks = [];
     this.dirty = true;
     this.lastHudUpdate = 0;
@@ -1073,12 +1163,25 @@ class GameManager {
       panel.querySelector("[data-act=zodiac]").addEventListener("click", () => ZodiacSystem.toggle(p.manager));
       panel.querySelector("[data-act=zodiac-cancel]").addEventListener("click", () => ZodiacSystem.cancel(p.manager));
     });
-    controls.querySelector("[data-act=codex]").addEventListener("click", () => {
+    const codexButton = controls.querySelector("[data-act=codex]");
+    const closeCodex = () => {
+      zodiacCodex.hidden = true;
+      document.body.classList.remove("codex-open");
+      codexButton.focus();
+    };
+    codexButton.addEventListener("click", () => {
       UIManager.renderCodex();
       zodiacCodex.hidden = false;
+      document.body.classList.add("codex-open");
+      zodiacCodex.querySelector("[data-close-codex]").focus();
     });
-    zodiacCodex.querySelector("[data-close-codex]").addEventListener("click", () => {
-      zodiacCodex.hidden = true;
+    zodiacCodex.querySelector("[data-close-codex]").addEventListener("click", closeCodex);
+    zodiacCodex.addEventListener("pointerdown", (event) => event.stopPropagation());
+    zodiacCodex.addEventListener("click", (event) => {
+      if (event.target === zodiacCodex) closeCodex();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !zodiacCodex.hidden) closeCodex();
     });
   }
   simulationTimeout(callback, milliseconds) {
