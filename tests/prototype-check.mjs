@@ -9,9 +9,10 @@ const [html, css, js] = await Promise.all([
 
 assert.match(html, /href="styles\.css"/);
 assert.match(html, /src="game\.js"/);
-assert.equal((html.match(/data-act="summon"/g) || []).length, 2);
+assert.equal((html.match(/data-act="summon"/g) || []).length, 1);
 assert.match(html, /data-player="0"/);
-assert.match(html, /data-player="1"/);
+assert.doesNotMatch(html, /data-player="1"/);
+assert.equal((html.match(/data-act="zodiac"/g) || []).length, 1);
 assert.ok(
   html.indexOf('class="field-label two"') <
     html.indexOf('class="field-label one"'),
@@ -33,6 +34,11 @@ assert.match(js, /startStarlight:\s*5000/);
 assert.match(js, /startDivinity:\s*50/);
 assert.match(js, /summonCost:\s*30/);
 assert.match(js, /emptySlots\(\)/);
+assert.doesNotMatch(
+  js.slice(js.indexOf("  summon() {"), js.indexOf("  tap(i) {")),
+  /exitModes|clearOthers|selectOnly/,
+  "summoning must not change selection or action modes",
+);
 assert.match(js, /swapCost:\s*10/);
 assert.match(js, /slime:\s*\{[^}]*hp:\s*500/);
 assert.match(js, /bug:\s*\{[^}]*hp:\s*800/);

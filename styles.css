@@ -54,7 +54,7 @@ button {
   width: min(100%, 580px);
   min-height: 100dvh;
   padding: max(8px, env(safe-area-inset-top)) 10px
-    max(10px, env(safe-area-inset-bottom));
+    calc(96px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -705,6 +705,28 @@ header {
     transform 0.38s ease-in,
     opacity 0.38s;
 }
+.summon-effect {
+  position: absolute;
+  z-index: 34;
+  width: 12px;
+  height: 12px;
+  margin: -6px;
+  border: 2px solid #fff7ba;
+  border-radius: 50%;
+  box-shadow: 0 0 10px 4px #9cecff;
+  pointer-events: none;
+  animation: summonSpark 0.4s ease-out forwards;
+}
+@keyframes summonSpark {
+  from {
+    transform: scale(0.25) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: scale(4) rotate(90deg);
+    opacity: 0;
+  }
+}
 .arena.speed-2 .merge-particle {
   transition-duration: 0.19s;
 }
@@ -724,9 +746,14 @@ header {
   }
 }
 .players {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
+  position: fixed;
+  z-index: 200;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(calc(100% - 20px), 430px);
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  pointer-events: none;
 }
 .player {
   background: var(--panel);
@@ -736,6 +763,8 @@ header {
   transition:
     border-color 0.18s,
     box-shadow 0.18s;
+  box-shadow: 0 8px 28px #000b;
+  pointer-events: auto;
 }
 .player.active-player {
   border-color: #8ff2ff;
@@ -765,10 +794,11 @@ header {
   gap: 4px;
 }
 .actions button {
-  padding: 7px 2px;
-  border-radius: 8px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 13px;
   background: linear-gradient(#46528e, #303867);
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 800;
   border: 1px solid #8191d055;
 }
@@ -855,9 +885,6 @@ header {
   .arena {
     width: min(76%, 400px);
   }
-  .actions button {
-    padding: 5px 1px;
-  }
   header {
     padding: 4px 9px;
   }
@@ -883,7 +910,7 @@ header {
     font-size: 17px;
   }
   .players {
-    gap: 4px;
+    width: min(calc(100% - 12px), 430px);
   }
   .player {
     padding: 5px 4px;
@@ -899,7 +926,7 @@ header {
     gap: 3px;
   }
   .actions button {
-    font-size: 9px;
+    font-size: 13px;
   }
   .field {
     gap: 3px;
