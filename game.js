@@ -160,7 +160,9 @@ class Enemy {
     this.el = document.createElement("div");
     this.el.className = `enemy ${this.type}${this.boss ? " boss" : ""}`;
     this.el.innerHTML = `<div class="bar" aria-hidden="true"><i></i></div><span class="enemy-body"></span><small>${this.boss ? this.name : ""}</small>`;
+    this.hpFill = this.el.querySelector(".bar i");
     arena.append(this.el);
+    this.updateHealthBar();
     this.render();
   }
   position() {
@@ -175,11 +177,6 @@ class Enemy {
   render() {
     const metrics = RangeSystem.metrics();
     this.el.style.transform = `translate3d(${(this.x * metrics.width) / 100}px, ${(this.y * metrics.height) / 100}px, 0)`;
-    const hpPercent = Math.max(0, (this.hp / this.maxHp) * 100);
-    if (hpPercent !== this.lastHpPercent) {
-      this.el.firstElementChild.firstElementChild.style.width = `${hpPercent}%`;
-      this.lastHpPercent = hpPercent;
-    }
   }
   update(dt) {
     this.progress += this.speed * dt;
@@ -199,12 +196,12 @@ class Enemy {
       this.dead = true;
       this.el.remove();
       game.kill(this);
-    } else this.renderHealth();
+    } else this.updateHealthBar();
   }
-  renderHealth() {
-    const hpPercent = Math.max(0, (this.hp / this.maxHp) * 100);
+  updateHealthBar() {
+    const hpPercent = Math.max(0, Math.min(100, (this.hp / this.maxHp) * 100));
     if (hpPercent !== this.lastHpPercent) {
-      this.el.firstElementChild.firstElementChild.style.width = `${hpPercent}%`;
+      this.hpFill.style.width = `${hpPercent}%`;
       this.lastHpPercent = hpPercent;
     }
   }
@@ -1092,8 +1089,8 @@ class UIManager {
     );
     links.innerHTML = lines.join("");
     g.players.forEach((p) => p.manager.render());
-    g.players.forEach((p, playerIndex) => {
-      const panel = controls.querySelector(`[data-player="${playerIndex}"]`);
+    controls.querySelectorAll(".game-controls").forEach((panel) => {
+      const p = g.players[Number(panel.dataset.player)];
       const z = panel.querySelector("[data-act=zodiac]");
       const cancel = panel.querySelector("[data-act=zodiac-cancel]");
       panel.classList.toggle("active-player", p.manager.selected.length > 0 || p.manager.swapMode || p.manager.zodiacMode);
@@ -1171,6 +1168,7 @@ class GameManager {
     };
     codexButton.addEventListener("click", () => {
       UIManager.renderCodex();
+      zodiacCodexList.scrollTop = 0;
       zodiacCodex.hidden = false;
       document.body.classList.add("codex-open");
       zodiacCodex.querySelector("[data-close-codex]").focus();

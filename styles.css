@@ -395,7 +395,8 @@ header {
   font-size: 16px;
   pointer-events: none;
   will-change: transform;
-  contain: layout style paint;
+  /* Paint containment clipped the bar because it sits above the enemy box. */
+  contain: layout style;
 }
 .enemy .bar {
   position: absolute;
@@ -403,14 +404,15 @@ header {
   right: -3px;
   top: -8px;
   height: 3px;
-  background: #310d25;
+  background: rgba(17, 5, 20, 0.9);
+  border: 1px solid rgba(255, 220, 235, 0.45);
   border-radius: 2px;
   overflow: hidden;
 }
 .enemy .bar i {
   display: block;
   height: 100%;
-  background: #ff5e93;
+  background: #ff648f;
 }
 .enemy-body {
   position: absolute;
@@ -1068,13 +1070,15 @@ header {
   padding: max(18px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
   background: rgba(4, 6, 24, 0.88);
   overflow: hidden;
-  touch-action: none;
+  touch-action: pan-y;
 }
 .zodiac-codex[hidden] { display: none; }
 .codex-panel {
   width: min(94vw, 500px);
-  max-height: 85vh;
-  max-height: 85dvh;
+  height: min(82vh, 720px);
+  max-height: 82vh;
+  height: min(82dvh, 720px);
+  max-height: 82dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1083,7 +1087,7 @@ header {
   background: radial-gradient(circle at 80% 0, #34317a 0, transparent 38%), linear-gradient(160deg, #151b48, #090d2d);
   box-shadow: 0 0 36px #639cff33, 0 24px 60px #000c;
 }
-.codex-panel > header {
+.codex-header {
   flex: 0 0 auto;
   z-index: 2;
   display: flex;
@@ -1108,6 +1112,15 @@ header {
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable;
+}
+body.codex-open {
+  overflow: hidden;
+}
+@supports not (height: 1dvh) {
+  .codex-panel {
+    height: min(82vh, 720px);
+    max-height: 82vh;
+  }
 }
 .zodiac-card {
   position: relative;
