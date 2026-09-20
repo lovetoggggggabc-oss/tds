@@ -64,10 +64,10 @@ assert.doesNotMatch(
   "summoning must not change selection or action modes",
 );
 assert.match(js, /swapCost:\s*10/);
-assert.match(js, /slime:\s*\{[^}]*hp:\s*100/);
-assert.match(js, /bug:\s*\{[^}]*hp:\s*70/);
-assert.match(js, /name:\s*"코어 드론"[\s\S]*?hp:\s*2500/);
-assert.match(js, /name:\s*"운석 괴물"[\s\S]*?hp:\s*5000/);
+assert.match(js, /slime:\s*\{[^}]*hp:\s*500/);
+assert.match(js, /bug:\s*\{[^}]*hp:\s*800/);
+assert.match(js, /name:\s*"코어 드론"[\s\S]*?hp:\s*10000/);
+assert.match(js, /name:\s*"운석 괴물"[\s\S]*?hp:\s*20000/);
 assert.match(js, /Math\.pow\(1 \+ CONFIG\.waveHpGrowth, wave - 1\)/);
 assert.match(js, /this\.hpFill = this\.el\.querySelector\("\.bar i"\)/);
 assert.match(js, /else this\.updateHealthBar\(\)/);
@@ -121,9 +121,15 @@ assert.match(
   "multi-selection must be restricted to zodiac mode",
 );
 assert.doesNotMatch(js, /selected\.length\s*<\s*4|max(?:imum)? 4|0\/4/);
-assert.match(js, /const ZODIAC_RECIPES = CONFIG\.constellations/);
+assert.match(js, /const ZODIAC_RECIPES = CONSTELLATION_DEFINITIONS/);
 assert.match(js, /static exactMatch\(counts\)/);
 assert.match(js, /static renderCodex\(\)/);
+assert.match(js, /const CONSTELLATION_DEFINITIONS = Object\.freeze/);
+assert.match(js, /this\.definitionId = definitionId/);
+assert.match(js, /const isAstrologer = constellation\.definitionId === CONSTELLATION_IDS\.ASTROLOGER/);
+assert.match(js, /constellation:\$\{constellation\.definitionId\}/,
+  "the contextual-action cache must be invalidated by the selected definition");
+assert.doesNotMatch(js, /display:\s*none[^}]*data-player/, "2P controls must not be hidden with CSS");
 for (const name of ["새벽의 별자리", "광휘의 별자리", "궁수자리", "점성술자리"])
   assert.match(js, new RegExp(`name:\\s*"${name}"`), `${name} must remain in the registry`);
 assert.match(

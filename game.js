@@ -1,4 +1,45 @@
 "use strict";
+const CONSTELLATION_IDS = Object.freeze({
+  DAWN: "DAWN",
+  RADIANCE: "RADIANCE",
+  SAGITTARIUS: "SAGITTARIUS",
+  ASTROLOGER: "ASTROLOGER",
+});
+// This is the sole source of truth for recipes, construction, combat stats,
+// contextual actions, effects and the codex.
+const CONSTELLATION_DEFINITIONS = Object.freeze({
+  [CONSTELLATION_IDS.DAWN]: Object.freeze({
+    id: CONSTELLATION_IDS.DAWN, name: "새벽의 별자리",
+    recipe: Object.freeze({ blue: 3, white: 1 }), attackDamage: 500,
+    attackSpeed: 4, range: 4, targeting: "highest", completionEffect: "dawnMoon",
+    specialMultiplier: 15, specialHits: 4,
+    abilities: Object.freeze(["같은 적을 4회 공격하면 현재 공격력의 1500% 특수 피해 (기본 공격력 기준 7,500)"]),
+  }),
+  [CONSTELLATION_IDS.RADIANCE]: Object.freeze({
+    id: CONSTELLATION_IDS.RADIANCE, name: "광휘의 별자리",
+    recipe: Object.freeze({ red: 2, white: 1 }), attackDamage: 950,
+    attackSpeed: 1, range: 6, targeting: "highest",
+    abilities: Object.freeze(["구성 별들의 단계 합만큼 서로 다른 적에게 연쇄 공격. 각 대상은 광휘의 별자리 공격력만큼 피해"]),
+  }),
+  [CONSTELLATION_IDS.SAGITTARIUS]: Object.freeze({
+    id: CONSTELLATION_IDS.SAGITTARIUS, name: "궁수자리",
+    recipe: Object.freeze({ sky: 2, blue: 2 }), attackDamage: 400,
+    attackSpeed: 6, range: 6, targeting: "highest",
+    abilities: Object.freeze([
+      "같은 적 집중 공격: 20타 공격력 +1000%, 40타 +2000%, 60타에 모든 아군 공격력 +1000% (10초). 타겟 변경 시 집중 초기화",
+      "누적 15회 적중 시 모든 아군 사거리 +1 (5초), 종료 후 5초 대기",
+    ]),
+  }),
+  [CONSTELLATION_IDS.ASTROLOGER]: Object.freeze({
+    id: CONSTELLATION_IDS.ASTROLOGER, name: "점성술자리",
+    recipe: Object.freeze({ orange: 2 }), attackDamage: 10,
+    attackSpeed: 1, range: 3, targeting: "highest", contextualAction: "divination",
+    abilities: Object.freeze([
+      "공격 성공 시 별빛 1 + 현재 활성화된 완성 별자리 수 획득",
+      "별빛 점술 30: 50% 확률로 +60, 실패 시 추가 -15 (별빛은 0 미만이 되지 않음)",
+    ]),
+  }),
+});
 const CONFIG = {
   waveSeconds: 15,
   summonCost: 30,
@@ -13,64 +54,21 @@ const CONFIG = {
   rangeUnit: 6.3,
   waveHpGrowth: 0.12,
   tierDamage: [1, 1.7, 2.8, 4.4],
-  constellationTierPower: [1, 1.25, 1.55, 1.9],
   whiteBurstInterval: 0.16,
   whiteBurstRest: 2,
-  constellations: {
-    dawn: {
-      name: "새벽의 별자리",
-      recipe: { blue: 3, white: 1 },
-      range: 4,
-      damage: 500,
-      rate: 4,
-      specialMultiplier: 15,
-      specialHits: 4,
-      special: "같은 적을 4회 공격하면 현재 공격력의 1500% 특수 피해 (기본 공격력 기준 7,500)",
-    },
-    radiance: {
-      name: "광휘의 별자리",
-      recipe: { red: 2, white: 1 },
-      range: 6,
-      damage: 950,
-      rate: 1,
-      special: "구성 별들의 단계 합만큼 서로 다른 적에게 연쇄 공격. 각 대상은 광휘의 별자리 공격력만큼 피해",
-    },
-    sagittarius: {
-      name: "궁수자리",
-      recipe: { sky: 2, blue: 2 },
-      range: 6,
-      damage: 400,
-      rate: 6,
-      specials: [
-        "같은 적 집중 공격: 20타 공격력 +1000%, 40타 +2000%, 60타에 모든 아군 공격력 +1000% (10초). 타겟 변경 시 집중 초기화",
-        "누적 15회 적중 시 모든 아군 사거리 +1 (5초), 종료 후 5초 대기",
-      ],
-    },
-    astrologer: {
-      name: "점성술자리",
-      recipe: { orange: 2 },
-      range: 3,
-      damage: 10,
-      rate: 1,
-      specials: [
-        "공격 성공 시 별빛 1 + 현재 활성화된 완성 별자리 수 획득",
-        "별빛 점술 30: 50% 확률로 +60, 실패 시 추가 -15 (별빛은 0 미만이 되지 않음)",
-      ],
-    },
-  },
   monsters: {
-    slime: { name: "어둠 슬라임", hp: 100, speed: 4.6, reward: 1 },
-    bug: { name: "암흑 벌레", hp: 70, speed: 7, reward: 2 },
+    slime: { name: "어둠 슬라임", hp: 500, speed: 4.6, reward: 1 },
+    bug: { name: "암흑 벌레", hp: 800, speed: 7, reward: 2 },
     drone: {
       name: "코어 드론",
-      hp: 2500,
+      hp: 10000,
       speed: 2.8,
       reward: 30,
       boss: true,
     },
     meteor: {
       name: "운석 괴물",
-      hp: 5000,
+      hp: 20000,
       speed: 1.8,
       reward: 50,
       boss: true,
@@ -122,7 +120,7 @@ const CONFIG = {
 // Every zodiac-facing feature reads this registry: matching, combat, labels,
 // and the codex. Adding a constellation does not require another matching
 // branch or a new hard-coded selection limit.
-const ZODIAC_RECIPES = CONFIG.constellations;
+const ZODIAC_RECIPES = CONSTELLATION_DEFINITIONS;
 const STAR_KEYS = Object.keys(CONFIG.stars),
   TARGET_LABELS = {
     lock: "대상 고정 공격",
@@ -351,127 +349,132 @@ class SpatialGrid {
     return candidates;
   }
 }
+const CONSTELLATION_BEHAVIORS = Object.freeze({
+  [CONSTELLATION_IDS.DAWN]: Object.freeze({
+    createRuntime: () => ({ sameTargetId: null, sameTargetHits: 0 }),
+    onTargetChanged(constellation, target) {
+      constellation.runtime.sameTargetId = target;
+      constellation.runtime.sameTargetHits = 0;
+    },
+    attack(constellation, target, origin) {
+      const damage = constellation.currentDamage();
+      target.hit(damage, origin);
+      const runtime = constellation.runtime;
+      runtime.sameTargetHits++;
+      if (runtime.sameTargetHits === constellation.definition.specialHits) {
+        if (!target.dead) {
+          const specialDamage = damage * constellation.definition.specialMultiplier;
+          UIManager.dawnSpecial(target.position(), specialDamage);
+          target.hit(specialDamage, origin);
+        }
+        runtime.sameTargetHits = 0;
+      }
+    },
+  }),
+  [CONSTELLATION_IDS.RADIANCE]: Object.freeze({
+    createRuntime: (constellation) => ({ componentStageSum: constellation.componentStageSum }),
+    attack(constellation, first, origin) { constellation.chainAttack(first, origin); },
+  }),
+  [CONSTELLATION_IDS.SAGITTARIUS]: Object.freeze({
+    createRuntime: () => ({
+      focusTargetId: null, focusHits: 0, totalHits: 0,
+      transcendenceUntil: 0, rangeBuffUntil: 0, rangeBuffCooldownUntil: 0,
+    }),
+    onTargetChanged(constellation, target) {
+      constellation.runtime.focusTargetId = target;
+      constellation.runtime.focusHits = 0;
+    },
+    attack(constellation, target, origin) {
+      const runtime = constellation.runtime;
+      const now = game.gameTime;
+      const transcending = runtime.transcendenceUntil > now;
+      const nextFocusHit = runtime.focusHits + 1;
+      const focusMultiplier = transcending ? 1 : nextFocusHit >= 40 ? 21 : nextFocusHit >= 20 ? 11 : 1;
+      target.hit(constellation.currentDamage(focusMultiplier), origin);
+      if (!transcending) runtime.focusHits = nextFocusHit;
+      if (runtime.rangeBuffUntil <= now && runtime.rangeBuffCooldownUntil <= now) {
+        runtime.totalHits++;
+        if (runtime.totalHits >= 15) {
+          runtime.totalHits = 0;
+          runtime.rangeBuffUntil = now + 5;
+          runtime.rangeBuffCooldownUntil = now + 10;
+          game.rangeBuffUntil = Math.max(game.rangeBuffUntil, runtime.rangeBuffUntil);
+          game.rangeBuffCooldownUntil = Math.max(game.rangeBuffCooldownUntil, runtime.rangeBuffCooldownUntil);
+        }
+      }
+      if (runtime.focusHits >= 60 && runtime.transcendenceUntil <= now) {
+        runtime.transcendenceUntil = now + 10;
+        runtime.focusHits = 0;
+        game.attackBuffUntil = Math.max(game.attackBuffUntil, runtime.transcendenceUntil);
+      }
+    },
+  }),
+  [CONSTELLATION_IDS.ASTROLOGER]: Object.freeze({
+    createRuntime: () => ({ lastDivinationResult: null }),
+    attack(constellation, target, origin) {
+      target.hit(constellation.currentDamage(), origin);
+      const active = game.players.reduce(
+        (total, player) => total + player.manager.activeConstellations().length, 0,
+      );
+      constellation.owner.player.resources.starlight += 1 + active;
+      game.markDirty();
+    },
+  }),
+});
 class Constellation {
-  constructor(owner, center, members, kind, connectionOrder = members) {
+  constructor(owner, center, members, definitionId, connectionOrder = members) {
     this.owner = owner;
     this.center = center;
-    this.members = members;
-    // Combat membership and the player's visual path are intentionally kept
-    // separate so recipe/slot processing cannot reorder the connection.
+    this.members = [...members];
     this.connectionOrder = [...connectionOrder];
-    this.kind = kind;
-    this.stats = CONFIG.constellations[kind];
-    this.componentStageSum = members.reduce(
-      (sum, index) => sum + owner.stars[index].tier,
-      0,
-    );
-    this.powerMultiplier = members.reduce(
-      (sum, index) => sum + CONFIG.constellationTierPower[owner.stars[index].tier - 1], 0,
-    ) / members.length;
+    this.definitionId = definitionId;
+    this.definition = CONSTELLATION_DEFINITIONS[definitionId];
+    this.behavior = CONSTELLATION_BEHAVIORS[definitionId];
+    if (!this.definition || !this.behavior) throw new Error(`Unknown constellation: ${definitionId}`);
+    this.componentStageSum = members.reduce((sum, index) => sum + owner.stars[index].tier, 0);
     this.cooldown = 0;
     this.target = null;
-    this.hitCount = 0;
-    this.rangeHitCount = 0;
-    members.forEach((i) => (owner.stars[i].support = i !== center));
+    this.runtime = this.behavior.createRuntime(this);
+    members.forEach((index) => (owner.stars[index].support = index !== center));
     owner.stars[center].constellation = this;
+  }
+  resetTarget() {
+    this.target = null;
+    this.behavior.onTargetChanged?.(this, null);
   }
   attack(dt) {
     this.cooldown -= dt;
-    let position = this.owner.pos(this.center);
-    if (
-      this.target &&
-      (this.target.dead ||
-        !RangeSystem.contains(position, this.target.position(), this.effectiveRange()))
-    ) {
-      this.target = null;
-      this.hitCount = 0;
-    }
+    const position = this.owner.pos(this.center);
+    if (this.target && (this.target.dead || !RangeSystem.contains(position, this.target.position(), this.effectiveRange())))
+      this.resetTarget();
     if (this.cooldown > 0) return;
-    let target =
-      this.target ||
-      Targeting.choose(
-        {
-          data: () => ({
-            range: this.effectiveRange(),
-            target: "highest",
-          }),
-        },
-        game.enemies,
-        position,
-      );
-    if (target) {
-      if (target !== this.target) {
-        this.target = target;
-        this.hitCount = 0;
-      }
-      const currentAttackDamage =
-        this.stats.damage * this.powerMultiplier * this.attackMultiplier();
-      if (this.kind === "radiance") {
-        this.chainAttack(target, position);
-        this.target = null;
-        this.hitCount = 0;
-      } else {
-        target.hit(currentAttackDamage, position);
-        if (this.kind !== "sagittarius" || game.attackBuffUntil <= game.gameTime)
-          this.hitCount++;
-        this.afterHit();
-      }
-      if (this.kind === "dawn" && this.hitCount === this.stats.specialHits) {
-        if (!target.dead) {
-          const specialDamage =
-            currentAttackDamage * this.stats.specialMultiplier;
-          UIManager.dawnSpecial(target.position(), specialDamage);
-          target.hit(specialDamage, position);
-        }
-        this.hitCount = 0;
-      }
-      if (target.dead) {
-        this.target = null;
-        this.hitCount = 0;
-      }
-      this.cooldown = 1 / this.stats.rate;
+    const target = this.target || Targeting.choose({ data: () => ({
+      range: this.effectiveRange(), target: this.definition.targeting,
+    }) }, game.enemies, position);
+    if (!target) return;
+    if (target !== this.target) {
+      this.target = target;
+      this.behavior.onTargetChanged?.(this, target);
     }
+    this.behavior.attack(this, target, position);
+    if (this.definitionId === CONSTELLATION_IDS.RADIANCE) this.resetTarget();
+    else if (target.dead) this.resetTarget();
+    this.cooldown = 1 / this.definition.attackSpeed;
+  }
+  currentDamage(localMultiplier = 1) {
+    const allyMultiplier = game.attackBuffUntil > game.gameTime ? 11 : 1;
+    return this.definition.attackDamage * allyMultiplier * localMultiplier;
   }
   effectiveRange() {
-    return this.stats.range + (game.rangeBuffUntil > game.gameTime ? 1 : 0);
-  }
-  attackMultiplier() {
-    const allyMultiplier = game.attackBuffUntil > game.gameTime ? 11 : 1;
-    if (this.kind !== "sagittarius") return allyMultiplier;
-    return allyMultiplier * (this.hitCount >= 40 ? 21 : this.hitCount >= 20 ? 11 : 1);
-  }
-  afterHit() {
-    if (this.kind === "astrologer") {
-      const active = game.players.reduce(
-        (total, player) => total + player.manager.activeConstellations().length,
-        0,
-      );
-      this.owner.player.resources.starlight += 1 + active;
-      game.markDirty();
-      return;
-    }
-    if (this.kind !== "sagittarius") return;
-    const now = game.gameTime;
-    if (game.rangeBuffUntil <= now && game.rangeBuffCooldownUntil <= now) {
-      this.rangeHitCount++;
-      if (this.rangeHitCount >= 15) {
-        this.rangeHitCount = 0;
-        game.rangeBuffUntil = now + 5;
-        game.rangeBuffCooldownUntil = now + 10;
-      }
-    }
-    if (this.hitCount >= 60 && game.attackBuffUntil <= now) {
-      game.attackBuffUntil = now + 10;
-      this.hitCount = 0;
-    }
+    return this.definition.range + (game.rangeBuffUntil > game.gameTime ? 1 : 0);
   }
   chainAttack(first, origin) {
     const hit = new Set();
     let target = first;
     let from = origin;
-    while (target && hit.size < this.componentStageSum) {
+    while (target && hit.size < this.runtime.componentStageSum) {
       const targetPosition = target.position();
-      target.hit(this.stats.damage * this.powerMultiplier * this.attackMultiplier(), from);
+      target.hit(this.currentDamage(), from);
       if (hit.size) UIManager.chainBeam(from, targetPosition);
       hit.add(target);
       from = targetPosition;
@@ -488,9 +491,9 @@ class Constellation {
     }
   }
   release() {
-    this.members.forEach((i) => {
-      this.owner.stars[i].support = false;
-      this.owner.stars[i].constellation = null;
+    this.members.forEach((index) => {
+      this.owner.stars[index].support = false;
+      this.owner.stars[index].constellation = null;
     });
     this.connectionOrder.length = 0;
   }
@@ -768,19 +771,19 @@ class ZodiacSystem {
     const connectionOrder = [...m.selected];
     const picks = [...m.selected];
     const counts = this.counts(m);
-    const kind = this.exactMatch(counts);
+    const definitionId = this.exactMatch(counts);
     if (
-      !kind ||
+      !definitionId ||
       picks.some((i) => m.stars[i].support || m.stars[i].constellation)
     )
       return UIManager.hint("선택한 별과 정확히 일치하는 별자리가 없습니다.");
     let center = picks[0],
       points = picks.map((i) => m.pos(i));
-    new Constellation(m, center, [...picks], kind, connectionOrder);
+    new Constellation(m, center, [...picks], definitionId, connectionOrder);
     m.exitModes();
     UIManager.zodiacComplete(points);
-    if (kind === "dawn") UIManager.showDawnMoon();
-    UIManager.hint(`✨ ${CONFIG.constellations[kind].name} 완성!`);
+    if (CONSTELLATION_DEFINITIONS[definitionId].completionEffect === "dawnMoon") UIManager.showDawnMoon();
+    UIManager.hint(`✨ ${CONSTELLATION_DEFINITIONS[definitionId].name} 완성!`);
     game.render();
   }
   static cancel(m) {
@@ -811,7 +814,7 @@ class DivinationSystem {
     if (
       !star?.constellation ||
       star.constellation.center !== index ||
-      star.constellation.kind !== "astrologer"
+      star.constellation.definitionId !== CONSTELLATION_IDS.ASTROLOGER
     )
       return UIManager.hint("점성술자리를 선택하세요.");
     const resources = manager.player.resources;
@@ -824,6 +827,7 @@ class DivinationSystem {
       resources.starlight - CONFIG.divinationFailureCost,
     );
     UIManager.divinationEffect(manager.pos(index), success);
+    star.constellation.runtime.lastDivinationResult = success ? "success" : "failure";
     UIManager.hint(success ? "점술 성공! +60" : "점술 실패... -15");
     game.markDirty();
   }
@@ -891,15 +895,15 @@ class UIManager {
   }
   static renderCodex() {
     zodiacCodexList.innerHTML = Object.entries(ZODIAC_RECIPES)
-      .map(([kind, zodiac]) => {
+      .map(([definitionId, zodiac]) => {
         const requirements = Object.entries(zodiac.recipe)
           .map(([type, amount]) => `<span class="codex-requirement"><i style="--star-color:${CONFIG.stars[type].color};color:${CONFIG.stars[type].color}">✦</i>${CONFIG.stars[type].name} ×${amount}</span>`)
           .join("");
-        const specials = zodiac.specials || [zodiac.special];
+        const specials = zodiac.abilities;
         const abilities = specials.map((special, index) =>
           `<p><strong>특수능력${specials.length > 1 ? ` ${index + 1}` : ""}</strong><span>${special}</span></p>`,
         ).join("");
-        return `<article class="zodiac-card ${kind}"><h3>${zodiac.name}</h3><h4>필요 별</h4><div class="codex-recipe">${requirements}</div><dl><div><dt>공격력</dt><dd>${zodiac.damage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.rate}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><div class="codex-specials">${abilities}</div></article>`;
+        return `<article class="zodiac-card ${definitionId.toLowerCase()}"><h3>${zodiac.name}</h3><h4>필요 별</h4><div class="codex-recipe">${requirements}</div><dl><div><dt>공격력</dt><dd>${zodiac.attackDamage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.attackSpeed}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><div class="codex-specials">${abilities}</div></article>`;
       })
       .join("");
   }
@@ -916,7 +920,7 @@ class UIManager {
             "beforeend",
             `<circle class="spark" cx="${from.x + ((to.x - from.x) * (n + 1)) / 5}" cy="${from.y + ((to.y - from.y) * (n + 1)) / 5}" r="${0.35 + n * 0.06}"/>`,
           );
-      }, i * 90),
+      }, i * 90);
     });
     game.simulationTimeout(
       () =>
@@ -1019,9 +1023,9 @@ class UIManager {
     starInfo.hidden = false;
     starInfo.style.setProperty("--star-color", d.color);
     let constellation = s.constellation;
-    const constellationStats = constellation?.stats;
+    const constellationStats = constellation?.definition;
     starInfo.innerHTML = constellation
-      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>공격력 ${Math.round(constellationStats.damage * constellation.powerMultiplier)}</span><span>공격속도 ${constellationStats.rate}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.kind === "radiance" ? `<span>단계 합 ${constellation.componentStageSum}</span><span>최대 연쇄 대상 ${constellation.componentStageSum}</span>` : ""}</div><div class="trait">${(constellationStats.specials || [constellationStats.special]).join(" · ")}</div>`
+      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>공격력 ${constellationStats.attackDamage}</span><span>공격속도 ${constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>단계 합 ${constellation.componentStageSum}</span><span>최대 연쇄 대상 ${constellation.componentStageSum}</span>` : ""}</div><div class="trait">${constellationStats.abilities.join(" · ")}</div>`
       : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? constellationStats.range : d.range,
@@ -1038,9 +1042,11 @@ class UIManager {
     contextActions.style.top = `${p.y}%`;
     if (constellation) {
       let enabled = pick.m.player.resources.divinity >= 1;
-      const isAstrologer = constellation.kind === "astrologer";
+      const isAstrologer = constellation.definitionId === CONSTELLATION_IDS.ASTROLOGER;
       const canDivine = isAstrologer && pick.m.player.resources.can(CONFIG.divinationCost);
-      let actionKey = `${pick.player}:${pick.index}:constellation:${enabled}:${canDivine}`;
+      // definitionId is deliberately part of the cache key: actions from a
+      // previous tower type must never survive a selection/type change.
+      let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}`;
       if (this.actionKey !== actionKey) {
         contextActions.innerHTML = `${isAstrologer ? `<button class="divination" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}<button data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
         if (isAstrologer)
@@ -1055,11 +1061,11 @@ class UIManager {
         canSwap = pick.m.player.resources.can(CONFIG.swapCost) && !s.support;
       let actionKey = `${pick.player}:${pick.index}:star:${s.type}:${s.tier}:${canSwap}:${partner}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `<button data-context="swap"${canSwap ? "" : " disabled"}>교환</button><button class="merge${partner >= 0 ? " available" : ""}" data-context="merge"${partner >= 0 ? "" : " disabled"}>합성</button>`;
+        contextActions.innerHTML = `<button data-context="swap"${canSwap ? "" : " disabled"}>교환 10</button>${partner >= 0 ? `<button class="merge available" data-context="merge">합성</button>` : ""}`;
         contextActions.querySelector('[data-context="swap"]').onclick = () =>
           SwapSystem.begin(pick.m);
-        contextActions.querySelector('[data-context="merge"]').onclick = () =>
-          MergeSystem.execute(pick.m);
+        contextActions.querySelector('[data-context="merge"]')?.addEventListener("click", () =>
+          MergeSystem.execute(pick.m));
         this.actionKey = actionKey;
       }
     } else {
@@ -1219,8 +1225,7 @@ class GameManager {
       if (!star) return;
       if (star.lock === enemy) star.lock = null;
       if (star.constellation?.target === enemy) {
-        star.constellation.target = null;
-        star.constellation.hitCount = 0;
+        star.constellation.resetTarget();
       }
     }));
   }
@@ -1263,6 +1268,8 @@ restart.onclick = () => location.reload();
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 window.__TDS__ = {
   CONFIG,
+  CONSTELLATION_IDS,
+  CONSTELLATION_DEFINITIONS,
   ZODIAC_RECIPES,
   game,
   classes: { Enemy, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
