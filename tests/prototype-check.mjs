@@ -7,9 +7,9 @@ const [html, css, js] = await Promise.all([
   readFile("game.js", "utf8"),
 ]);
 
-assert.match(html, /href="styles\.css\?v=31"/);
-assert.match(html, /<script src="game\.js\?v=31" defer><\/script>/);
-assert.equal((html.match(/data-act="summon"/g) || []).length, 1);
+assert.match(html, /href="styles\.css\?v=32"/);
+assert.match(html, /<script src="game\.js\?v=32" defer><\/script>/);
+assert.equal((html.match(/data-act="summon"/g) || []).length, 0);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/, "2P's direct controls must not be rendered");
 assert.equal((html.match(/data-act="zodiac"/g) || []).length, 1);
@@ -38,8 +38,8 @@ assert.match(js, /destination: Object\.freeze\(\{ x: 50, y: 6 \}\)/);
 assert.equal((html.match(/class="road"/g) || []).length, 1, "the arena has one road");
 assert.match(html, /class="roadStars"/, "the road carries a subtle particle layer");
 assert.match(js, /\.roadGlow,\.roadEdge,\.road,\.roadStars/, "all visible road layers share routePathData");
-assert.match(html, /data-act="summon-cancel"/, "placement mode needs an explicit cancel control");
-assert.match(css, /\.free-field\.placing/);
+assert.doesNotMatch(html, /data-act="summon-cancel"/);
+assert.doesNotMatch(css, /\.free-field\.placing/);
 assert.match(css, /\.road\s*\{[\s\S]*?stroke-width:\s*34px/);
 assert.match(css, /\.range-indicator\s*\{[\s\S]*?border-radius:\s*50%/);
 assert.match(
@@ -55,7 +55,8 @@ assert.match(
 assert.match(js, /this\.stars = Array\(MAX_STARS_PER_PLAYER\)\.fill\(null\)/);
 assert.match(js, /startStarlight:\s*5000/);
 assert.match(js, /startDivinity:\s*50/);
-assert.match(js, /bossWaveSeconds:\s*25/);
+assert.match(js, /waveSeconds:\s*10/);
+assert.match(js, /bossWaveSeconds:\s*20/);
 assert.match(js, /start\(\)[\s\S]*?this\.wave\.update\(0\)/, "wave 1 must start after construction");
 for (const id of [
   "arena", "controls", "wave", "timer", "hp", "starlight1",
@@ -68,11 +69,8 @@ for (const id of [
   );
 assert.match(js, /summonCost:\s*30/);
 assert.match(js, /emptySlots\(\)/);
-assert.match(
-  js.slice(js.indexOf("  summon() {"), js.indexOf("  tap(i) {")),
-  /this\.clearNormalSelection\(\)/,
-  "successful summoning must clear normal selection",
-);
+assert.match(js.slice(js.indexOf("  summonAt(x, y) {"), js.indexOf("  tap(i) {")), /this\.clearNormalSelection\(\)/,
+  "successful summoning must clear normal selection");
 assert.match(js, /swapCost:\s*10/);
 assert.match(js, /const nextTypes = STAR_KEYS\.filter\(\(type\) => type !== oldType\)/);
 assert.match(js, /SwapSystem\.execute\(pick\.m, pick\.index\)/);
@@ -163,7 +161,7 @@ assert.match(js, /previewLayout:\s*Object\.freeze/g, "every constellation must d
 assert.match(js, /this\.discoveredConstellations = new Set\(\)/);
 assert.match(js, /game\.discoverConstellation\(definitionId\)/);
 assert.match(js, /summonAt\(x, y\)[\s\S]*?this\.clearNormalSelection\(\)/, "successful free placement must clear normal selection");
-assert.match(js, /event\.target\.closest\("\.star-node, \.free-field\.placing/, "placement input must not trigger background deselection");
+assert.match(js, /event\.target\.closest\("\.star-node, \.context-actions/, "star and UI input must not trigger map summoning");
 assert.match(html, /id="field-1"/, "the 2P field must remain in the game");
 assert.match(js, /this\.pathProgress = Math\.min\(1, this\.progress \/ 100\)/);
 assert.match(js, /const roadClearance = MAP_DEFINITION\.roadWidth \/ 2 \+ starRadius \+ MAP_DEFINITION\.placementPadding/);
@@ -189,8 +187,8 @@ assert.match(css, /\.star-node\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?aspect-r
 assert.match(js, /function bindPointerTap/);
 assert.match(html, /<main class="app" id="game-shell">/);
 assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*600px\);[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
-assert.match(html, /styles\.css\?v=31/, "the deployed stylesheet URL must change when its layout changes");
-assert.match(html, /game\.js\?v=31/, "the deployed script URL must not reuse the pre-layout cache entry");
+assert.match(html, /styles\.css\?v=32/, "the deployed stylesheet URL must change when its layout changes");
+assert.match(html, /game\.js\?v=32/, "the deployed script URL must not reuse the pre-layout cache entry");
 assert.match(css, /\.star-info\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?z-index:\s*160/);
 
 const isBoss = (n) =>
