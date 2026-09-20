@@ -30,9 +30,28 @@ let dawnMoon, starInfo, controls, zodiacCodex, zodiacCodexList;
 let wave, timer, hp, starlight1, divinity1, starlight2, divinity2, nextEnemies;
 let speed, restart, finalWave, gameover;
 let game = null;
+let finishBattle = null;
 let controlsBound = false;
 let toastTimer = 0;
-const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", BATTLE_GAME: "BATTLE_GAME" });
+const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA" });
+const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
+const DRAW_COST = 100;
+function loadPlayerProgress() {
+  try {
+    const saved = typeof localStorage === "undefined" ? null : JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY));
+    return { starFragments: Math.max(0, Number.isFinite(saved?.starFragments) ? Math.floor(saved.starFragments) : 0) };
+  } catch (_error) {
+    return { starFragments: 0 };
+  }
+}
+const playerProgress = loadPlayerProgress();
+function savePlayerProgress() {
+  try {
+    if (typeof localStorage !== "undefined") localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(playerProgress));
+  } catch (_error) {
+    // The game remains playable when storage is blocked by private-browser settings.
+  }
+}
 const CONSTELLATION_IDS = Object.freeze({
   DAWN: "DAWN",
   RADIANCE: "RADIANCE",
@@ -1675,6 +1694,7 @@ class GameManager {
     this.last = 0;
     this.running = true;
     this.speed = 1;
+    this.battleRewardGranted = false;
     this.base = { hp: BASE_MAX_HP, maxHp: BASE_MAX_HP };
     Object.defineProperty(this, "baseHP", {
       get: () => this.base.hp,
@@ -1805,8 +1825,7 @@ class GameManager {
     this.base.hp = Math.max(0, this.base.hp - e.baseDamage);
     if (this.base.hp <= 0) {
       this.running = false;
-      finalWave.textContent = this.wave.wave;
-      gameover.hidden = false;
+      finishBattle?.(this);
     }
     this.markDirty();
   }
@@ -1924,6 +1943,7 @@ function bootstrapGame() {
 
   const mainMenu = getRequiredElement("main-menu");
   const battleMenu = getRequiredElement("battle-menu");
+  const gachaScreen = getRequiredElement("gacha-screen");
   const gameShell = getRequiredElement("game-shell");
   const exitDialog = getRequiredElement("exit-dialog");
   const toast = getRequiredElement("game-toast");
@@ -1933,10 +1953,19 @@ function bootstrapGame() {
     mainMenu.hidden = screen !== SCREEN_STATES.MAIN_MENU;
     battleMenu.hidden = screen !== SCREEN_STATES.BATTLE_MENU;
     gameShell.hidden = screen !== SCREEN_STATES.BATTLE_GAME;
+    gachaScreen.hidden = screen !== SCREEN_STATES.GACHA;
     exitDialog.hidden = true;
   };
-  const showMainMenu = () => showScreen(SCREEN_STATES.MAIN_MENU);
+  const drawButton = getRequiredElement("draw-once");
+  const updateMetaCurrency = () => {
+    document.querySelectorAll?.("[data-star-fragments]").forEach((node) => {
+      node.textContent = playerProgress.starFragments.toLocaleString("ko-KR");
+    });
+    drawButton.disabled = playerProgress.starFragments < DRAW_COST;
+  };
+  const showMainMenu = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.MAIN_MENU); };
   const showBattleMenu = () => showScreen(SCREEN_STATES.BATTLE_MENU);
+  const showGacha = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.GACHA); };
   const startBattle = () => {
     if (game) game.destroy();
     gameover.hidden = true;
@@ -1948,12 +1977,31 @@ function bootstrapGame() {
     game = new GameManager();
     game.start();
   };
-  const leaveBattle = () => {
-    if (game) game.destroy();
-    game = null;
-    showMainMenu();
+  finishBattle = (battle = game) => {
+    if (!battle) return 0;
+    const reachedWave = Math.max(0, Math.floor(battle.wave.wave));
+    const reward = reachedWave * 2;
+    if (!battle.battleRewardGranted) {
+      battle.battleRewardGranted = true;
+      battle.starFragmentReward = reward;
+      playerProgress.starFragments += reward;
+      savePlayerProgress();
+    }
+    battle.running = false;
+    battle.rafRunning = false;
+    if (typeof cancelAnimationFrame === "function" && battle.rafId) cancelAnimationFrame(battle.rafId);
+    finalWave.textContent = reachedWave;
+    getRequiredElement("fragmentReward").textContent = battle.starFragmentReward ?? reward;
+    gameover.hidden = false;
+    exitDialog.hidden = true;
+    updateMetaCurrency();
+    return reward;
   };
+  const leaveBattle = () => finishBattle(game);
   getRequiredElement("open-battle-menu").onclick = showBattleMenu;
+  document.querySelectorAll?.("[data-open-battle]").forEach((button) => { button.onclick = showBattleMenu; });
+  document.querySelectorAll?.("[data-open-gacha]").forEach((button) => { button.onclick = showGacha; });
+  document.querySelectorAll?.("[data-main-home]").forEach((button) => { button.onclick = showMainMenu; });
   getRequiredElement("battle-back").onclick = showMainMenu;
   getRequiredElement("play-battle").onclick = startBattle;
   getRequiredElement("battle-exit").onclick = () => { exitDialog.hidden = false; };
@@ -1961,6 +2009,7 @@ function bootstrapGame() {
   getRequiredElement("exit-confirm").onclick = leaveBattle;
   document.querySelectorAll?.("[data-coming-soon]").forEach((button) => {
     button.addEventListener("click", () => {
+      toast.textContent = "준비 중인 콘텐츠입니다.";
       toast.hidden = false;
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => { toast.hidden = true; }, 1800);
@@ -1973,7 +2022,19 @@ function bootstrapGame() {
     speed.classList.toggle("active", game.speed === 2);
     arena.classList.toggle("speed-2", game.speed === 2);
   };
-  restart.onclick = startBattle;
+  restart.onclick = () => {
+    if (game) game.destroy();
+    game = null;
+    gameover.hidden = true;
+    showMainMenu();
+  };
+  drawButton.onclick = () => {
+    if (drawButton.disabled) return;
+    toast.textContent = "뽑기 확률 설정 후 이용할 수 있습니다.";
+    toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 2200);
+  };
   window.addEventListener("resize", () => {
     RangeSystem.refresh();
     game?.markDirty();
@@ -1981,10 +2042,10 @@ function bootstrapGame() {
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   showMainMenu();
   const diagnostics = {
-    CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, SCREEN_STATES,
+    CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, SCREEN_STATES, DRAW_COST, playerProgress,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
-    showMainMenu, showBattleMenu, startBattle, leaveBattle,
+    showMainMenu, showBattleMenu, showGacha, startBattle, leaveBattle, finishBattle,
     classes: { Enemy, GuardianUnit, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
     performance: () => ({
       activeEnemies: game?.enemies.length || 0,
