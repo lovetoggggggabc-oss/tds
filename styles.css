@@ -680,6 +680,76 @@ header {
 .dawn-moon.play {
   animation: dawnMoonComplete 1.8s ease-out forwards;
 }
+.dawn-special {
+  position: absolute;
+  z-index: 92;
+  width: 92px;
+  height: 72px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  filter: drop-shadow(0 0 9px #8fe8ff);
+  animation: dawnSpecialFade 0.46s ease-out forwards;
+}
+.dawn-special svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-14deg);
+  fill: #eaffff;
+  filter: drop-shadow(0 0 5px #59cfff);
+  animation: dawnSlash 0.4s cubic-bezier(.2,.8,.3,1) forwards;
+}
+.dawn-flash,
+.dawn-shockwave,
+.dawn-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+}
+.dawn-flash {
+  width: 44px;
+  height: 44px;
+  margin: -22px;
+  border-radius: 50%;
+  background: #eaffff;
+  box-shadow: 0 0 25px 12px #72dfff;
+  animation: dawnFlash 0.34s ease-out forwards;
+}
+.dawn-shockwave {
+  width: 28px;
+  height: 28px;
+  margin: -14px;
+  border: 3px solid #dffcff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #74dfff;
+  animation: dawnShockwave 0.42s ease-out forwards;
+}
+.dawn-spark {
+  --angle: 0deg;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 6px 2px #78dcff;
+  animation: dawnSpark 0.42s ease-out forwards;
+}
+.dawn-special b {
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  color: #fff;
+  font-size: 12px;
+  text-shadow: 0 0 7px #56d8ff, 0 2px 3px #10245c;
+  transform: translateX(-50%);
+}
+@keyframes dawnSpecialFade { 0%, 65% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes dawnSlash { 0% { opacity: 0; transform: rotate(-28deg) scale(.35); } 35% { opacity: 1; } 100% { opacity: 0; transform: rotate(-4deg) scale(1.25); } }
+@keyframes dawnFlash { from { opacity: .95; transform: scale(.35); } to { opacity: 0; transform: scale(1.45); } }
+@keyframes dawnShockwave { from { opacity: 1; transform: scale(.3); } to { opacity: 0; transform: scale(2.4); } }
+@keyframes dawnSpark { from { opacity: 1; transform: rotate(var(--angle)) translateX(5px) scale(1); } to { opacity: 0; transform: rotate(var(--angle)) translateX(39px) scale(.2); } }
 @keyframes dawnMoonComplete {
   0% {
     opacity: 0;
@@ -853,7 +923,7 @@ header {
   transform: translateX(-50%);
   width: min(calc(100% - 20px), 430px);
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr auto;
   gap: 7px;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -865,6 +935,13 @@ header {
   box-shadow: 0 8px 28px #000b;
   isolation: isolate;
   pointer-events: auto;
+}
+.game-controls .codex-button {
+  min-width: 76px;
+  padding-inline: 8px;
+  color: #d7eaff;
+  font-size: 11px;
+  background: linear-gradient(#29355f, #1c2448);
 }
 .game-controls.active-player {
   border-color: #8ff2ff;
@@ -935,6 +1012,62 @@ header {
   text-align: center;
   padding: 28px;
 }
+.zodiac-codex {
+  position: fixed;
+  z-index: 400;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(18px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+  background: rgba(4, 6, 24, 0.88);
+  backdrop-filter: blur(8px);
+}
+.zodiac-codex[hidden] { display: none; }
+.codex-panel {
+  width: min(100%, 500px);
+  max-height: 88dvh;
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid #91cfff66;
+  border-radius: 22px;
+  background: radial-gradient(circle at 80% 0, #34317a 0, transparent 38%), linear-gradient(160deg, #151b48, #090d2d);
+  box-shadow: 0 0 36px #639cff33, 0 24px 60px #000c;
+}
+.codex-panel > header {
+  position: sticky;
+  top: -14px;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 4px 12px;
+  background: linear-gradient(#151b48 70%, transparent);
+  border: 0;
+  box-shadow: none;
+}
+.codex-panel header small { color: #7de6ff; font-size: 9px; letter-spacing: .18em; }
+.codex-panel h2 { margin: 1px 0 0; font-size: 22px; }
+.codex-panel header button { width: 38px; height: 38px; border: 1px solid #b8deff55; border-radius: 50%; background: #293461; font-size: 25px; line-height: 1; }
+.codex-list { display: grid; gap: 11px; }
+.zodiac-card {
+  position: relative;
+  overflow: hidden;
+  padding: 14px;
+  border: 1px solid #82dfff55;
+  border-radius: 17px;
+  background: linear-gradient(135deg, rgba(43, 62, 126, .8), rgba(18, 23, 66, .92));
+  box-shadow: inset 0 0 24px #82ceff12, 0 8px 20px #0006;
+}
+.zodiac-card.radiance { border-color: #ffb68a66; background: linear-gradient(135deg, rgba(105, 40, 66, .82), rgba(32, 20, 62, .94)); }
+.zodiac-card h3 { margin: 0 0 9px; color: #effdff; font-size: 17px; text-shadow: 0 0 8px #80dfff; }
+.codex-recipe { display: flex; flex-wrap: wrap; gap: 7px; }
+.codex-requirement { padding: 5px 8px; border: 1px solid #ffffff22; border-radius: 10px; background: #050a2788; font-size: 12px; }
+.codex-requirement i { margin-right: 5px; font-style: normal; filter: drop-shadow(0 0 4px currentColor); }
+.zodiac-card dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+.zodiac-card dl div { padding: 7px; border-radius: 9px; background: #080c2f99; text-align: center; }
+.zodiac-card dt { color: #9face0; font-size: 9px; }
+.zodiac-card dd { margin: 2px 0 0; font-weight: 900; font-size: 12px; }
+.zodiac-card p { margin: 0; color: #dbe8ff; font-size: 11px; line-height: 1.5; }
+.zodiac-card p strong { color: #8be9ff; margin-right: 4px; }
 .overlay[hidden] {
   display: none;
 }

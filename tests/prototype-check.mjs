@@ -14,8 +14,11 @@ assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/);
 assert.equal((html.match(/data-act="zodiac"/g) || []).length, 1);
 assert.equal((html.match(/data-act="zodiac-cancel"/g) || []).length, 1);
+assert.equal((html.match(/data-act="codex"/g) || []).length, 1);
+assert.match(html, /id="zodiacCodex"/);
 assert.match(html, /id="dawnMoon"/);
 assert.match(css, /\.dawn-moon\s*\{[\s\S]*?pointer-events:\s*none/);
+assert.match(css, /\.dawn-special\s*\{[\s\S]*?pointer-events:\s*none/);
 assert.doesNotMatch(html, /1P 마법사|2P 마법사|class="wallet"|class="players"/);
 assert.match(html, /class="game-controls"/);
 assert.ok(
@@ -103,6 +106,11 @@ assert.match(
   /if \(this\.zodiacMode\)[\s\S]*?this\.selected\.push\(i\)/,
   "multi-selection must be restricted to zodiac mode",
 );
+assert.doesNotMatch(js, /selected\.length\s*<\s*4|max(?:imum)? 4|0\/4/);
+assert.match(js, /const ZODIAC_RECIPES = CONFIG\.constellations/);
+assert.match(js, /static exactMatch\(counts\)/);
+assert.match(js, /static renderCodex\(\)/);
+assert.match(js, /static dawnSpecial\(position, damage\)/);
 assert.match(
   js,
   /let dt = Math\.min\([\s\S]*?\* this\.speed/,

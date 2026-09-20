@@ -102,6 +102,22 @@
         </div>
       </section>
       <section
+        class="zodiac-codex"
+        id="zodiacCodex"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="zodiacCodexTitle"
+        hidden
+      >
+        <div class="codex-panel">
+          <header>
+            <div><small>CELESTIAL ARCHIVE</small><h2 id="zodiacCodexTitle">별자리 도감</h2></div>
+            <button type="button" data-close-codex aria-label="별자리 도감 닫기">×</button>
+          </header>
+          <div id="zodiacCodexList" class="codex-list"></div>
+        </div>
+      </section>
+      <section
         class="game-controls"
         id="controls"
         data-player="0"
@@ -119,6 +135,9 @@
           별 소환 30
         </button>
         <button type="button" data-act="zodiac">조디악</button>
+        <button type="button" class="codex-button" data-act="codex">
+          별자리 도감
+        </button>
       </section>
     </main>
     <script src="game.js"></script>

@@ -6,6 +6,7 @@ const source = await readFile("game.js", "utf8");
 const definitions = source.slice(0, source.indexOf("class UIManager"));
 const hints = [];
 let moonPlays = 0;
+const dawnBursts = [];
 
 const context = {
   Math: Object.create(Math),
@@ -17,6 +18,7 @@ const context = {
     chainBeam: () => {},
     zodiacComplete: () => {},
     showDawnMoon: () => moonPlays++,
+    dawnSpecial: (position, damage) => dawnBursts.push({ position, damage }),
   },
   effects: { querySelectorAll: () => [] },
 };
@@ -145,6 +147,18 @@ for (let hit = 0; hit < 4; hit++) {
 assert.deepEqual(damage, [500, 500, 500, 500, 500 * 15]);
 assert.equal(constellation.hitCount, 0);
 assert.equal(moonPlays, 1, "special attack must not replay the moon");
+assert.deepEqual(dawnBursts, [{ position: { x: 1, y: 0 }, damage: 7500 }]);
+
+// Dawn's streak belongs to one living, in-range target only.
+const nextEnemy = { ...enemy, dead: false, hp: 100000, position: () => ({ x: 2, y: 0 }), hit: enemy.hit };
+context.game.enemies = [nextEnemy];
+constellation.target = enemy;
+constellation.hitCount = 3;
+enemy.dead = true;
+constellation.cooldown = 0;
+constellation.attack(0);
+assert.equal(constellation.hitCount, 1, "changing targets resets the four-hit streak");
+assert.equal(dawnBursts.length, 1);
 
 // Radiance accepts red x2 + white x1, saves the real stage sum and chains once
 // per stage across distinct nearest enemies.
@@ -177,6 +191,23 @@ context.game.enemies = chained.slice(0, 2).map((enemy) => ({ ...enemy, hp: 10000
 radiance.cooldown = 0;
 radiance.attack(0);
 assert.deepEqual(context.game.enemies.map((enemy) => enemy.received), [[950], [950]]);
+
+// Recipe matching is count-based: selection order and star tier never affect it.
+for (const tiers of [[1, 1, 1], [2, 4, 3]]) {
+  const manager = makeManager();
+  for (const [index, type] of [[7, "white"], [2, "red"], [12, "red"]])
+    manager.stars[index] = new Star(type, tiers[index === 7 ? 2 : index === 2 ? 0 : 1]);
+  manager.zodiacMode = true;
+  manager.selected = [7, 12, 2];
+  assert.equal(ZodiacSystem.exactMatch(ZodiacSystem.counts(manager)), "radiance");
+  ZodiacSystem.create(manager);
+  assert.equal(manager.stars[7].constellation.kind, "radiance");
+  assert.equal(manager.stars[7].constellation.componentStageSum, tiers.reduce((a, b) => a + b, 0));
+}
+assert.equal(ZodiacSystem.exactMatch({ blue: 3, white: 1 }), "dawn");
+assert.equal(ZodiacSystem.exactMatch({ white: 1, blue: 3 }), "dawn");
+assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 2 })], ["radiance"]);
+assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 3 })], []);
 
 // The same pixel conversion defines visual radius and gameplay inclusion.
 assert.equal(RangeSystem.radius(4), 100.8);
