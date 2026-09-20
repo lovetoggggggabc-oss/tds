@@ -13,6 +13,8 @@ assert.equal((html.match(/data-act="summon"/g) || []).length, 1);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/);
 assert.equal((html.match(/data-act="zodiac"/g) || []).length, 1);
+assert.doesNotMatch(html, /1P 마법사|2P 마법사|class="wallet"|class="players"/);
+assert.match(html, /class="game-controls"/);
 assert.ok(
   html.indexOf('class="field-label two"') <
     html.indexOf('class="field-label one"'),
@@ -29,6 +31,16 @@ assert.match(css, /\.road\s*\{[\s\S]*?stroke-width:\s*1\.35px/);
 assert.match(css, /\.field\.p2\s*\{\s*top:\s*16%/);
 assert.match(css, /\.field\.p1\s*\{\s*bottom:\s*16%/);
 assert.match(css, /\.range-indicator\s*\{[\s\S]*?border-radius:\s*50%/);
+assert.match(
+  css,
+  /\.range-indicator\s*\{[\s\S]*?pointer-events:\s*none/,
+  "the visual range overlay must never intercept controls",
+);
+assert.match(
+  css,
+  /\.game-controls\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*200/,
+  "the control bar must live in a fixed top-level input layer",
+);
 assert.match(js, /this\.stars = Array\(15\)\.fill\(null\)/);
 assert.match(js, /startStarlight:\s*5000/);
 assert.match(js, /startDivinity:\s*50/);

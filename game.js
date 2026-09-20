@@ -691,22 +691,19 @@ class UIManager {
     links.innerHTML = lines.join("");
     g.players.forEach((p) => p.manager.render());
     let p = g.players[0],
-      box = controls.querySelector('[data-player="0"]'),
-      z = box.querySelector("[data-act=zodiac]");
-    box.classList.toggle(
+      z = controls.querySelector("[data-act=zodiac]");
+    controls.classList.toggle(
       "active-player",
       p.manager.selected.length > 0 ||
         p.manager.swapMode ||
         p.manager.zodiacMode,
     );
-    box.querySelector(".wallet").innerHTML =
-      `별빛 <strong>✦ ${p.resources.starlight}</strong> · 신성 <strong>◇ ${p.resources.divinity}</strong>`;
-    box.querySelector("[data-act=summon]").disabled =
+    controls.querySelector("[data-act=summon]").disabled =
       !p.resources.can(CONFIG.summonCost) || p.manager.stars.every(Boolean);
     z.classList.toggle("active", p.manager.zodiacMode);
     z.textContent = p.manager.zodiacMode
       ? `연결 실행 (${p.manager.selected.length}/4)`
-      : "조디악 선택";
+      : "조디악";
     this.renderInfo(g);
   }
 }
@@ -729,12 +726,11 @@ class GameManager {
     requestAnimationFrame((t) => this.loop(t));
   }
   buildControls() {
-    let p = this.players[0],
-      el = controls.querySelector('[data-player="0"]');
-    el.querySelector("[data-act=summon]").addEventListener("click", () =>
-      p.manager.summon(),
-    );
-    el.querySelector("[data-act=zodiac]").addEventListener("click", () =>
+    let p = this.players[0];
+    controls
+      .querySelector("[data-act=summon]")
+      .addEventListener("click", () => p.manager.summon());
+    controls.querySelector("[data-act=zodiac]").addEventListener("click", () =>
       ZodiacSystem.toggle(p.manager),
     );
   }
