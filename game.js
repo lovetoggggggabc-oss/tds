@@ -35,6 +35,7 @@ const CONSTELLATION_IDS = Object.freeze({
   RADIANCE: "RADIANCE",
   SAGITTARIUS: "SAGITTARIUS",
   ASTROLOGER: "ASTROLOGER",
+  GUARDIAN: "GUARDIAN",
 });
 const BASE_MAX_HP = 5000;
 const MAX_STARS_PER_PLAYER = 15;
@@ -116,6 +117,19 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       "별빛 점술 30: 50% 확률로 +60, 실패 시 추가 -15 (별빛은 0 미만이 되지 않음)",
     ]),
   }),
+  [CONSTELLATION_IDS.GUARDIAN]: Object.freeze({
+    id: CONSTELLATION_IDS.GUARDIAN, name: "수호자의 자리",
+    recipe: Object.freeze({ orange: 1, white: 1, red: 1 }), attackDamage: 300,
+    attackSpeed: 0.5, range: 3, targeting: "highest",
+    previewLayout: Object.freeze({
+      nodes: Object.freeze([[50, 18], [20, 68], [80, 68]]),
+      edges: Object.freeze([[0, 1], [1, 2], [2, 0]]),
+    }),
+    specialDescriptions: Object.freeze([
+      "수호의 빛: 공격에 성공할 때마다 기지의 체력을 50 + 최대 체력의 1%만큼 회복합니다. 기지의 체력이 가득 차 있다면 대신 기지 최대 체력을 1% 증가시킵니다.",
+      "수호자 소환: 15초마다 기지 최대 체력의 20%만큼의 체력을 가진 수호자를 출구에서 소환합니다. 수호자는 적과 반대 방향으로 이동하며 적을 만나면 길을 막고 전투합니다.",
+    ]),
+  }),
 });
 const CONFIG = {
   waveSeconds: 10,
@@ -127,6 +141,14 @@ const CONFIG = {
   startStarlight: 5000,
   startDivinity: 50,
   baseMaxHP: BASE_MAX_HP,
+  guardianUnit: {
+    hpRatio: 0.20,
+    attackDamage: 100,
+    attacksPerSecond: 1,
+    summonCooldown: 15,
+    speed: 4,
+    contactDistance: 24,
+  },
   // One range unit is this percentage of the arena width. RangeSystem is the
   // single conversion point used by both targeting and the circular overlay.
   rangeUnit: 6.3,
@@ -135,14 +157,15 @@ const CONFIG = {
   whiteBurstInterval: 0.16,
   whiteBurstRest: 2,
   monsters: {
-    slime: { name: "어둠 슬라임", hp: 500, speed: 4.6, reward: 1, baseDamage: 100 },
-    bug: { name: "암흑 벌레", hp: 800, speed: 7, reward: 2, baseDamage: 150 },
+    slime: { name: "어둠 슬라임", hp: 500, speed: 4.6, reward: 1, baseDamage: 100, allyCombatDamage: 35 },
+    bug: { name: "암흑 벌레", hp: 800, speed: 7, reward: 2, baseDamage: 150, allyCombatDamage: 55 },
     drone: {
       name: "코어 드론",
       hp: 10000,
       speed: 2.8,
       reward: 30,
       baseDamage: 500,
+      allyCombatDamage: 180,
       boss: true,
     },
     meteor: {
@@ -151,6 +174,7 @@ const CONFIG = {
       speed: 1.8,
       reward: 50,
       baseDamage: 1000,
+      allyCombatDamage: 300,
       boss: true,
     },
   },
@@ -259,6 +283,7 @@ class Enemy {
     this.maxHp = this.hp * Math.pow(1 + CONFIG.waveHpGrowth, wave - 1);
     this.hp = this.maxHp;
     this.dead = false;
+    this.engagedAlly = null;
     this.x = MAP_DEFINITION.spawn.x;
     this.y = MAP_DEFINITION.spawn.y;
     this.lastHpPercent = -1;
@@ -281,6 +306,8 @@ class Enemy {
     this.el.style.transform = `translate3d(${(this.x * metrics.width) / 100}px, ${(this.y * metrics.height) / 100}px, 0)`;
   }
   update(dt) {
+    if (this.engagedAlly && !this.engagedAlly.dead) return;
+    this.engagedAlly = null;
     this.progress += this.speed * dt;
     this.pathProgress = Math.min(1, this.progress / 100);
     const position = this.calculatePosition();
@@ -307,6 +334,90 @@ class Enemy {
       this.hpFill.style.width = `${hpPercent}%`;
       this.lastHpPercent = hpPercent;
     }
+  }
+}
+class GuardianUnit {
+  constructor(base) {
+    const stats = CONFIG.guardianUnit;
+    this.team = "ALLY";
+    this.maxHp = base.maxHp * stats.hpRatio;
+    this.hp = this.maxHp;
+    this.pathProgress = 1;
+    this.progress = 100;
+    this.dead = false;
+    this.target = null;
+    this.attackCooldown = 0;
+    this.enemyAttackCooldown = 0;
+    Object.assign(this, MAP_DEFINITION.destination);
+    this.el = document.createElement("div");
+    this.el.className = "guardian-unit";
+    this.el.innerHTML = '<div class="bar" aria-hidden="true"><i></i></div><span class="guardian-body"><i></i></span>';
+    this.hpFill = this.el.querySelector(".bar i");
+    arena.append(this.el);
+    this.updateHealthBar();
+    this.render();
+  }
+  position() { return { x: this.x, y: this.y }; }
+  render() {
+    const metrics = RangeSystem.metrics();
+    this.el.style.transform = `translate3d(${(this.x * metrics.width) / 100}px, ${(this.y * metrics.height) / 100}px, 0)`;
+  }
+  acquireTarget() {
+    let best = null;
+    let distance = Infinity;
+    for (const enemy of game.enemies) {
+      if (enemy.dead || (enemy.engagedAlly && enemy.engagedAlly !== this)) continue;
+      const nextDistance = RangeSystem.distance(this.position(), enemy.position());
+      if (nextDistance <= CONFIG.guardianUnit.contactDistance && nextDistance < distance) {
+        best = enemy;
+        distance = nextDistance;
+      }
+    }
+    if (best) {
+      this.target = best;
+      best.engagedAlly = this;
+    }
+  }
+  update(dt) {
+    if (this.dead) return;
+    if (this.target?.dead) this.releaseTarget();
+    if (!this.target) this.acquireTarget();
+    if (this.target) {
+      this.attackCooldown -= dt;
+      this.enemyAttackCooldown -= dt;
+      if (this.attackCooldown <= 0) {
+        this.target.hit(CONFIG.guardianUnit.attackDamage, this.position());
+        this.attackCooldown = 1 / CONFIG.guardianUnit.attacksPerSecond;
+        if (this.target.dead) this.releaseTarget();
+      }
+      if (this.target && this.enemyAttackCooldown <= 0) {
+        this.hit(this.target.allyCombatDamage);
+        this.enemyAttackCooldown = 1;
+      }
+      return;
+    }
+    this.progress -= CONFIG.guardianUnit.speed * dt;
+    this.pathProgress = Math.max(0, this.progress / 100);
+    Object.assign(this, routePoint(this.pathProgress));
+    if (this.progress <= 0) this.remove();
+    else this.render();
+  }
+  hit(damage) {
+    this.hp -= damage;
+    if (this.hp <= 0) this.remove();
+    else this.updateHealthBar();
+  }
+  releaseTarget() {
+    if (this.target?.engagedAlly === this) this.target.engagedAlly = null;
+    this.target = null;
+  }
+  remove() {
+    this.releaseTarget();
+    this.dead = true;
+    this.el.remove();
+  }
+  updateHealthBar() {
+    this.hpFill.style.width = `${Math.max(0, this.hp / this.maxHp * 100)}%`;
   }
 }
 class EnemySpawner {
@@ -550,6 +661,25 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
       game.markDirty();
     },
   }),
+  [CONSTELLATION_IDS.GUARDIAN]: Object.freeze({
+    createRuntime: () => ({ componentStageSum: 0, summonCooldown: CONFIG.guardianUnit.summonCooldown }),
+    update(constellation, dt) {
+      constellation.runtime.summonCooldown -= dt;
+      if (constellation.runtime.summonCooldown > 0) return;
+      constellation.runtime.summonCooldown += CONFIG.guardianUnit.summonCooldown;
+      game.summonGuardian();
+    },
+    attack(constellation, target, origin) {
+      target.hit(constellation.currentDamage(), origin, constellation);
+      const base = game.base;
+      if (base.hp < base.maxHp) base.hp = Math.min(base.maxHp, base.hp + 50 + base.maxHp * 0.01);
+      else {
+        base.maxHp *= 1.01;
+        base.hp = base.maxHp;
+      }
+      game.markDirty();
+    },
+  }),
 });
 class Constellation {
   constructor(owner, center, members, definitionId, connectionOrder = members) {
@@ -580,6 +710,7 @@ class Constellation {
     this.behavior.onTargetChanged?.(this, null);
   }
   attack(dt) {
+    this.behavior.update?.(this, dt);
     this.cooldown -= dt;
     const position = this.owner.pos(this.center);
     if (this.target && (this.target.dead || !RangeSystem.contains(position, this.target.position(), this.effectiveRange())))
@@ -1043,6 +1174,14 @@ class UIManager {
     arena.append(d);
     setTimeout(() => d.remove(), 1700);
   }
+  static guardianPortal() {
+    const portal = document.createElement("div");
+    portal.className = "guardian-portal";
+    portal.style.left = `${MAP_DEFINITION.destination.x}%`;
+    portal.style.top = `${MAP_DEFINITION.destination.y}%`;
+    portal.setAttribute("aria-hidden", "true");
+    this.addTransient(portal, arena, 650);
+  }
   static beam(a, b) {
     let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("class", "beam");
@@ -1336,7 +1475,7 @@ class UIManager {
     const values = {
       wave: String(g.wave.wave),
       timer: Math.max(0, g.wave.left).toFixed(1),
-      hp: `HP ${g.baseHP}/${BASE_MAX_HP}`,
+      hp: `HP ${Math.round(g.base.hp).toLocaleString()}/${Math.round(g.base.maxHp).toLocaleString()}`,
       starlight1: String(g.players[0].resources.starlight),
       divinity1: String(g.players[0].resources.divinity),
       starlight2: String(g.players[1].resources.starlight),
@@ -1356,8 +1495,13 @@ class GameManager {
     this.last = 0;
     this.running = true;
     this.speed = 1;
-    this.baseHP = BASE_MAX_HP;
+    this.base = { hp: BASE_MAX_HP, maxHp: BASE_MAX_HP };
+    Object.defineProperty(this, "baseHP", {
+      get: () => this.base.hp,
+      set: (value) => { this.base.hp = value; },
+    });
     this.enemies = [];
+    this.alliedUnits = [];
     this.spatial = new SpatialGrid();
     this.gameTime = 0;
     this.attackBuffUntil = 0;
@@ -1464,6 +1608,10 @@ class GameManager {
   markDirty() {
     this.dirty = true;
   }
+  summonGuardian() {
+    UIManager.guardianPortal();
+    this.alliedUnits.push(new GuardianUnit(this.base));
+  }
   kill(e, sourceConstellation = null) {
     this.players.forEach((p) => {
       p.resources.starlight += e.reward;
@@ -1475,8 +1623,8 @@ class GameManager {
   }
   leak(e) {
     this.clearEnemyReferences(e);
-    this.baseHP = Math.max(0, this.baseHP - e.baseDamage);
-    if (this.baseHP <= 0) {
+    this.base.hp = Math.max(0, this.base.hp - e.baseDamage);
+    if (this.base.hp <= 0) {
       this.running = false;
       finalWave.textContent = this.wave.wave;
       gameover.hidden = false;
@@ -1504,6 +1652,8 @@ class GameManager {
       this.spawner.update(dt);
       this.enemies.forEach((e) => e.update(dt));
       this.enemies = this.enemies.filter((e) => !e.dead);
+      this.alliedUnits.forEach((unit) => unit.update(dt));
+      this.alliedUnits = this.alliedUnits.filter((unit) => !unit.dead);
       this.spatial.rebuild(this.enemies);
       this.players.forEach((p) => p.manager.update(dt));
       this.updateTasks();
@@ -1586,7 +1736,7 @@ function bootstrapGame() {
   game.start();
   window.__TDS__ = {
     CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, game,
-    classes: { Enemy, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
+    classes: { Enemy, GuardianUnit, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
     performance: () => ({
       activeEnemies: game.enemies.length,
       activeEffects: UIManager.activeEffects || 0,

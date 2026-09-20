@@ -39,7 +39,7 @@ vm.runInContext(
 
 const { CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem } =
   context.testApi;
-assert.deepEqual(Object.keys(CONSTELLATION_DEFINITIONS), ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER"]);
+assert.deepEqual(Object.keys(CONSTELLATION_DEFINITIONS), ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER", "GUARDIAN"]);
 for (const [id, definition] of Object.entries(CONSTELLATION_DEFINITIONS))
   assert.equal(definition.id, id, `${id} must carry its stable definition id`);
 
