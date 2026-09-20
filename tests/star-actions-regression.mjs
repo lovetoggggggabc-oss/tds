@@ -8,6 +8,7 @@ const hints = [];
 let moonPlays = 0;
 const dawnBursts = [];
 const divinationResults = [];
+const completionPaths = [];
 
 const context = {
   Math: Object.create(Math),
@@ -17,7 +18,7 @@ const context = {
     mergeEffect: () => {},
     swapEffect: () => {},
     chainBeam: () => {},
-    zodiacComplete: () => {},
+    zodiacComplete: (points) => completionPaths.push(points),
     showDawnMoon: () => moonPlays++,
     dawnSpecial: (position, damage) => dawnBursts.push({ position, damage }),
     divinationEffect: (position, success) => divinationResults.push({ position, success }),
@@ -51,6 +52,13 @@ const makeManager = () => {
     zodiacMode: false,
     swapMode: false,
     pos: (index) => ({ x: index, y: 0 }),
+    activeConstellations() {
+      return this.stars.reduce((items, star) => {
+        if (star?.constellation && !items.includes(star.constellation))
+          items.push(star.constellation);
+        return items;
+      }, []);
+    },
     selectOnly(index) {
       this.selected = [index];
     },
@@ -69,6 +77,11 @@ const makeManager = () => {
 
 context.game = {
   enemies: [],
+  gameTime: 0,
+  attackBuffUntil: 0,
+  rangeBuffUntil: 0,
+  rangeBuffCooldownUntil: 0,
+  players: [],
   render() {},
   simulationTimeout(callback) {
     callback();
@@ -121,7 +134,7 @@ const zodiacManager = makeManager();
 for (const [index, type] of [
   [0, "blue"],
   [1, "blue"],
-  [2, "red"],
+  [2, "blue"],
   [3, "white"],
 ])
   zodiacManager.stars[index] = new Star(type);
@@ -133,6 +146,10 @@ const constellation = zodiacManager.stars[0].constellation;
 assert.equal(CONFIG.constellations.dawn.damage, 500);
 assert.equal(CONFIG.constellations.dawn.rate, 4);
 assert.equal(CONFIG.constellations.dawn.range, 4);
+assert.deepEqual([...constellation.connectionOrder], [0, 1, 2, 3]);
+assert.deepEqual(JSON.parse(JSON.stringify(completionPaths.at(-1))), [
+  { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 },
+]);
 
 const damage = [];
 const enemy = {
@@ -210,8 +227,8 @@ for (const tiers of [[1, 1, 1], [2, 4, 3]]) {
   assert.equal(manager.stars[7].constellation.kind, "radiance");
   assert.equal(manager.stars[7].constellation.componentStageSum, tiers.reduce((a, b) => a + b, 0));
 }
-assert.equal(ZodiacSystem.exactMatch({ blue: 2, red: 1, white: 1 }), "dawn");
-assert.equal(ZodiacSystem.exactMatch({ white: 1, red: 1, blue: 2 }), "dawn");
+assert.equal(ZodiacSystem.exactMatch({ blue: 3, white: 1 }), "dawn");
+assert.equal(ZodiacSystem.exactMatch({ white: 1, blue: 3 }), "dawn");
 assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 2 })], ["radiance"]);
 assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 3 })], []);
 
@@ -219,7 +236,7 @@ assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 3 })], []);
 // success grants 60 while failure removes at most another 15.
 const divineManager = makeManager();
 divineManager.stars[0] = new Star("blue");
-divineManager.stars[0].constellation = { center: 0 };
+divineManager.stars[0].constellation = { center: 0, kind: "astrologer" };
 divineManager.selected = [0];
 context.Math.random = () => 0.49;
 DivinationSystem.execute(divineManager, 0);
@@ -231,6 +248,90 @@ divineManager.player.resources.starlight = 31;
 DivinationSystem.execute(divineManager, 0);
 assert.equal(divineManager.player.resources.starlight, 0);
 assert.deepEqual(divinationResults.map((result) => result.success), [true, false, false]);
+
+// Visual paths preserve selection, deselection, and reselection order for
+// every recipe size; matching continues to depend only on type counts.
+const connectionCases = [
+  { types: ["orange", "orange"], picks: [8, 2], kind: "astrologer" },
+  { types: ["red", "white", "red"], picks: [9, 1, 5], kind: "radiance" },
+  { types: ["blue", "blue", "white", "blue"], picks: [11, 3, 7, 0], kind: "dawn" },
+  { types: ["blue", "sky", "blue", "sky"], picks: [6, 12, 2, 10], kind: "sagittarius" },
+];
+for (const { types, picks, kind } of connectionCases) {
+  const manager = makeManager();
+  picks.forEach((slot, index) => { manager.stars[slot] = new Star(types[index]); });
+  manager.zodiacMode = true;
+  manager.selected = [...picks];
+  ZodiacSystem.create(manager);
+  const made = manager.stars[picks[0]].constellation;
+  assert.equal(made.kind, kind);
+  assert.deepEqual([...made.connectionOrder], picks);
+  assert.equal(completionPaths.at(-1).length - 1, picks.length - 1);
+  assert.deepEqual(
+    [...made.connectionOrder.slice(0, -1)].map((from, index) => [from, made.connectionOrder[index + 1]]),
+    picks.slice(0, -1).map((from, index) => [from, picks[index + 1]]),
+  );
+}
+const reselection = makeManager();
+[[13, "blue"], [4, "blue"], [8, "white"], [1, "blue"]]
+  .forEach(([slot, type]) => { reselection.stars[slot] = new Star(type); });
+reselection.zodiacMode = true;
+reselection.selected = [13, 4, 8];
+reselection.selected.splice(reselection.selected.indexOf(4), 1);
+reselection.selected.push(1, 4);
+ZodiacSystem.create(reselection);
+assert.deepEqual(
+  [...reselection.stars[13].constellation.connectionOrder],
+  [13, 8, 1, 4],
+);
+assert.deepEqual(
+  [...reselection.stars[13].constellation.connectionOrder.slice(0, -1)]
+    .map((from, index) => [from, reselection.stars[13].constellation.connectionOrder[index + 1]]),
+  [[13, 8], [8, 1], [1, 4]],
+);
+
+// Astrologer attacks retain their combat stats and award 1 + active zodiac.
+const astrologerManager = makeManager();
+astrologerManager.stars[2] = new Star("orange");
+astrologerManager.stars[9] = new Star("orange");
+astrologerManager.selected = [9, 2];
+astrologerManager.zodiacMode = true;
+context.game.players = [{ manager: astrologerManager }];
+ZodiacSystem.create(astrologerManager);
+const astrologer = astrologerManager.stars[9].constellation;
+const starlightBeforeAttack = astrologerManager.player.resources.starlight;
+context.game.enemies = [enemy];
+enemy.dead = false;
+enemy.hp = 100000;
+astrologer.cooldown = 0;
+astrologer.attack(0);
+assert.equal(astrologerManager.player.resources.starlight, starlightBeforeAttack + 2);
+assert.equal(astrologer.stats.damage, 10);
+assert.equal(astrologer.stats.rate, 1);
+assert.equal(astrologer.stats.range, 3);
+
+// Sagittarius uses simulation time for both ally buffs and freezes focus
+// accumulation during transcendence without introducing per-buff timers.
+const sagittariusManager = makeManager();
+[[1, "sky"], [5, "blue"], [7, "sky"], [12, "blue"]]
+  .forEach(([slot, type]) => { sagittariusManager.stars[slot] = new Star(type); });
+sagittariusManager.selected = [12, 1, 5, 7];
+sagittariusManager.zodiacMode = true;
+context.game.players = [{ manager: sagittariusManager }];
+ZodiacSystem.create(sagittariusManager);
+const sagittarius = sagittariusManager.stars[12].constellation;
+assert.equal(sagittarius.stats.damage, 400);
+assert.equal(sagittarius.stats.rate, 6);
+assert.equal(sagittarius.stats.range, 6);
+sagittarius.rangeHitCount = 14;
+sagittarius.hitCount = 59;
+sagittarius.afterHit();
+assert.equal(context.game.rangeBuffUntil, 5);
+assert.equal(context.game.rangeBuffCooldownUntil, 10);
+sagittarius.hitCount = 60;
+sagittarius.afterHit();
+assert.equal(context.game.attackBuffUntil, 10);
+assert.equal(sagittarius.hitCount, 0);
 
 // The same pixel conversion defines visual radius and gameplay inclusion.
 assert.equal(RangeSystem.radius(4), 100.8);

@@ -16,6 +16,10 @@ assert.equal((html.match(/data-act="zodiac"/g) || []).length, 2);
 assert.equal((html.match(/data-act="zodiac-cancel"/g) || []).length, 2);
 assert.equal((html.match(/data-act="codex"/g) || []).length, 1);
 assert.match(html, /id="zodiacCodex"/);
+assert.match(html, />별자리 도감<\/button>/);
+assert.match(css, /\.codex-panel\s*\{[\s\S]*?display:\s*flex;[\s\S]*?overflow:\s*hidden/);
+assert.match(css, /\.codex-list\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto/);
+assert.match(css, /-webkit-overflow-scrolling:\s*touch/);
 assert.match(html, /id="dawnMoon"/);
 assert.match(css, /\.dawn-moon\s*\{[\s\S]*?pointer-events:\s*none/);
 assert.match(css, /\.dawn-special\s*\{[\s\S]*?pointer-events:\s*none/);
@@ -110,6 +114,9 @@ assert.doesNotMatch(js, /selected\.length\s*<\s*4|max(?:imum)? 4|0\/4/);
 assert.match(js, /const ZODIAC_RECIPES = CONFIG\.constellations/);
 assert.match(js, /static exactMatch\(counts\)/);
 assert.match(js, /static renderCodex\(\)/);
+assert.match(js, /this\.connectionOrder = \[\.\.\.connectionOrder\]/);
+assert.match(js, /c\.connectionOrder\.slice\(0, -1\)/);
+assert.doesNotMatch(js, /selected\.sort\(/);
 assert.match(js, /static dawnSpecial\(position, damage\)/);
 assert.match(
   js,
