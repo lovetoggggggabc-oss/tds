@@ -57,15 +57,22 @@ context.game = {
 };
 
 const [one, two] = players;
-one.summonButton.click();
-assert.equal(
-  one.player.manager.selected.length,
-  0,
-  "a newly summoned star must not be selected automatically",
-);
+
+// TEST B: repeated summons without a selection never auto-select a new star.
+for (let press = 0; press < 5; press++) {
+  one.summonButton.click();
+  assert.equal(
+    one.player.manager.selected.length,
+    0,
+    "a newly summoned star must not be selected automatically",
+  );
+}
+assert.equal(one.player.manager.stars.filter(Boolean).length, 5);
+
+// TEST C/D: an existing selection and its UI modes survive repeated summons.
 const originalSelection = one.player.manager.stars.findIndex(Boolean);
 one.player.manager.selected = [originalSelection];
-for (let press = 1; press < 15; press++) {
+for (let press = 0; press < 5; press++) {
   // UI modes may be active after a previous interaction, but are never summon
   // prerequisites and must not prevent the next click.
   one.player.manager.swapMode = press % 2 === 0;
@@ -81,10 +88,14 @@ for (let press = 1; press < 15; press++) {
   assert.equal(one.player.manager.zodiacMode, press % 3 === 0);
   assert.equal(
     one.player.manager.stars.filter(Boolean).length,
-    press + 1,
-    `1P summon click ${press + 1} should fill exactly one empty slot`,
+    press + 6,
+    `selected-state summon click ${press + 1} should fill exactly one empty slot`,
   );
 }
+assert.equal(one.player.manager.stars.filter(Boolean).length, 10);
+
+// Fill the remaining five slots, then verify a full field blocks without cost.
+for (let press = 0; press < 5; press++) one.summonButton.click();
 assert.equal(one.player.resources.starlight, 5000 - 15 * CONFIG.summonCost);
 assert.equal(one.player.manager.emptySlots().length, 0);
 

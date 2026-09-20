@@ -302,6 +302,7 @@ header {
   inset: 20%;
   border-radius: 50%;
   border: 1px dashed #7380b333;
+  pointer-events: none;
 }
 .slot.selected {
   outline: 2px solid #fff;
@@ -745,17 +746,16 @@ header {
     opacity: 0;
   }
 }
-.players {
+.game-controls {
   position: fixed;
   z-index: 200;
   left: 50%;
-  bottom: 0;
+  bottom: max(10px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   width: min(calc(100% - 20px), 430px);
-  padding-bottom: max(10px, env(safe-area-inset-bottom));
-  pointer-events: none;
-}
-.player {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 7px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -764,36 +764,16 @@ header {
     border-color 0.18s,
     box-shadow 0.18s;
   box-shadow: 0 8px 28px #000b;
+  isolation: isolate;
   pointer-events: auto;
 }
-.player.active-player {
+.game-controls.active-player {
   border-color: #8ff2ff;
   box-shadow:
     0 0 0 1px #8ff2ff55,
     0 0 14px #6bdfff22;
 }
-.player-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 5px;
-}
-.player-head b {
-  font-size: 12px;
-}
-.wallet {
-  font-size: 10px;
-  color: var(--muted);
-}
-.wallet strong {
-  color: #ffe594;
-}
-.actions {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
-}
-.actions button {
+.game-controls button {
   min-height: 48px;
   padding: 10px 14px;
   border-radius: 13px;
@@ -802,14 +782,14 @@ header {
   font-weight: 800;
   border: 1px solid #8191d055;
 }
-.actions button.primary {
+.game-controls button.primary {
   background: linear-gradient(#795ad5, #5039a0);
 }
-.actions button:disabled {
+.game-controls button:disabled {
   opacity: 0.32;
   filter: grayscale(1);
 }
-.actions button.active {
+.game-controls button.active {
   outline: 2px solid #ffe590;
   background: #7e662b;
 }
@@ -909,23 +889,10 @@ header {
   .wave b {
     font-size: 17px;
   }
-  .players {
+  .game-controls {
     width: min(calc(100% - 12px), 430px);
   }
-  .player {
-    padding: 5px 4px;
-  }
-  .player-head {
-    display: block;
-  }
-  .wallet {
-    display: block;
-    margin-top: 2px;
-  }
-  .actions {
-    gap: 3px;
-  }
-  .actions button {
+  .game-controls button {
     font-size: 13px;
   }
   .field {

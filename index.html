@@ -73,18 +73,16 @@
           </div>
         </div>
       </section>
-      <section class="players" id="controls" aria-label="1P 게임 조작">
-        <div class="player" data-player="0">
-          <div class="player-head">
-            <b>1P 마법사</b><span class="wallet"></span>
-          </div>
-          <div class="actions">
-            <button type="button" class="primary" data-act="summon">
-              ✦ 별 소환 30
-            </button>
-            <button type="button" data-act="zodiac">조디악</button>
-          </div>
-        </div>
+      <section
+        class="game-controls"
+        id="controls"
+        data-player="0"
+        aria-label="1P 게임 조작"
+      >
+        <button type="button" class="primary" data-act="summon">
+          별 소환 30
+        </button>
+        <button type="button" data-act="zodiac">조디악</button>
       </section>
     </main>
     <script src="game.js"></script>
