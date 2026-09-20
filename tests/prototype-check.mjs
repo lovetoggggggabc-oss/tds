@@ -9,17 +9,19 @@ const [html, css, js] = await Promise.all([
 
 assert.match(html, /href="styles\.css"/);
 assert.match(html, /src="game\.js"/);
-assert.equal((html.match(/data-act="summon"/g) || []).length, 2);
+assert.equal((html.match(/data-act="summon"/g) || []).length, 1);
 assert.match(html, /data-player="0"/);
-assert.match(html, /data-player="1"/);
-assert.equal((html.match(/data-act="zodiac"/g) || []).length, 2);
-assert.equal((html.match(/data-act="zodiac-cancel"/g) || []).length, 2);
+assert.doesNotMatch(html, /data-player="1"/, "2P's direct controls must not be rendered");
+assert.equal((html.match(/data-act="zodiac"/g) || []).length, 1);
+assert.equal((html.match(/data-act="zodiac-cancel"/g) || []).length, 1);
 assert.equal((html.match(/data-act="codex"/g) || []).length, 1);
 assert.match(html, /id="zodiacCodex"/);
 assert.match(html, />별자리 도감<\/button>/);
 assert.match(css, /\.codex-panel\s*\{[\s\S]*?display:\s*flex;[\s\S]*?overflow:\s*hidden/);
 assert.match(css, /\.codex-list\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto/);
 assert.match(css, /-webkit-overflow-scrolling:\s*touch/);
+assert.match(css, /\.codex-panel\s*\{[\s\S]*?height:\s*min\(82dvh,\s*720px\)/);
+assert.match(css, /body\.codex-open\s*\{[\s\S]*?overflow:\s*hidden/);
 assert.match(html, /id="dawnMoon"/);
 assert.match(css, /\.dawn-moon\s*\{[\s\S]*?pointer-events:\s*none/);
 assert.match(css, /\.dawn-special\s*\{[\s\S]*?pointer-events:\s*none/);
@@ -67,6 +69,14 @@ assert.match(js, /bug:\s*\{[^}]*hp:\s*70/);
 assert.match(js, /name:\s*"코어 드론"[\s\S]*?hp:\s*2500/);
 assert.match(js, /name:\s*"운석 괴물"[\s\S]*?hp:\s*5000/);
 assert.match(js, /Math\.pow\(1 \+ CONFIG\.waveHpGrowth, wave - 1\)/);
+assert.match(js, /this\.hpFill = this\.el\.querySelector\("\.bar i"\)/);
+assert.match(js, /else this\.updateHealthBar\(\)/);
+assert.doesNotMatch(
+  js.slice(js.indexOf("  render() {"), js.indexOf("  update(dt) {")),
+  /hpPercent|style\.width/,
+  "enemy movement rendering must not update health bars",
+);
+assert.doesNotMatch(css, /contain:\s*layout style paint/, "paint containment must not clip enemy HP bars");
 assert.match(
   js,
   /rangeIndicator\.style\.width = diameter \+ "px";\s*rangeIndicator\.style\.height = diameter \+ "px"/,
@@ -114,6 +124,15 @@ assert.doesNotMatch(js, /selected\.length\s*<\s*4|max(?:imum)? 4|0\/4/);
 assert.match(js, /const ZODIAC_RECIPES = CONFIG\.constellations/);
 assert.match(js, /static exactMatch\(counts\)/);
 assert.match(js, /static renderCodex\(\)/);
+for (const name of ["새벽의 별자리", "광휘의 별자리", "궁수자리", "점성술자리"])
+  assert.match(js, new RegExp(`name:\\s*"${name}"`), `${name} must remain in the registry`);
+assert.match(
+  js.slice(js.indexOf("static renderCodex()"), js.indexOf("static zodiacComplete")),
+  /Object\.entries\(ZODIAC_RECIPES\)/,
+  "the codex must render the complete shared registry",
+);
+assert.match(html, /id="field-1"/, "the 2P field must remain in the game");
+assert.match(html, /M8 7V50H89 M8 93V50/, "both enemy paths must remain in the arena");
 assert.match(js, /this\.connectionOrder = \[\.\.\.connectionOrder\]/);
 assert.match(js, /c\.connectionOrder\.slice\(0, -1\)/);
 assert.doesNotMatch(js, /selected\.sort\(/);
