@@ -8,10 +8,11 @@
     />
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
-    <link rel="stylesheet" href="styles.css" />
+    <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
+    <link rel="stylesheet" href="styles.css?v=26" />
   </head>
   <body>
-    <main class="app">
+    <main class="app" id="game-shell">
       <header>
         <div class="brand"><small>CO-OP DEFENSE</small><b>별빛 수호대</b></div>
         <div class="wave">
@@ -131,6 +132,6 @@
         </section>
       </nav>
     </main>
-    <script src="game.js" defer></script>
+    <script src="game.js?v=26" defer></script>
   </body>
 </html>

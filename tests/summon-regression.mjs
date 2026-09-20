@@ -19,11 +19,25 @@ class FakeButton {
     this.listeners = {};
   }
   setAttribute() {}
+  setPointerCapture() {}
   addEventListener(type, listener) {
     this.listeners[type] = listener;
   }
   click() {
     this.listeners.click();
+  }
+  pointerTap() {
+    const event = {
+      isPrimary: true,
+      button: 0,
+      pointerId: 1,
+      clientX: 10,
+      clientY: 10,
+      preventDefault() {},
+      stopPropagation() {},
+    };
+    this.listeners.pointerdown(event);
+    this.listeners.pointerup(event);
   }
 }
 
@@ -63,7 +77,7 @@ const [one, two] = players;
 // normal selection only after payment succeeds and never affects the 2P board.
 one.player.manager.selected = [2];
 one.player.manager.swapMode = true;
-one.player.manager.tap(7);
+one.player.manager.field.children[7].pointerTap();
 assert.ok(one.player.manager.stars[7], "the tapped 1P slot must receive the star");
 assert.equal(one.player.manager.stars[7].tier, 1, "direct summons must be stage 1");
 assert.equal(one.player.manager.selected.length, 0, "a successful direct summon clears selection");
