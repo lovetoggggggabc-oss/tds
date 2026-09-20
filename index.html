@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=35" />
+    <link rel="stylesheet" href="styles.css?v=36" />
   </head>
   <body>
     <main class="app" id="game-shell">
@@ -24,7 +24,7 @@
           <span>1P ✦<b id="starlight1">0</b> ◇<b id="divinity1">0</b></span>
         </div>
         <div class="hp">
-          <b id="hp">HP 150/150</b><span>1P·2P 공용</span
+          <b id="hp">HP 400/400</b><span>1P·2P 공용</span
           ><button class="speed" id="speed" aria-label="게임 속도 변경">
             1× 속도
           </button>
@@ -45,14 +45,21 @@
           <path class="road" />
           <path class="roadStars" />
           <g class="route-arrows arrow"></g>
-          <circle class="goal goalPulse" cx="50" cy="6" r="5.5" />
-          <circle class="goal" cx="50" cy="6" r="3.5" />
+          <g class="cosmic-base">
+            <path class="base-shield" d="M50 0.8 55 3.5 55 8.5 50 11.2 45 8.5 45 3.5Z" />
+            <circle class="goal goalPulse" cx="50" cy="6" r="5.5" />
+            <circle class="goal" cx="50" cy="6" r="3.5" />
+            <circle class="base-core" cx="50" cy="6" r="1.35" />
+          </g>
           <text class="destination-label" x="50" y="13">DESTINATION</text>
           <text x="50" y="7.4" text-anchor="middle" fill="#fff" font-size="4">
             ✦
           </text>
-          <circle class="start" cx="50" cy="94" r="3.5" />
-          <text x="50" y="95.4" text-anchor="middle" fill="#fff" font-size="4">✦</text>
+          <g class="spawn-portal">
+            <circle class="portal-rim" cx="50" cy="94" r="5" />
+            <circle class="start" cx="50" cy="94" r="3.5" />
+            <path class="portal-swirl" d="M47.5 94c1.2-2.4 5.3-2 5.4.5.1 2-3.4 2.6-4.1.7-.5-1.4 1.8-2.2 2.5-.8" />
+          </g>
           <text class="start-label" x="50" y="89">SPAWN</text>
         </svg>
         <svg id="links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg
@@ -128,6 +135,6 @@
         </section>
       </nav>
     </main>
-    <script src="game.js?v=35" defer></script>
+    <script src="game.js?v=36" defer></script>
   </body>
 </html>

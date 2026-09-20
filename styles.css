@@ -200,11 +200,18 @@ header {
 .roadEdge { fill: none; stroke: rgba(190, 210, 255, .72); stroke-width: 36px; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
 .roadStars { fill: none; stroke: #ccecff; stroke-width: 1.4px; stroke-opacity: .48; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-dasharray: 1 24; filter: drop-shadow(0 0 3px #8fdfff); }
 .arrow { fill: #fff; opacity: .88; filter: drop-shadow(0 0 2px #9edbff); }
-.start { fill: #12173e; stroke: #fff; stroke-width: 1.2px; vector-effect: non-scaling-stroke; }
+.spawn-portal, .cosmic-base { pointer-events: none; }
+.portal-rim { fill: #10082f; stroke: #a270dc; stroke-width: .65px; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 3px #7b4fc5); }
+.start { fill: #171039; stroke: #68418d; stroke-width: .7px; vector-effect: non-scaling-stroke; }
+.portal-swirl { fill: none; stroke: #d293dc; stroke-width: .55px; stroke-linecap: round; vector-effect: non-scaling-stroke; transform-origin: 50px 94px; animation: portalSpin 7s linear infinite; }
 .start-label, .destination-label { fill: #dceaff; font-size: 2.4px; font-weight: 900; text-anchor: middle; letter-spacing: .12em; }
 .goal { fill: #211d4b; stroke: #f1c6ff; stroke-width: 1.2px; vector-effect: non-scaling-stroke; }
+.base-shield { fill: #15295899; stroke: #99dfff; stroke-width: .7px; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 2px #897cff); }
+.base-core { fill: #fff; stroke: #bdeeff; stroke-width: .5px; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 2px #fff); animation: corePulse 1.8s ease-in-out infinite; transform-origin: 50px 6px; }
 .goalPulse { animation: pulse 1.4s infinite; transform-origin: 50px 6px; }
 @keyframes pulse { 50% { opacity: .35; transform: scale(1.1); } }
+@keyframes portalSpin { to { transform: rotate(360deg); } }
+@keyframes corePulse { 50% { opacity: .62; transform: scale(.78); } }
 .free-field {
   position: absolute;
   z-index: 3;
@@ -533,6 +540,24 @@ header {
   border-radius: 3px;
   background: #071b36e8;
 }
+.guardian-health {
+  position: absolute;
+  left: 50%;
+  top: -21px;
+  width: 58px;
+  transform: translateX(-50%);
+  text-align: center;
+}
+.guardian-health .bar { top: 12px; left: 8px; right: 8px; }
+.guardian-hp {
+  display: block;
+  color: #efffff;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 11px;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #00152e, 0 0 4px #49cfff;
+}
 .guardian-unit .bar i {
   display: block;
   height: 100%;
@@ -586,6 +611,25 @@ header {
   35% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(1.45); }
 }
+.twilight-area {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  border: 1px solid #d184d899;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, #b04b6945 0 4%, transparent 5%),
+    radial-gradient(circle at 28% 34%, #f5d7ff99 0 1px, transparent 1.5px),
+    radial-gradient(circle at 72% 25%, #ff9bad99 0 1px, transparent 1.5px),
+    radial-gradient(circle at 65% 72%, #d9baff88 0 1px, transparent 1.5px),
+    radial-gradient(circle, #60296a38, #17104442 60%, #7a283328);
+  box-shadow: inset 0 0 12px #7c3ca555, 0 0 5px #b95fb255;
+  animation: twilightPulse 2.2s ease-in-out infinite;
+}
+.star-node.twilight-transcending { box-shadow: 0 0 8px #d765bb, 0 0 14px #713d9d, inset 0 0 8px #a83b5d; }
+.twilight-time { color: #f0a7e8; font-weight: 900; }
+@keyframes twilightPulse { 50% { opacity: .82; transform: translate(-50%, -50%) scale(.985); } }
 .beam {
   stroke: #aef8ff;
   stroke-width: 0.6;

@@ -39,9 +39,14 @@ vm.runInContext(
 
 const { CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem } =
   context.testApi;
-assert.deepEqual(Object.keys(CONSTELLATION_DEFINITIONS), ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER", "GUARDIAN"]);
+assert.deepEqual(Object.keys(CONSTELLATION_DEFINITIONS), ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER", "GUARDIAN", "TWILIGHT"]);
 for (const [id, definition] of Object.entries(CONSTELLATION_DEFINITIONS))
   assert.equal(definition.id, id, `${id} must carry its stable definition id`);
+assert.deepEqual(JSON.parse(JSON.stringify(CONSTELLATION_DEFINITIONS.TWILIGHT.recipe)), { red: 2, white: 1, blue: 1 });
+assert.equal(CONSTELLATION_DEFINITIONS.TWILIGHT.attackDamage, 800);
+assert.equal(CONSTELLATION_DEFINITIONS.TWILIGHT.attackSpeed, 2);
+assert.equal(CONSTELLATION_DEFINITIONS.TWILIGHT.range, 7);
+assert.equal(CONSTELLATION_DEFINITIONS.TWILIGHT.transcendenceRange, 5);
 
 const makeManager = () => {
   const resources = { starlight: 100, divinity: 9 };
@@ -317,7 +322,7 @@ for (const tiers of [[1, 1, 1], [2, 4, 3]]) {
 }
 assert.equal(ZodiacSystem.exactMatch({ blue: 3, white: 1 }), "DAWN");
 assert.equal(ZodiacSystem.exactMatch({ white: 1, blue: 3 }), "DAWN");
-assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 2 })], ["RADIANCE"]);
+assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 2 })], ["RADIANCE", "TWILIGHT"]);
 assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 3 })], []);
 
 // Divination replaces exchange for a constellation: 30 is paid first, then
