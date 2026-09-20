@@ -9,10 +9,41 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=36" />
+    <link rel="stylesheet" href="styles.css?v=37" />
   </head>
   <body>
-    <main class="app" id="game-shell">
+    <section class="lobby-screen screen-active" id="main-menu" aria-labelledby="main-menu-title">
+      <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
+      <header class="lobby-title">
+        <span>CELESTIAL GUARDIANS</span>
+        <h1 id="main-menu-title">별자리 디펜스</h1>
+        <p>ZODIAC DEFENSE</p>
+      </header>
+      <nav class="lobby-menu" aria-label="메인 메뉴">
+        <button type="button" data-coming-soon><i>✧</i><span>상점<small>CELESTIAL SHOP</small></span></button>
+        <button type="button" data-coming-soon><i>✦</i><span>별 &amp; 별자리<small>STARS &amp; ZODIAC</small></span></button>
+        <button type="button" class="battle-entry" id="open-battle-menu"><i>⚔</i><span>전투<small>BATTLE</small></span><b>PLAY</b></button>
+        <button type="button" data-coming-soon><i>◇</i><span>유물<small>RELICS</small></span></button>
+        <button type="button" data-coming-soon><i>✺</i><span>뽑기<small>SUMMON</small></span></button>
+      </nav>
+      <footer class="lobby-footer">별의 운명이 수호자를 기다립니다</footer>
+    </section>
+
+    <section class="lobby-screen battle-menu-screen" id="battle-menu" hidden aria-labelledby="battle-menu-title">
+      <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
+      <header class="subscreen-header">
+        <button type="button" id="battle-back" aria-label="메인 메뉴로 돌아가기">←</button>
+        <div><small>BATTLE</small><h1 id="battle-menu-title">전투</h1></div>
+      </header>
+      <article class="stage-card">
+        <div class="stage-map" aria-hidden="true"><span></span><i>✦</i><b>∞</b></div>
+        <div class="stage-copy"><small>STAGE 01 · ENDLESS</small><h2>별의 길</h2><p>끝없이 몰려오는<br />우주 몬스터를 막아내세요.</p><strong>∞ 무한 웨이브</strong></div>
+        <button type="button" id="play-battle"><span>게임 플레이</span><small>GAME PLAY</small></button>
+      </article>
+    </section>
+
+    <main class="app" id="game-shell" hidden>
+      <button type="button" class="battle-exit" id="battle-exit" aria-label="전투 나가기">☰<span>나가기</span></button>
       <header class="game-hud">
         <div class="brand"><b>별자리 디펜스</b><small>ZODIAC DEFENSE</small></div>
         <div class="wave">
@@ -151,6 +182,10 @@
         </section>
       </nav>
     </main>
-    <script src="game.js?v=36" defer></script>
+    <div class="game-toast" id="game-toast" role="status" aria-live="polite" hidden>준비 중인 콘텐츠입니다.</div>
+    <section class="confirm-dialog" id="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" hidden>
+      <div><small>LEAVE BATTLE</small><h2 id="exit-dialog-title">전투 종료</h2><p>전투를 종료하고 메인 메뉴로 돌아가시겠습니까?</p><footer><button type="button" id="exit-cancel">취소</button><button type="button" class="danger" id="exit-confirm">나가기</button></footer></div>
+    </section>
+    <script src="game.js?v=37" defer></script>
   </body>
 </html>
