@@ -65,6 +65,34 @@
         <span class="field-label one">1P FIELD</span>
         <div class="field p1" id="field-0"></div>
         <div class="hint" id="hint">별을 소환해 공동 도착지를 지키세요!</div>
+        <div id="dawnMoon" class="dawn-moon" hidden aria-hidden="true">
+          <svg viewBox="0 0 200 200" role="presentation">
+            <defs>
+              <filter
+                id="moonGlow"
+                x="-80%"
+                y="-80%"
+                width="260%"
+                height="260%"
+              >
+                <feGaussianBlur stdDeviation="7" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <linearGradient id="moonLight" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#fff" />
+                <stop offset="1" stop-color="#9edcff" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M137 25a77 77 0 1 0 19 123A65 65 0 1 1 137 25Z"
+              fill="url(#moonLight)"
+              filter="url(#moonGlow)"
+            />
+          </svg>
+        </div>
         <div class="overlay" id="gameover" hidden>
           <div class="card">
             <h1>우주 방어 실패</h1>
@@ -79,6 +107,14 @@
         data-player="0"
         aria-label="1P 게임 조작"
       >
+        <button
+          type="button"
+          class="zodiac-cancel"
+          data-act="zodiac-cancel"
+          hidden
+        >
+          조디악 실행 취소
+        </button>
         <button type="button" class="primary" data-act="summon">
           별 소환 30
         </button>
