@@ -92,8 +92,10 @@ listeners.DOMContentLoaded();
 assert.equal(window.BOOT_STAGE, "complete");
 assert.equal(window.__TDS__.currentScreen, "MAIN_MENU");
 assert.equal(window.__TDS__.game, null, "combat must not begin from the main menu");
+window.__TDS__.showGacha();
 window.__TDS__.showBattleMenu();
-assert.equal(window.__TDS__.currentScreen, "BATTLE_MENU");
+assert.equal(window.__TDS__.currentScreen, "BATTLE_MENU", "gacha to battle must stop at the battle menu");
+assert.equal(window.__TDS__.game, null, "a navigation gesture must never start combat");
 window.__TDS__.startBattle();
 const game = window.__TDS__.game;
 assert.equal(game.players.length, 2);
@@ -103,9 +105,20 @@ assert.deepEqual(JSON.parse(JSON.stringify(game.players.map((player) => [
   player.manager.stars.length,
   player.manager.field.children.length,
 ]))), [[5000, 50, 15, 15], [5000, 50, 15, 15]]);
-assert.equal(game.wave.wave, 1);
+assert.equal(game.wave.wave, 0, "waves must remain stopped during preparation");
+assert.equal(game.phase, "PREPARING");
 assert.equal(game.rafRunning, true);
-assert.ok(game.spawner.queue.length > 0, "wave 1 must queue enemies before the loop");
+assert.equal(game.spawner.queue.length, 0, "preparation must not queue enemies");
+
+const preparationFrame = animationFrames.shift();
+preparationFrame(16);
+assert.equal(game.wave.wave, 0);
+assert.equal(game.enemies.length, 0);
+const combatStartFrame = animationFrames.shift();
+combatStartFrame(15016);
+assert.equal(game.phase, "COMBAT");
+assert.equal(game.wave.wave, 1);
+assert.ok(game.spawner.queue.length > 0, "wave 1 queues only after 15 real seconds");
 assert.equal(game.wave.left, 10, "normal waves use the 10-second game-time interval");
 
 game.wave.wave = 9;
@@ -115,23 +128,24 @@ assert.equal(game.wave.wave, 10);
 assert.equal(game.wave.left, 20, "boss waves use the 20-second game-time interval");
 
 const firstFrame = animationFrames.splice(0);
-firstFrame.forEach((callback) => callback(16));
+firstFrame.forEach((callback) => callback(15032));
 assert.ok(game.enemies.length > 0, "the first animation frame must spawn an enemy");
 game.wave.wave = 40;
 window.__TDS__.leaveBattle();
 assert.equal(game.rafRunning, false, "leaving combat must stop its animation loop");
 assert.equal(window.__TDS__.currentScreen, "BATTLE_GAME", "leaving combat must show results before returning home");
 assert.equal(window.__TDS__.playerProgress.starFragments, 80, "wave 40 must award exactly 80 star fragments");
-assert.deepEqual(JSON.parse(storage.get("zodiacDefenseProgress")), { starFragments: 80 });
+assert.deepEqual(JSON.parse(storage.get("zodiacDefenseProgress")), { starFragments: 80, meteorFragments: 2 });
 window.__TDS__.leaveBattle();
 assert.equal(window.__TDS__.playerProgress.starFragments, 80, "a battle reward must only be granted once");
+assert.equal(window.__TDS__.playerProgress.meteorFragments, 2, "wave 40 must award two meteor fragments once");
 elements.get("restart").onclick();
 assert.equal(window.__TDS__.currentScreen, "MAIN_MENU");
 window.__TDS__.showBattleMenu();
 window.__TDS__.startBattle();
 assert.notEqual(window.__TDS__.game, game, "re-entry must create a fresh combat state");
-assert.equal(window.__TDS__.game.wave.wave, 1, "re-entry must begin from wave 1");
+assert.equal(window.__TDS__.game.wave.wave, 0, "re-entry must begin with preparation before wave 1");
 assert.equal(elements.has("bootError"), false, "successful boot must not display diagnostics");
-assert.equal((html.match(/<script src="game\.js\?v=37" defer><\/script>/g) || []).length, 1);
+assert.equal((html.match(/<script src="game\.js\?v=38" defer><\/script>/g) || []).length, 1);
 
 console.log("Runtime bootstrap smoke passed: DOM ready, 2 players, 30 star positions, resources, wave 1, enemy spawn, and RAF verified.");

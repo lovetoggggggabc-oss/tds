@@ -9,12 +9,15 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=37" />
+    <link rel="stylesheet" href="styles.css?v=38" />
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
       <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="fragment-wallet" aria-label="보유 별조각"><span class="fragment-gem">✦</span><small>별조각</small><b data-star-fragments>0</b></div>
+      <div class="permanent-wallet" aria-label="보유 영구 재화">
+        <span><i class="fragment-gem">✦</i><small>별조각</small><b data-star-fragments>0</b></span>
+        <span><i class="meteor-gem">☄</i><small>운석조각</small><b data-meteor-fragments>0</b></span>
+      </div>
       <header class="lobby-title">
         <div class="celestial-emblem" aria-hidden="true"><i>✦</i></div>
         <h1 id="main-menu-title">별자리 디펜스</h1>
@@ -32,12 +35,22 @@
 
     <section class="lobby-screen gacha-screen" id="gacha-screen" hidden aria-labelledby="gacha-title">
       <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
-      <header class="subscreen-header"><button type="button" data-main-home aria-label="메인 메뉴로 돌아가기">←</button><div><small>CELESTIAL SUMMON</small><h1 id="gacha-title">별의 소환</h1></div></header>
-      <article class="summon-card">
+      <header class="subscreen-header"><button type="button" data-main-home aria-label="메인 메뉴로 돌아가기">←</button><div><small>CELESTIAL SUMMON</small><h1 id="gacha-title">뽑기</h1></div></header>
+      <div class="gacha-tabs" role="tablist" aria-label="뽑기 종류">
+        <button type="button" id="constellation-tab" role="tab" aria-selected="true" data-gacha-tab="constellation">별자리 뽑기</button>
+        <button type="button" id="relic-tab" role="tab" aria-selected="false" data-gacha-tab="relic">유물 뽑기</button>
+      </div>
+      <article class="summon-card constellation-board" data-gacha-board="constellation">
         <div class="summon-orbit" aria-hidden="true"><i>✦</i></div>
-        <h2>별의 소환</h2><p>별조각을 사용하여<br />새로운 별과 별자리를 획득할 수 있습니다.</p>
+        <h2>별자리 뽑기</h2><p>별조각으로 새로운 별과<br />별자리를 만날 준비를 하세요.</p>
         <div class="summon-balance"><small>현재 별조각</small><strong><span class="fragment-gem">✦</span> <span data-star-fragments>0</span></strong></div>
-        <button type="button" id="draw-once"><b>1회 뽑기</b><small>✦ 100</small></button>
+        <div class="draw-actions"><button type="button" data-draw="constellation" data-cost="100"><b>1회 뽑기</b><small>✦ 100</small></button><button type="button" data-draw="constellation" data-cost="1000"><b>10회 뽑기</b><small>✦ 1000</small></button></div>
+      </article>
+      <article class="summon-card relic-board" data-gacha-board="relic" hidden>
+        <div class="summon-orbit relic-orbit" aria-hidden="true"><i>☄</i></div>
+        <h2>유물 뽑기</h2><p>운석조각에 잠든<br />고대 우주의 유물을 깨우세요.</p>
+        <div class="summon-balance"><small>현재 운석조각</small><strong><span class="meteor-gem">☄</span> <span data-meteor-fragments>0</span></strong></div>
+        <div class="draw-actions"><button type="button" data-draw="relic" data-cost="10"><b>1회 뽑기</b><small>☄ 10</small></button><button type="button" data-draw="relic" data-cost="100"><b>10회 뽑기</b><small>☄ 100</small></button></div>
       </article>
       <nav class="bottom-nav" aria-label="메인 메뉴">
         <button type="button" data-coming-soon><i>▣</i><span>상점</span></button><button type="button" data-coming-soon><i>⌁</i><span>별 &amp; 별자리</span></button><button type="button" data-open-battle><i>⚔</i><span>전투</span></button><button type="button" data-coming-soon><i>◇</i><span>유물</span></button><button type="button" class="active" data-open-gacha><i>✦</i><span>뽑기</span></button>
@@ -77,6 +90,8 @@
       </header>
       <aside class="star-info" id="starInfo" hidden aria-live="polite"></aside>
       <section class="arena" id="arena" aria-label="게임 필드">
+        <div class="battle-transition" id="battle-transition" aria-hidden="true"></div>
+        <div class="battle-countdown" id="battle-countdown" role="status" aria-live="polite" hidden><small id="preparation-label">전투 준비</small><strong id="preparation-count">15</strong></div>
         <div class="planet a"><i></i><i></i><i></i></div>
         <div class="planet b"></div>
         <div class="space-dust" aria-hidden="true"></div>
@@ -163,7 +178,7 @@
           <div class="card">
             <small>BATTLE RESULT</small><h1>전투 종료</h1>
             <p>도달 웨이브 <b id="finalWave">0</b></p>
-            <p class="result-reward">획득 별조각 <b>✦ +<span id="fragmentReward">0</span></b></p>
+            <div class="result-rewards"><small>획득 보상</small><p>✦ 별조각 <b>+<span id="fragmentReward">0</span></b></p><p class="meteor-result">☄ 운석조각 <b>+<span id="meteorFragmentReward">0</span></b></p></div>
             <button id="restart">메인으로</button>
           </div>
         </div>
@@ -202,6 +217,6 @@
     <section class="confirm-dialog" id="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" hidden>
       <div><small>LEAVE BATTLE</small><h2 id="exit-dialog-title">전투 종료</h2><p>전투를 종료하고 메인 메뉴로 돌아가시겠습니까?</p><footer><button type="button" id="exit-cancel">취소</button><button type="button" class="danger" id="exit-confirm">나가기</button></footer></div>
     </section>
-    <script src="game.js?v=37" defer></script>
+    <script src="game.js?v=38" defer></script>
   </body>
 </html>

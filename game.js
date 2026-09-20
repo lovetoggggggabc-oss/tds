@@ -29,19 +29,24 @@ let arena, effects, links, ranges, rangeIndicator, contextActions, hint;
 let dawnMoon, starInfo, controls, zodiacCodex, zodiacCodexList;
 let wave, timer, hp, starlight1, divinity1, starlight2, divinity2, nextEnemies;
 let speed, restart, finalWave, gameover;
+let battleCountdown, preparationLabel, preparationCount;
 let game = null;
 let finishBattle = null;
 let controlsBound = false;
 let toastTimer = 0;
 const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
-const DRAW_COST = 100;
+const PREPARATION_SECONDS = 15;
+const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([10, 100]) });
 function loadPlayerProgress() {
   try {
     const saved = typeof localStorage === "undefined" ? null : JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY));
-    return { starFragments: Math.max(0, Number.isFinite(saved?.starFragments) ? Math.floor(saved.starFragments) : 0) };
+    return {
+      starFragments: Math.max(0, Number.isFinite(saved?.starFragments) ? Math.floor(saved.starFragments) : 0),
+      meteorFragments: Math.max(0, Number.isFinite(saved?.meteorFragments) ? Math.floor(saved.meteorFragments) : 0),
+    };
   } catch (_error) {
-    return { starFragments: 0 };
+    return { starFragments: 0, meteorFragments: 0 };
   }
 }
 const playerProgress = loadPlayerProgress();
@@ -1663,9 +1668,10 @@ class UIManager {
     this.renderInfo(g);
   }
   static renderHud(g, force = false) {
-    const seconds = Math.max(0, Math.ceil(g.wave.left));
+    const preparing = g.phase === "PREPARING";
+    const seconds = Math.max(0, Math.ceil(preparing ? g.preparationRemaining : g.wave.left));
     const values = {
-      wave: String(g.wave.wave),
+      wave: String(preparing ? 1 : g.wave.wave),
       timer: `00:${String(seconds).padStart(2, "0")}`,
       hp: `♥ ${Math.round(g.base.hp).toLocaleString()} / ${Math.round(g.base.maxHp).toLocaleString()}`,
       starlight1: String(g.players[0].resources.starlight),
@@ -1679,6 +1685,14 @@ class UIManager {
       if (force || this.hudValues[key] !== value)
         elements[key].textContent = value;
       this.hudValues[key] = value;
+    }
+    if (preparing) {
+      battleCountdown.hidden = false;
+      preparationLabel.textContent = "전투 준비";
+      preparationCount.textContent = String(seconds);
+      timer.parentElement?.querySelector("small") && (timer.parentElement.querySelector("small").textContent = "전투 준비");
+    } else if (timer.parentElement?.querySelector("small")) {
+      timer.parentElement.querySelector("small").textContent = "다음 웨이브까지";
     }
     const nextWave = g.wave.wave + 1;
     if (force || this.hudValues.nextWave !== nextWave) {
@@ -1694,6 +1708,8 @@ class GameManager {
     this.last = 0;
     this.running = true;
     this.speed = 1;
+    this.phase = "PREPARING";
+    this.preparationRemaining = PREPARATION_SECONDS;
     this.battleRewardGranted = false;
     this.base = { hp: BASE_MAX_HP, maxHp: BASE_MAX_HP };
     Object.defineProperty(this, "baseHP", {
@@ -1728,8 +1744,8 @@ class GameManager {
     RangeSystem.refresh();
   }
   start() {
-    // Start simulation only after every manager, control and listener exists.
-    this.wave.update(0);
+    // The real-time preparation phase deliberately does not start waves.
+    this.preparationStartedAt = null;
     this.render();
     window.BOOT_STAGE = "starting-loop";
     this.rafRunning = true;
@@ -1843,18 +1859,27 @@ class GameManager {
     if (!this.last) this.last = t;
     const frameMs = t - this.last;
     this.frameMs = this.frameMs ? this.frameMs * 0.9 + frameMs * 0.1 : frameMs;
-    let dt = Math.min(frameMs / 1000, 0.05) * this.speed;
+    const realDt = Math.min(frameMs / 1000, 0.05);
+    let dt = realDt * this.speed;
     this.last = t;
     if (this.running) {
-      this.gameTime += dt;
-      this.wave.update(dt);
-      this.spawner.update(dt);
-      this.enemies.forEach((e) => e.update(dt));
-      this.enemies = this.enemies.filter((e) => !e.dead);
-      this.alliedUnits.forEach((unit) => unit.update(dt));
-      this.alliedUnits = this.alliedUnits.filter((unit) => !unit.dead);
-      this.spatial.rebuild(this.enemies);
-      this.players.forEach((p) => p.manager.update(dt));
+      if (this.phase === "PREPARING") {
+        if (this.preparationStartedAt === null) this.preparationStartedAt = t;
+        this.preparationRemaining = Math.max(0, PREPARATION_SECONDS - (t - this.preparationStartedAt) / 1000);
+        this.gameTime += realDt;
+        this.players.forEach((p) => p.manager.update(realDt));
+        if (this.preparationRemaining <= 0) this.beginCombat();
+      } else {
+        this.gameTime += dt;
+        this.wave.update(dt);
+        this.spawner.update(dt);
+        this.enemies.forEach((e) => e.update(dt));
+        this.enemies = this.enemies.filter((e) => !e.dead);
+        this.alliedUnits.forEach((unit) => unit.update(dt));
+        this.alliedUnits = this.alliedUnits.filter((unit) => !unit.dead);
+        this.spatial.rebuild(this.enemies);
+        this.players.forEach((p) => p.manager.update(dt));
+      }
       this.updateTasks();
       if (this.dirty) this.render();
       else if (t - this.lastHudUpdate >= 100) {
@@ -1863,6 +1888,22 @@ class GameManager {
       }
     }
     this.rafId = requestAnimationFrame((x) => this.loop(x));
+  }
+  beginCombat() {
+    if (this.phase !== "PREPARING") return;
+    this.phase = "COMBAT";
+    this.preparationRemaining = 0;
+    this.wave.update(0);
+    battleCountdown.hidden = false;
+    battleCountdown.classList.add("battle-start");
+    preparationLabel.textContent = "전투 시작!";
+    preparationCount.textContent = "";
+    setTimeout(() => {
+      if (game !== this) return;
+      battleCountdown.hidden = true;
+      battleCountdown.classList.remove("battle-start");
+    }, 1000);
+    this.markDirty();
   }
   destroy() {
     this.running = false;
@@ -1940,6 +1981,9 @@ function bootstrapGame() {
   restart = getRequiredElement("restart");
   finalWave = getRequiredElement("finalWave");
   gameover = getRequiredElement("gameover");
+  battleCountdown = getRequiredElement("battle-countdown");
+  preparationLabel = getRequiredElement("preparation-label");
+  preparationCount = getRequiredElement("preparation-count");
 
   const mainMenu = getRequiredElement("main-menu");
   const battleMenu = getRequiredElement("battle-menu");
@@ -1949,6 +1993,7 @@ function bootstrapGame() {
   const toast = getRequiredElement("game-toast");
   let currentScreen = SCREEN_STATES.MAIN_MENU;
   const showScreen = (screen) => {
+    if (!Object.values(SCREEN_STATES).includes(screen) || screen === currentScreen) return;
     currentScreen = screen;
     mainMenu.hidden = screen !== SCREEN_STATES.MAIN_MENU;
     battleMenu.hidden = screen !== SCREEN_STATES.BATTLE_MENU;
@@ -1956,35 +2001,53 @@ function bootstrapGame() {
     gachaScreen.hidden = screen !== SCREEN_STATES.GACHA;
     exitDialog.hidden = true;
   };
-  const drawButton = getRequiredElement("draw-once");
   const updateMetaCurrency = () => {
     document.querySelectorAll?.("[data-star-fragments]").forEach((node) => {
       node.textContent = playerProgress.starFragments.toLocaleString("ko-KR");
     });
-    drawButton.disabled = playerProgress.starFragments < DRAW_COST;
+    document.querySelectorAll?.("[data-meteor-fragments]").forEach((node) => {
+      node.textContent = playerProgress.meteorFragments.toLocaleString("ko-KR");
+    });
+    document.querySelectorAll?.("[data-draw]").forEach((button) => {
+      const balance = button.dataset.draw === "relic" ? playerProgress.meteorFragments : playerProgress.starFragments;
+      button.disabled = balance < Number(button.dataset.cost);
+    });
   };
   const showMainMenu = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.MAIN_MENU); };
   const showBattleMenu = () => showScreen(SCREEN_STATES.BATTLE_MENU);
   const showGacha = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.GACHA); };
   const startBattle = () => {
+    if (currentScreen !== SCREEN_STATES.BATTLE_MENU) return false;
     if (game) game.destroy();
     gameover.hidden = true;
     speed.textContent = "×1";
     speed.classList.remove("active");
     arena.classList.remove("speed-2");
+    battleCountdown.hidden = false;
+    battleCountdown.classList.remove("battle-start");
+    getRequiredElement("battle-transition").classList.remove("play");
+    void getRequiredElement("battle-transition").offsetWidth;
+    getRequiredElement("battle-transition").classList.add("play");
+    arena.classList.remove("battle-arrival");
+    void arena.offsetWidth;
+    arena.classList.add("battle-arrival");
     showScreen(SCREEN_STATES.BATTLE_GAME);
     window.BOOT_STAGE = "creating-game";
     game = new GameManager();
     game.start();
+    return true;
   };
   finishBattle = (battle = game) => {
     if (!battle) return 0;
     const reachedWave = Math.max(0, Math.floor(battle.wave.wave));
     const reward = reachedWave * 2;
+    const meteorReward = Math.floor(reachedWave / 20);
     if (!battle.battleRewardGranted) {
       battle.battleRewardGranted = true;
       battle.starFragmentReward = reward;
+      battle.meteorFragmentReward = meteorReward;
       playerProgress.starFragments += reward;
+      playerProgress.meteorFragments += meteorReward;
       savePlayerProgress();
     }
     battle.running = false;
@@ -1992,18 +2055,20 @@ function bootstrapGame() {
     if (typeof cancelAnimationFrame === "function" && battle.rafId) cancelAnimationFrame(battle.rafId);
     finalWave.textContent = reachedWave;
     getRequiredElement("fragmentReward").textContent = battle.starFragmentReward ?? reward;
+    getRequiredElement("meteorFragmentReward").textContent = battle.meteorFragmentReward ?? meteorReward;
     gameover.hidden = false;
     exitDialog.hidden = true;
     updateMetaCurrency();
     return reward;
   };
   const leaveBattle = () => finishBattle(game);
-  getRequiredElement("open-battle-menu").onclick = showBattleMenu;
-  document.querySelectorAll?.("[data-open-battle]").forEach((button) => { button.onclick = showBattleMenu; });
-  document.querySelectorAll?.("[data-open-gacha]").forEach((button) => { button.onclick = showGacha; });
-  document.querySelectorAll?.("[data-main-home]").forEach((button) => { button.onclick = showMainMenu; });
-  getRequiredElement("battle-back").onclick = showMainMenu;
-  getRequiredElement("play-battle").onclick = startBattle;
+  const navigateOnce = (callback) => (event) => { event?.preventDefault?.(); event?.stopPropagation?.(); callback(); };
+  getRequiredElement("open-battle-menu").onclick = navigateOnce(showBattleMenu);
+  document.querySelectorAll?.("[data-open-battle]").forEach((button) => { button.onclick = navigateOnce(showBattleMenu); });
+  document.querySelectorAll?.("[data-open-gacha]").forEach((button) => { button.onclick = navigateOnce(showGacha); });
+  document.querySelectorAll?.("[data-main-home]").forEach((button) => { button.onclick = navigateOnce(showMainMenu); });
+  getRequiredElement("battle-back").onclick = navigateOnce(showMainMenu);
+  getRequiredElement("play-battle").onclick = navigateOnce(startBattle);
   getRequiredElement("battle-exit").onclick = () => { exitDialog.hidden = false; };
   getRequiredElement("exit-cancel").onclick = () => { exitDialog.hidden = true; };
   getRequiredElement("exit-confirm").onclick = leaveBattle;
@@ -2016,7 +2081,7 @@ function bootstrapGame() {
     });
   });
   speed.onclick = () => {
-    if (!game) return;
+    if (!game || game.phase === "PREPARING") return;
     game.speed = game.speed === 1 ? 2 : 1;
     speed.textContent = `×${game.speed}`;
     speed.classList.toggle("active", game.speed === 2);
@@ -2028,13 +2093,21 @@ function bootstrapGame() {
     gameover.hidden = true;
     showMainMenu();
   };
-  drawButton.onclick = () => {
-    if (drawButton.disabled) return;
-    toast.textContent = "뽑기 확률 설정 후 이용할 수 있습니다.";
-    toast.hidden = false;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { toast.hidden = true; }, 2200);
-  };
+  document.querySelectorAll?.("[data-gacha-tab]").forEach((tab) => {
+    tab.onclick = () => {
+      document.querySelectorAll("[data-gacha-tab]").forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
+      document.querySelectorAll("[data-gacha-board]").forEach((board) => { board.hidden = board.dataset.gachaBoard !== tab.dataset.gachaTab; });
+    };
+  });
+  document.querySelectorAll?.("[data-draw]").forEach((button) => {
+    button.onclick = () => {
+      if (button.disabled) return;
+      toast.textContent = button.dataset.draw === "relic" ? "유물 뽑기 확률 설정 후 이용할 수 있습니다." : "뽑기 확률 설정 후 이용할 수 있습니다.";
+      toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.hidden = true; }, 2200);
+    };
+  });
   window.addEventListener("resize", () => {
     RangeSystem.refresh();
     game?.markDirty();
@@ -2042,7 +2115,7 @@ function bootstrapGame() {
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   showMainMenu();
   const diagnostics = {
-    CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, SCREEN_STATES, DRAW_COST, playerProgress,
+    CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, SCREEN_STATES, PREPARATION_SECONDS, GACHA_COSTS, playerProgress,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
     showMainMenu, showBattleMenu, showGacha, startBattle, leaveBattle, finishBattle,
