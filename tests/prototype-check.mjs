@@ -8,7 +8,7 @@ const [html, css, js] = await Promise.all([
 ]);
 
 assert.match(html, /href="styles\.css"/);
-assert.match(html, /src="game\.js"/);
+assert.match(html, /<script src="game\.js" defer><\/script>/);
 assert.equal((html.match(/data-act="summon"/g) || []).length, 1);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/, "2P's direct controls must not be rendered");
@@ -57,15 +57,15 @@ assert.match(js, /this\.stars = Array\(15\)\.fill\(null\)/);
 assert.match(js, /startStarlight:\s*5000/);
 assert.match(js, /startDivinity:\s*50/);
 assert.match(js, /bossWaveSeconds:\s*25/);
-assert.match(js, /this\.wave\.update\(0\)/, "wave 1 must start during boot");
+assert.match(js, /start\(\)[\s\S]*?this\.wave\.update\(0\)/, "wave 1 must start after construction");
 for (const id of [
   "arena", "controls", "wave", "timer", "hp", "starlight1",
   "divinity1", "starlight2", "divinity2",
 ])
   assert.match(
     js,
-    new RegExp(`const ${id} = document\\.getElementById\\("${id}"\\)`),
-    `${id} must not depend on browser-specific named-window globals`,
+    new RegExp(`${id} = getRequiredElement\\("${id}"\\)`),
+    `${id} must be required during DOM-ready bootstrap`,
   );
 assert.match(js, /summonCost:\s*30/);
 assert.match(js, /emptySlots\(\)/);

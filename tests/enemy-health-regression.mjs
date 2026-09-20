@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import vm from "node:vm";
 import { readFile } from "node:fs/promises";
 
-const source = await readFile("game.js", "utf8");
+const file = await readFile("game.js", "utf8");
+const source = file.slice(file.indexOf("const CONSTELLATION_IDS"));
 const definitions = source.slice(0, source.indexOf("class EnemySpawner"));
 const created = [];
 const context = {

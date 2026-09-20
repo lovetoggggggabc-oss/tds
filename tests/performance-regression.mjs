@@ -3,7 +3,8 @@ import vm from "node:vm";
 import { performance } from "node:perf_hooks";
 import { readFile } from "node:fs/promises";
 
-const source = await readFile("game.js", "utf8");
+const file = await readFile("game.js", "utf8");
+const source = file.slice(file.indexOf("const CONSTELLATION_IDS"));
 const definitions = source.slice(0, source.indexOf("class UIManager"));
 const context = {
   Math,
