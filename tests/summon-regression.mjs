@@ -57,12 +57,28 @@ context.game = {
 };
 
 const [one, two] = players;
-for (let press = 0; press < 15; press++) {
+one.summonButton.click();
+assert.equal(
+  one.player.manager.selected.length,
+  0,
+  "a newly summoned star must not be selected automatically",
+);
+const originalSelection = one.player.manager.stars.findIndex(Boolean);
+one.player.manager.selected = [originalSelection];
+for (let press = 1; press < 15; press++) {
   // UI modes may be active after a previous interaction, but are never summon
   // prerequisites and must not prevent the next click.
   one.player.manager.swapMode = press % 2 === 0;
   one.player.manager.zodiacMode = press % 3 === 0;
   one.summonButton.click();
+  assert.equal(one.player.manager.selected.length, 1);
+  assert.equal(
+    one.player.manager.selected[0],
+    originalSelection,
+    "summoning must preserve the previously selected star",
+  );
+  assert.equal(one.player.manager.swapMode, press % 2 === 0);
+  assert.equal(one.player.manager.zodiacMode, press % 3 === 0);
   assert.equal(
     one.player.manager.stars.filter(Boolean).length,
     press + 1,
@@ -90,5 +106,5 @@ assert.equal(
 );
 
 console.log(
-  "Summon regression passed: 1P filled 15/15 slots, the 16th click was free, and 2P remained independent.",
+  "Summon regression passed: selection was preserved, 1P filled 15/15 slots, the 16th click was free, and 2P remained independent.",
 );

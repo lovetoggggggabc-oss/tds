@@ -320,10 +320,10 @@ class StarManager {
       STAR_KEYS[Math.floor(Math.random() * STAR_KEYS.length)],
     );
     this.player.resources.spend(CONFIG.summonCost);
-    this.exitModes();
-    this.clearOthers();
-    this.selectOnly(i);
+    // A summon changes only the board and resources. In particular, it must
+    // not replace the current selection or cancel swap/zodiac target picking.
     game.render();
+    UIManager.summonEffect?.(this, i);
   }
   tap(i) {
     if (!this.stars[i]) return;
@@ -594,6 +594,16 @@ class UIManager {
     });
     game.simulationTimeout(() => dot.remove(), 420);
   }
+  static summonEffect(m, index) {
+    let p = m.pos(index),
+      flash = document.createElement("i");
+    flash.className = "summon-effect";
+    flash.style.left = p.x + "%";
+    flash.style.top = p.y + "%";
+    arena.append(flash);
+    // Purely decorative: no gameplay state or input is held until this ends.
+    setTimeout(() => flash.remove(), 420);
+  }
   static selected(g) {
     for (let i = g.players.length - 1; i >= 0; i--) {
       let m = g.players[i].manager;
@@ -679,25 +689,24 @@ class UIManager {
       }),
     );
     links.innerHTML = lines.join("");
-    g.players.forEach((p, i) => {
-      p.manager.render();
-      let box = controls.children[i],
-        z = box.querySelector("[data-act=zodiac]");
-      box.classList.toggle(
-        "active-player",
-        p.manager.selected.length > 0 ||
-          p.manager.swapMode ||
-          p.manager.zodiacMode,
-      );
-      box.querySelector(".wallet").innerHTML =
-        `별빛 <strong>✦ ${p.resources.starlight}</strong> · 신성 <strong>◇ ${p.resources.divinity}</strong>`;
-      box.querySelector("[data-act=summon]").disabled =
-        !p.resources.can(CONFIG.summonCost) || p.manager.stars.every(Boolean);
-      z.classList.toggle("active", p.manager.zodiacMode);
-      z.textContent = p.manager.zodiacMode
-        ? `연결 실행 (${p.manager.selected.length}/4)`
-        : "조디악 선택";
-    });
+    g.players.forEach((p) => p.manager.render());
+    let p = g.players[0],
+      box = controls.querySelector('[data-player="0"]'),
+      z = box.querySelector("[data-act=zodiac]");
+    box.classList.toggle(
+      "active-player",
+      p.manager.selected.length > 0 ||
+        p.manager.swapMode ||
+        p.manager.zodiacMode,
+    );
+    box.querySelector(".wallet").innerHTML =
+      `별빛 <strong>✦ ${p.resources.starlight}</strong> · 신성 <strong>◇ ${p.resources.divinity}</strong>`;
+    box.querySelector("[data-act=summon]").disabled =
+      !p.resources.can(CONFIG.summonCost) || p.manager.stars.every(Boolean);
+    z.classList.toggle("active", p.manager.zodiacMode);
+    z.textContent = p.manager.zodiacMode
+      ? `연결 실행 (${p.manager.selected.length}/4)`
+      : "조디악 선택";
     this.renderInfo(g);
   }
 }
@@ -720,15 +729,14 @@ class GameManager {
     requestAnimationFrame((t) => this.loop(t));
   }
   buildControls() {
-    this.players.forEach((p, i) => {
-      let el = controls.querySelector(`[data-player="${i}"]`);
-      el.querySelector("[data-act=summon]").addEventListener("click", () =>
-        p.manager.summon(),
-      );
-      el.querySelector("[data-act=zodiac]").addEventListener("click", () =>
-        ZodiacSystem.toggle(p.manager),
-      );
-    });
+    let p = this.players[0],
+      el = controls.querySelector('[data-player="0"]');
+    el.querySelector("[data-act=summon]").addEventListener("click", () =>
+      p.manager.summon(),
+    );
+    el.querySelector("[data-act=zodiac]").addEventListener("click", () =>
+      ZodiacSystem.toggle(p.manager),
+    );
   }
   simulationTimeout(callback, milliseconds) {
     return setTimeout(callback, milliseconds / this.speed);
