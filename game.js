@@ -42,6 +42,7 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
 });
 const CONFIG = {
   waveSeconds: 15,
+  bossWaveSeconds: 25,
   summonCost: 30,
   swapCost: 10,
   divinationCost: 30,
@@ -236,7 +237,7 @@ class WaveManager {
   constructor(game) {
     this.game = game;
     this.wave = 0;
-    this.left = 0.7;
+    this.left = 0;
   }
   static isBoss(n) {
     return (
@@ -249,7 +250,9 @@ class WaveManager {
     this.left -= dt;
     if (this.left <= 0) {
       this.wave++;
-      this.left += CONFIG.waveSeconds;
+      this.left += WaveManager.isBoss(this.wave)
+        ? CONFIG.bossWaveSeconds
+        : CONFIG.waveSeconds;
       this.game.spawner.wave(this.wave);
       if (WaveManager.isBoss(this.wave))
         UIManager.alert(`⚠ BOSS WAVE ${this.wave}`);
@@ -1142,13 +1145,16 @@ class GameManager {
     this.tasks = [];
     this.dirty = true;
     this.lastHudUpdate = 0;
-    this.wave = new WaveManager(this);
-    this.spawner = new EnemySpawner(this);
     this.players = [0, 1].map((i) => {
       let p = { resources: new PlayerResources() };
       p.manager = new StarManager(p, document.getElementById(`field-${i}`));
       return p;
     });
+    this.wave = new WaveManager(this);
+    this.spawner = new EnemySpawner(this);
+    // Start wave 1 synchronously. The first animation frame then spawns its
+    // first queued monster, rather than leaving a freshly loaded game at wave 0.
+    this.wave.update(0);
     this.buildControls();
     RangeSystem.refresh();
     window.addEventListener("resize", () => {
@@ -1257,6 +1263,33 @@ class GameManager {
     this.dirty = false;
   }
 }
+// Do not rely on HTML-id-to-window-name reflection here. WebKit does not
+// guarantee that every id becomes a JavaScript global, and a missing reflected
+// name aborts the first HUD render before the game loop can start.
+const arena = document.getElementById("arena");
+const effects = document.getElementById("effects");
+const links = document.getElementById("links");
+const ranges = document.getElementById("ranges");
+const rangeIndicator = document.getElementById("rangeIndicator");
+const contextActions = document.getElementById("contextActions");
+const hint = document.getElementById("hint");
+const dawnMoon = document.getElementById("dawnMoon");
+const starInfo = document.getElementById("starInfo");
+const controls = document.getElementById("controls");
+const zodiacCodex = document.getElementById("zodiacCodex");
+const zodiacCodexList = document.getElementById("zodiacCodexList");
+const wave = document.getElementById("wave");
+const timer = document.getElementById("timer");
+const hp = document.getElementById("hp");
+const starlight1 = document.getElementById("starlight1");
+const divinity1 = document.getElementById("divinity1");
+const starlight2 = document.getElementById("starlight2");
+const divinity2 = document.getElementById("divinity2");
+const speed = document.getElementById("speed");
+const restart = document.getElementById("restart");
+const finalWave = document.getElementById("finalWave");
+const gameover = document.getElementById("gameover");
+
 let game = new GameManager();
 speed.onclick = () => {
   game.speed = game.speed === 1 ? 2 : 1;
