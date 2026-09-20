@@ -7,8 +7,8 @@ const [html, css, js] = await Promise.all([
   readFile("game.js", "utf8"),
 ]);
 
-assert.match(html, /href="styles\.css\?v=29"/);
-assert.match(html, /<script src="game\.js\?v=29" defer><\/script>/);
+assert.match(html, /href="styles\.css\?v=30"/);
+assert.match(html, /<script src="game\.js\?v=30" defer><\/script>/);
 assert.equal((html.match(/data-act="summon"/g) || []).length, 1);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/, "2P's direct controls must not be rendered");
@@ -30,10 +30,14 @@ assert.match(css, /\.dawn-moon\s*\{[\s\S]*?pointer-events:\s*none/);
 assert.match(css, /\.dawn-special\s*\{[\s\S]*?pointer-events:\s*none/);
 assert.doesNotMatch(html, /1P 마법사|2P 마법사|class="wallet"|class="players"/);
 assert.match(html, /class="game-controls"/);
-assert.match(html, /M8 10C76 10 76 50 50 50/, "the arena must use the figure-eight route");
+assert.equal((html.match(/>SPAWN</g) || []).length, 1, "the arena has one spawn");
+assert.equal((html.match(/>DESTINATION</g) || []).length, 1, "the arena has one destination");
+assert.match(js, /const MAP_DEFINITIONS = Object\.freeze/);
+assert.match(js, /spawn: Object\.freeze\(\{ x: 50, y: 96 \}\)/);
+assert.match(js, /destination: Object\.freeze\(\{ x: 50, y: 4 \}\)/);
 assert.match(html, /data-act="summon-cancel"/, "placement mode needs an explicit cancel control");
 assert.match(css, /\.free-field\.placing/);
-assert.match(css, /\.road\s*\{[\s\S]*?stroke-width:\s*1\.35px/);
+assert.match(css, /\.road\s*\{[\s\S]*?stroke-width:\s*34px/);
 assert.match(css, /\.range-indicator\s*\{[\s\S]*?border-radius:\s*50%/);
 assert.match(
   css,
@@ -158,7 +162,8 @@ assert.match(js, /game\.discoverConstellation\(definitionId\)/);
 assert.match(js, /summonAt\(x, y\)[\s\S]*?this\.clearNormalSelection\(\)/, "successful free placement must clear normal selection");
 assert.match(js, /event\.target\.closest\("\.star-node, \.free-field\.placing/, "placement input must not trigger background deselection");
 assert.match(html, /id="field-1"/, "the 2P field must remain in the game");
-assert.match(html, /M8 90C76 90 76 50 50 50/, "both figure-eight enemy paths must remain in the arena");
+assert.match(js, /this\.pathProgress = Math\.min\(1, this\.progress \/ 100\)/);
+assert.match(js, /const roadClearance = MAP_DEFINITION\.roadWidth \/ 2 \+ starRadius \+ MAP_DEFINITION\.placementPadding/);
 assert.match(js, /this\.connectionOrder = \[\.\.\.connectionOrder\]/);
 assert.match(js, /c\.connectionOrder\.slice\(0, -1\)/);
 assert.doesNotMatch(js, /selected\.sort\(/);
@@ -181,8 +186,8 @@ assert.match(css, /\.star-node\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?aspect-r
 assert.match(js, /function bindPointerTap/);
 assert.match(html, /<main class="app" id="game-shell">/);
 assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*600px\);[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
-assert.match(html, /styles\.css\?v=29/, "the deployed stylesheet URL must change when its layout changes");
-assert.match(html, /game\.js\?v=29/, "the deployed script URL must not reuse the pre-layout cache entry");
+assert.match(html, /styles\.css\?v=30/, "the deployed stylesheet URL must change when its layout changes");
+assert.match(html, /game\.js\?v=30/, "the deployed script URL must not reuse the pre-layout cache entry");
 assert.match(css, /\.star-info\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?z-index:\s*160/);
 
 const isBoss = (n) =>
