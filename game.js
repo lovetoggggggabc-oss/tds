@@ -36,6 +36,7 @@ const CONSTELLATION_IDS = Object.freeze({
   SAGITTARIUS: "SAGITTARIUS",
   ASTROLOGER: "ASTROLOGER",
 });
+const BASE_MAX_HP = 5000;
 // This is the sole source of truth for recipes, construction, combat stats,
 // contextual actions, effects and the codex.
 const CONSTELLATION_DEFINITIONS = Object.freeze({
@@ -79,7 +80,7 @@ const CONFIG = {
   divinationFailureCost: 15,
   startStarlight: 5000,
   startDivinity: 50,
-  startHP: 5,
+  baseMaxHP: BASE_MAX_HP,
   // One range unit is this percentage of the arena width. RangeSystem is the
   // single conversion point used by both targeting and the circular overlay.
   rangeUnit: 6.3,
@@ -88,13 +89,14 @@ const CONFIG = {
   whiteBurstInterval: 0.16,
   whiteBurstRest: 2,
   monsters: {
-    slime: { name: "어둠 슬라임", hp: 500, speed: 4.6, reward: 1 },
-    bug: { name: "암흑 벌레", hp: 800, speed: 7, reward: 2 },
+    slime: { name: "어둠 슬라임", hp: 500, speed: 4.6, reward: 1, baseDamage: 100 },
+    bug: { name: "암흑 벌레", hp: 800, speed: 7, reward: 2, baseDamage: 150 },
     drone: {
       name: "코어 드론",
       hp: 10000,
       speed: 2.8,
       reward: 30,
+      baseDamage: 500,
       boss: true,
     },
     meteor: {
@@ -102,6 +104,7 @@ const CONFIG = {
       hp: 20000,
       speed: 1.8,
       reward: 50,
+      baseDamage: 1000,
       boss: true,
     },
   },
@@ -148,6 +151,30 @@ const CONFIG = {
     },
   },
 };
+
+// Pointer Events avoid Safari's synthetic touch/click pair. A small movement
+// allowance keeps a deliberate tap responsive while rejecting drags.
+function bindPointerTap(element, callback, shouldStart = () => true) {
+  let gesture = null;
+  const cancel = () => { gesture = null; };
+  element.addEventListener("pointerdown", (event) => {
+    if (!event.isPrimary || event.button > 0 || !shouldStart(event)) return;
+    gesture = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    element.setPointerCapture?.(event.pointerId);
+  });
+  element.addEventListener("pointermove", (event) => {
+    if (!gesture || gesture.id !== event.pointerId) return;
+    if (Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 10)
+      cancel();
+  }, { passive: true });
+  element.addEventListener("pointercancel", cancel);
+  element.addEventListener("pointerup", (event) => {
+    if (!gesture || gesture.id !== event.pointerId) return;
+    cancel();
+    event.preventDefault();
+    callback(event);
+  });
+}
 // Every zodiac-facing feature reads this registry: matching, combat, labels,
 // and the codex. Adding a constellation does not require another matching
 // branch or a new hard-coded selection limit.
@@ -534,7 +561,16 @@ class StarManager {
       b.className = "slot";
       b.dataset.index = i;
       b.setAttribute("aria-label", `빈 슬롯 ${i + 1}`);
-      b.addEventListener("pointerup", () => this.tap(i));
+      bindPointerTap(b, (event) => {
+        event.stopPropagation();
+        this.tap(i);
+      });
+      b.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          this.tap(i);
+        }
+      });
       field.append(b);
     }
     if (typeof requestAnimationFrame === "function")
@@ -1146,7 +1182,7 @@ class UIManager {
     const values = {
       wave: String(g.wave.wave),
       timer: Math.max(0, g.wave.left).toFixed(1),
-      hp: "♥".repeat(g.hp) + "♡".repeat(CONFIG.startHP - g.hp),
+      hp: `HP ${g.baseHP}/${BASE_MAX_HP}`,
       starlight1: String(g.players[0].resources.starlight),
       divinity1: String(g.players[0].resources.divinity),
       starlight2: String(g.players[1].resources.starlight),
@@ -1166,7 +1202,7 @@ class GameManager {
     this.last = 0;
     this.running = true;
     this.speed = 1;
-    this.hp = CONFIG.startHP;
+    this.baseHP = BASE_MAX_HP;
     this.enemies = [];
     this.spatial = new SpatialGrid();
     this.gameTime = 0;
@@ -1201,7 +1237,7 @@ class GameManager {
     requestAnimationFrame((t) => this.loop(t));
   }
   buildControls() {
-    arena.addEventListener("pointerup", (event) => {
+    bindPointerTap(arena, (event) => {
       // Slots handle their own taps, while every in-arena contextual control
       // must remain actionable without a bubbling event clearing its target.
       if (event.target.closest(".slot, .context-actions, button, [role=button]")) return;
@@ -1210,7 +1246,7 @@ class GameManager {
         changed = player.manager.clearNormalSelection() || changed;
       });
       if (changed) this.render();
-    });
+    }, (event) => !event.target.closest(".slot, .context-actions, button, [role=button]"));
     controls.querySelectorAll(".game-controls").forEach((panel) => {
       const p = this.players[Number(panel.dataset.player)];
       panel.querySelector("[data-act=summon]").addEventListener("click", () => p.manager.summon());
@@ -1264,7 +1300,8 @@ class GameManager {
   }
   leak(e) {
     this.clearEnemyReferences(e);
-    if (--this.hp <= 0) {
+    this.baseHP = Math.max(0, this.baseHP - e.baseDamage);
+    if (this.baseHP <= 0) {
       this.running = false;
       finalWave.textContent = this.wave.wave;
       gameover.hidden = false;
