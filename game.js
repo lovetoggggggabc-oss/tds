@@ -6,12 +6,31 @@ const CONFIG = {
   startStarlight: 5000,
   startDivinity: 50,
   startHP: 5,
+  // One range unit is this percentage of the arena width. RangeSystem is the
+  // single conversion point used by both targeting and the circular overlay.
   rangeUnit: 6.3,
   waveHpGrowth: 0.12,
   tierDamage: [1, 1.7, 2.8, 4.4],
   whiteBurstInterval: 0.16,
   whiteBurstRest: 2,
-  constellation: { range: 4, damage: 500, rate: 4, specialMultiplier: 15 },
+  constellations: {
+    dawn: {
+      name: "새벽의 별자리",
+      recipe: { blue: 3, white: 1 },
+      range: 4,
+      damage: 500,
+      rate: 4,
+      specialMultiplier: 15,
+      specialHits: 4,
+    },
+    radiance: {
+      name: "광휘의 별자리",
+      recipe: { red: 2, white: 1 },
+      range: 6,
+      damage: 950,
+      rate: 1,
+    },
+  },
   monsters: {
     slime: { name: "어둠 슬라임", hp: 500, speed: 4.6, reward: 1 },
     bug: { name: "암흑 벌레", hp: 800, speed: 7, reward: 2 },
@@ -74,7 +93,6 @@ const CONFIG = {
   },
 };
 const STAR_KEYS = Object.keys(CONFIG.stars),
-  RECIPE = { blue: 2, red: 1, white: 1 },
   TARGET_LABELS = {
     lock: "대상 고정 공격",
     random: "무작위 대상",
@@ -213,8 +231,7 @@ class Targeting {
     let targets = enemies.filter(
       (e) =>
         !e.dead &&
-        Targeting.dist(pos, e.position()) <=
-          star.data().range * CONFIG.rangeUnit,
+        RangeSystem.contains(pos, e.position(), star.data().range),
     );
     if (!targets.length) return null;
     if (star.data().target === "lock" && targets.includes(star.lock))
@@ -231,14 +248,42 @@ class Targeting {
     return targets.sort((a, b) => b.progress - a.progress)[0];
   }
   static dist(a, b) {
-    return Math.hypot(a.x - b.x, (a.y - b.y) * 0.68);
+    return RangeSystem.distance(a, b);
+  }
+}
+class RangeSystem {
+  static metrics() {
+    if (typeof arena !== "undefined" && arena.getBoundingClientRect) {
+      const rect = arena.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    }
+    return { width: 100, height: 100 };
+  }
+  static radius(range) {
+    return (this.metrics().width * CONFIG.rangeUnit * range) / 100;
+  }
+  static distance(a, b) {
+    const { width, height } = this.metrics();
+    return Math.hypot(
+      ((a.x - b.x) * width) / 100,
+      ((a.y - b.y) * height) / 100,
+    );
+  }
+  static contains(a, b, range) {
+    return this.distance(a, b) <= this.radius(range);
   }
 }
 class Constellation {
-  constructor(owner, center, members) {
+  constructor(owner, center, members, kind) {
     this.owner = owner;
     this.center = center;
     this.members = members;
+    this.kind = kind;
+    this.stats = CONFIG.constellations[kind];
+    this.componentStageSum = members.reduce(
+      (sum, index) => sum + owner.stars[index].tier,
+      0,
+    );
     this.cooldown = 0;
     this.target = null;
     this.hitCount = 0;
@@ -251,8 +296,7 @@ class Constellation {
     if (
       this.target &&
       (this.target.dead ||
-        Targeting.dist(position, this.target.position()) >
-          CONFIG.constellation.range * CONFIG.rangeUnit)
+        !RangeSystem.contains(position, this.target.position(), this.stats.range))
     ) {
       this.target = null;
       this.hitCount = 0;
@@ -263,7 +307,7 @@ class Constellation {
       Targeting.choose(
         {
           data: () => ({
-            range: CONFIG.constellation.range,
+            range: this.stats.range,
             target: "highest",
           }),
         },
@@ -275,13 +319,19 @@ class Constellation {
         this.target = target;
         this.hitCount = 0;
       }
-      const currentAttackDamage = CONFIG.constellation.damage;
-      target.hit(currentAttackDamage, position);
-      this.hitCount++;
-      if (this.hitCount === 3) {
+      const currentAttackDamage = this.stats.damage;
+      if (this.kind === "radiance") {
+        this.chainAttack(target, position);
+        this.target = null;
+        this.hitCount = 0;
+      } else {
+        target.hit(currentAttackDamage, position);
+        this.hitCount++;
+      }
+      if (this.kind === "dawn" && this.hitCount === this.stats.specialHits) {
         if (!target.dead) {
           const specialDamage =
-            currentAttackDamage * CONFIG.constellation.specialMultiplier;
+            currentAttackDamage * this.stats.specialMultiplier;
           target.hit(specialDamage, position);
         }
         this.hitCount = 0;
@@ -290,7 +340,26 @@ class Constellation {
         this.target = null;
         this.hitCount = 0;
       }
-      this.cooldown = 1 / CONFIG.constellation.rate;
+      this.cooldown = 1 / this.stats.rate;
+    }
+  }
+  chainAttack(first, origin) {
+    const hit = new Set();
+    let target = first;
+    let from = origin;
+    while (target && hit.size < this.componentStageSum) {
+      const targetPosition = target.position();
+      target.hit(this.stats.damage, from);
+      if (hit.size) UIManager.chainBeam(from, targetPosition);
+      hit.add(target);
+      from = targetPosition;
+      target = game.enemies
+        .filter((enemy) => !enemy.dead && !hit.has(enemy))
+        .sort(
+          (a, b) =>
+            RangeSystem.distance(from, a.position()) -
+            RangeSystem.distance(from, b.position()),
+        )[0];
     }
   }
   release() {
@@ -490,7 +559,8 @@ class SwapSystem {
     if (!star || star.support || star.constellation)
       return UIManager.hint("별자리 구성원은 교환할 수 없습니다.");
     if (!m.player.resources.spend(CONFIG.swapCost)) return;
-    let candidates = STAR_KEYS.filter((type) => type !== star.type);
+    const oldType = star.type;
+    let candidates = STAR_KEYS.filter((type) => type !== oldType);
     star.type = candidates[Math.floor(Math.random() * candidates.length)];
     star.cooldown = 0;
     star.burstLeft = 3;
@@ -499,6 +569,7 @@ class SwapSystem {
     m.swapMode = false;
     UIManager.hint(`${star.data().name} 별로 교환했습니다.`);
     game.render();
+    UIManager.swapEffect(m, a, oldType);
   }
 }
 class ZodiacSystem {
@@ -508,34 +579,41 @@ class ZodiacSystem {
       m.swapMode = false;
       m.zodiacMode = true;
       m.selected = [];
-      UIManager.hint("조디악 선택 모드 · 중심 별을 먼저, 총 4개를 고르세요.");
+      UIManager.hint("조디악 선택 모드 · 중심 별부터 재료 3~4개를 고르세요.");
       return game.render();
     }
     this.create(m);
   }
   static create(m) {
     let picks = m.selected;
-    if (picks.length !== 4)
-      return UIManager.hint(
-        `조디악 선택 모드 · 별 ${4 - picks.length}개를 더 선택하세요.`,
-      );
+    if (picks.length < 3 || picks.length > 4)
+      return UIManager.hint("조디악 재료 별을 3개 또는 4개 선택하세요.");
     let counts = {};
     picks.forEach((i) => {
       let s = m.stars[i];
       if (s) counts[s.type] = (counts[s.type] || 0) + 1;
     });
+    const kind = Object.keys(CONFIG.constellations).find((key) => {
+      const recipe = CONFIG.constellations[key].recipe;
+      return (
+        Object.keys(counts).length === Object.keys(recipe).length &&
+        Object.keys(recipe).every((type) => counts[type] === recipe[type])
+      );
+    });
     if (
-      Object.keys(RECIPE).some((k) => counts[k] !== RECIPE[k]) ||
+      !kind ||
       picks.some((i) => m.stars[i].support || m.stars[i].constellation)
     )
-      return UIManager.hint("새벽: 청색×2 + 적색×1 + 백색×1");
+      return UIManager.hint(
+        "조합 불일치 · 새벽(청색×3+백색×1) / 광휘(적색×2+백색×1)",
+      );
     let center = picks[0],
       points = picks.map((i) => m.pos(i));
-    new Constellation(m, center, [...picks]);
+    new Constellation(m, center, [...picks], kind);
     m.exitModes();
     UIManager.zodiacComplete(points[0], points.slice(1));
-    UIManager.showDawnMoon();
-    UIManager.hint("✨ 새벽의 별자리 완성!");
+    if (kind === "dawn") UIManager.showDawnMoon();
+    UIManager.hint(`✨ ${CONFIG.constellations[kind].name} 완성!`);
     game.render();
   }
   static cancel(m) {
@@ -584,6 +662,15 @@ class UIManager {
     );
     effects.append(line);
     game.simulationTimeout(() => line.remove(), 170);
+  }
+  static chainBeam(a, b) {
+    let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("class", "chain-beam");
+    ["x1", "y1", "x2", "y2"].forEach((key, index) =>
+      line.setAttribute(key, [a.x, a.y, b.x, b.y][index]),
+    );
+    effects.append(line);
+    game.simulationTimeout(() => line.remove(), 230);
   }
   static zodiacComplete(center, members) {
     members.forEach((p, i) =>
@@ -650,6 +737,30 @@ class UIManager {
     // Purely decorative: no gameplay state or input is held until this ends.
     setTimeout(() => flash.remove(), 420);
   }
+  static swapEffect(m, index, oldType) {
+    const position = m.pos(index);
+    const effect = document.createElement("span");
+    effect.className = "swap-effect";
+    effect.style.left = `${position.x}%`;
+    effect.style.top = `${position.y}%`;
+    const old = document.createElement("i");
+    old.className = "swap-old-star";
+    old.textContent = "✦";
+    old.style.color = CONFIG.stars[oldType].color;
+    const next = document.createElement("i");
+    next.className = "swap-new-star";
+    next.textContent = "✦";
+    next.style.color = m.stars[index].data().color;
+    effect.append(old, next);
+    for (let n = 0; n < 7; n++) {
+      const particle = document.createElement("i");
+      particle.className = "swap-particle";
+      particle.style.setProperty("--angle", `${n * (360 / 7)}deg`);
+      effect.append(particle);
+    }
+    arena.append(effect);
+    setTimeout(() => effect.remove(), 560);
+  }
   static selected(g) {
     for (let i = g.players.length - 1; i >= 0; i--) {
       let m = g.players[i].manager;
@@ -676,12 +787,13 @@ class UIManager {
     starInfo.hidden = false;
     starInfo.style.setProperty("--star-color", d.color);
     let constellation = s.constellation;
+    const constellationStats = constellation?.stats;
     starInfo.innerHTML = constellation
-      ? `<strong>✦ 새벽의 별자리</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>공격력 ${CONFIG.constellation.damage}</span><span>공격속도 ${CONFIG.constellation.rate}회/초</span><span>사정거리 ${CONFIG.constellation.range}</span></div><div class="trait">같은 적 3회 타격 시 공격력의 1500% 특수공격</div>`
+      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>공격력 ${constellationStats.damage}</span><span>공격속도 ${constellationStats.rate}회/초</span><span>사정거리 ${constellationStats.range}</span>${constellation.kind === "radiance" ? `<span>단계 합 ${constellation.componentStageSum}</span><span>최대 연쇄 대상 ${constellation.componentStageSum}</span>` : ""}</div><div class="trait">${constellation.kind === "radiance" ? "특수공격 · 연결된 별들의 단계 합만큼 연쇄 공격" : "같은 적 4회 타격 시 공격력의 1500% 특수공격"}</div>`
       : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
     ranges.innerHTML = "";
-    let shownRange = constellation ? CONFIG.constellation.range : d.range,
-      diameter = (arena.clientWidth * shownRange * CONFIG.rangeUnit * 2) / 100;
+    let shownRange = constellation ? constellationStats.range : d.range,
+      diameter = RangeSystem.radius(shownRange) * 2;
     rangeIndicator.hidden = false;
     rangeIndicator.style.left = p.x + "%";
     rangeIndicator.style.top = p.y + "%";
@@ -759,7 +871,7 @@ class UIManager {
     z.classList.toggle("active", p.manager.zodiacMode);
     cancel.hidden = !p.manager.zodiacMode;
     z.textContent = p.manager.zodiacMode
-      ? `연결 실행 (${p.manager.selected.length}/4)`
+      ? `연결 실행 (${p.manager.selected.length})`
       : "조디악";
     this.renderInfo(g);
   }
@@ -842,5 +954,5 @@ document.addEventListener("contextmenu", (e) => e.preventDefault());
 window.__TDS__ = {
   CONFIG,
   game,
-  classes: { Enemy, WaveManager, Star, Targeting },
+  classes: { Enemy, WaveManager, Star, Targeting, RangeSystem, Constellation },
 };

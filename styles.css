@@ -561,6 +561,18 @@ header {
   filter: drop-shadow(0 0 2px #fff);
   animation: zap 0.16s forwards;
 }
+.chain-beam {
+  stroke: #fff4ad;
+  stroke-width: 1.05;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #ffc94d);
+  pointer-events: none;
+  animation: chainZap 0.22s ease-out forwards;
+}
+@keyframes chainZap {
+  from { opacity: 1; stroke-dasharray: 2 0.7; }
+  to { opacity: 0; stroke-dasharray: 0.4 2; }
+}
 .link {
   stroke: #ffd979;
   stroke-width: 0.45;
@@ -754,6 +766,56 @@ header {
   box-shadow: 0 0 10px 4px #9cecff;
   pointer-events: none;
   animation: summonSpark 0.4s ease-out forwards;
+}
+.swap-effect {
+  position: absolute;
+  z-index: 40;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.swap-old-star,
+.swap-new-star {
+  position: absolute;
+  inset: 0 auto auto 0;
+  font-style: normal;
+  font-size: 29px;
+  line-height: 1;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 5px currentColor);
+  animation: swapOld 0.28s ease-in forwards;
+}
+.swap-new-star {
+  animation: swapNew 0.54s ease-out forwards;
+}
+.swap-particle {
+  --angle: 0deg;
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px;
+  border-radius: 50%;
+  background: #fffbd0;
+  box-shadow: 0 0 5px 2px #fff, 0 0 9px #ffd85c;
+  pointer-events: none;
+  animation: swapParticle 0.48s ease-out forwards;
+}
+@keyframes swapOld {
+  0%, 28% { opacity: 1; transform: translate(-50%, -50%) scale(1.35); filter: brightness(2.5) drop-shadow(0 0 12px #fff); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.25); }
+}
+@keyframes swapParticle {
+  0% { opacity: 1; transform: rotate(var(--angle)) translateX(3px) scale(1); }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateX(27px) scale(0.2); }
+}
+@keyframes swapNew {
+  0%, 42% { opacity: 0; transform: scale(0.25); }
+  72% { opacity: 1; transform: scale(1.45); filter: brightness(2.1) drop-shadow(0 0 13px #fff); }
+  100% { opacity: 1; transform: scale(1); }
 }
 @keyframes summonSpark {
   from {
