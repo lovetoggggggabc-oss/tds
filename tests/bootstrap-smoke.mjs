@@ -54,6 +54,11 @@ elements.get("zodiacCodex").querySelector = () => new Element();
 
 const listeners = {};
 const animationFrames = [];
+const storage = new Map();
+const localStorage = {
+  getItem(key) { return storage.get(key) ?? null; },
+  setItem(key, value) { storage.set(key, value); },
+};
 const document = {
   readyState: "loading",
   body: new Element("body"),
@@ -72,7 +77,7 @@ const window = {
   addEventListener(type, callback) { listeners[`window:${type}`] = callback; },
 };
 const context = {
-  Math, Error, document, window,
+  Math, Error, document, window, localStorage,
   location: { reload() {} },
   requestAnimationFrame(callback) { animationFrames.push(callback); return animationFrames.length; },
   setTimeout() { return 1; },
@@ -112,8 +117,15 @@ assert.equal(game.wave.left, 20, "boss waves use the 20-second game-time interva
 const firstFrame = animationFrames.splice(0);
 firstFrame.forEach((callback) => callback(16));
 assert.ok(game.enemies.length > 0, "the first animation frame must spawn an enemy");
+game.wave.wave = 40;
 window.__TDS__.leaveBattle();
 assert.equal(game.rafRunning, false, "leaving combat must stop its animation loop");
+assert.equal(window.__TDS__.currentScreen, "BATTLE_GAME", "leaving combat must show results before returning home");
+assert.equal(window.__TDS__.playerProgress.starFragments, 80, "wave 40 must award exactly 80 star fragments");
+assert.deepEqual(JSON.parse(storage.get("zodiacDefenseProgress")), { starFragments: 80 });
+window.__TDS__.leaveBattle();
+assert.equal(window.__TDS__.playerProgress.starFragments, 80, "a battle reward must only be granted once");
+elements.get("restart").onclick();
 assert.equal(window.__TDS__.currentScreen, "MAIN_MENU");
 window.__TDS__.showBattleMenu();
 window.__TDS__.startBattle();

@@ -12,21 +12,36 @@
     <link rel="stylesheet" href="styles.css?v=37" />
   </head>
   <body>
-    <section class="lobby-screen screen-active" id="main-menu" aria-labelledby="main-menu-title">
+    <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
       <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="fragment-wallet" aria-label="보유 별조각"><span class="fragment-gem">✦</span><small>별조각</small><b data-star-fragments>0</b></div>
       <header class="lobby-title">
-        <span>CELESTIAL GUARDIANS</span>
+        <div class="celestial-emblem" aria-hidden="true"><i>✦</i></div>
         <h1 id="main-menu-title">별자리 디펜스</h1>
         <p>ZODIAC DEFENSE</p>
       </header>
-      <nav class="lobby-menu" aria-label="메인 메뉴">
-        <button type="button" data-coming-soon><i>✧</i><span>상점<small>CELESTIAL SHOP</small></span></button>
-        <button type="button" data-coming-soon><i>✦</i><span>별 &amp; 별자리<small>STARS &amp; ZODIAC</small></span></button>
-        <button type="button" class="battle-entry" id="open-battle-menu"><i>⚔</i><span>전투<small>BATTLE</small></span><b>PLAY</b></button>
-        <button type="button" data-coming-soon><i>◇</i><span>유물<small>RELICS</small></span></button>
-        <button type="button" data-coming-soon><i>✺</i><span>뽑기<small>SUMMON</small></span></button>
+      <button type="button" class="hero-play" id="open-battle-menu"><i>✦</i><b>플레이</b><small>별이 지키는 전장을 향해</small></button>
+      <nav class="bottom-nav" aria-label="메인 메뉴">
+        <button type="button" data-coming-soon><i>▣</i><span>상점</span></button>
+        <button type="button" data-coming-soon><i>⌁</i><span>별 &amp; 별자리</span></button>
+        <button type="button" class="active" data-open-battle><i>⚔</i><span>전투</span></button>
+        <button type="button" data-coming-soon><i>◇</i><span>유물</span></button>
+        <button type="button" data-open-gacha><i>✦</i><span>뽑기</span></button>
       </nav>
-      <footer class="lobby-footer">별의 운명이 수호자를 기다립니다</footer>
+    </section>
+
+    <section class="lobby-screen gacha-screen" id="gacha-screen" hidden aria-labelledby="gacha-title">
+      <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
+      <header class="subscreen-header"><button type="button" data-main-home aria-label="메인 메뉴로 돌아가기">←</button><div><small>CELESTIAL SUMMON</small><h1 id="gacha-title">별의 소환</h1></div></header>
+      <article class="summon-card">
+        <div class="summon-orbit" aria-hidden="true"><i>✦</i></div>
+        <h2>별의 소환</h2><p>별조각을 사용하여<br />새로운 별과 별자리를 획득할 수 있습니다.</p>
+        <div class="summon-balance"><small>현재 별조각</small><strong><span class="fragment-gem">✦</span> <span data-star-fragments>0</span></strong></div>
+        <button type="button" id="draw-once"><b>1회 뽑기</b><small>✦ 100</small></button>
+      </article>
+      <nav class="bottom-nav" aria-label="메인 메뉴">
+        <button type="button" data-coming-soon><i>▣</i><span>상점</span></button><button type="button" data-coming-soon><i>⌁</i><span>별 &amp; 별자리</span></button><button type="button" data-open-battle><i>⚔</i><span>전투</span></button><button type="button" data-coming-soon><i>◇</i><span>유물</span></button><button type="button" class="active" data-open-gacha><i>✦</i><span>뽑기</span></button>
+      </nav>
     </section>
 
     <section class="lobby-screen battle-menu-screen" id="battle-menu" hidden aria-labelledby="battle-menu-title">
@@ -146,9 +161,10 @@
         </div>
         <div class="overlay" id="gameover" hidden>
           <div class="card">
-            <h1>우주 방어 실패</h1>
-            <p>최고 도달 웨이브 <b id="finalWave">0</b></p>
-            <button id="restart">다시 시작</button>
+            <small>BATTLE RESULT</small><h1>전투 종료</h1>
+            <p>도달 웨이브 <b id="finalWave">0</b></p>
+            <p class="result-reward">획득 별조각 <b>✦ +<span id="fragmentReward">0</span></b></p>
+            <button id="restart">메인으로</button>
           </div>
         </div>
       </section>
