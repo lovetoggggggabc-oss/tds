@@ -38,6 +38,26 @@ const CONSTELLATION_IDS = Object.freeze({
 });
 const BASE_MAX_HP = 5000;
 const MAX_STARS_PER_PLAYER = 15;
+// Logical, normalized map data is authoritative for drawing, movement and
+// placement. New stages can provide another definition without changing any
+// of those systems.
+const MAP_DEFINITIONS = Object.freeze({
+  cosmic_s_01: Object.freeze({
+    id: "cosmic_s_01",
+    roadWidth: 34,
+    placementPadding: 3,
+    spawn: Object.freeze({ x: 50, y: 96 }),
+    destination: Object.freeze({ x: 50, y: 4 }),
+    route: Object.freeze([
+      Object.freeze([{ x: 50, y: 96 }, { x: 50, y: 88 }, { x: 82, y: 87 }, { x: 82, y: 72 }]),
+      Object.freeze([{ x: 82, y: 72 }, { x: 82, y: 57 }, { x: 18, y: 59 }, { x: 18, y: 43 }]),
+      Object.freeze([{ x: 18, y: 43 }, { x: 18, y: 27 }, { x: 82, y: 29 }, { x: 82, y: 15 }]),
+      Object.freeze([{ x: 82, y: 15 }, { x: 82, y: 7 }, { x: 57, y: 8 }, { x: 50, y: 4 }]),
+    ]),
+    arrows: Object.freeze([0.12, 0.36, 0.61, 0.84]),
+  }),
+});
+const MAP_DEFINITION = MAP_DEFINITIONS.cosmic_s_01;
 // This is the sole source of truth for recipes, construction, combat stats,
 // contextual actions, effects and the codex.
 const CONSTELLATION_DEFINITIONS = Object.freeze({
@@ -223,13 +243,16 @@ class Enemy {
   constructor(type, lane, wave) {
     Object.assign(this, CONFIG.monsters[type]);
     this.type = type;
-    this.lane = lane;
+    // lane is retained as a harmless compatibility field for saved/test data;
+    // every enemy now travels the one shared route.
+    this.lane = 0;
     this.progress = 0;
+    this.pathProgress = 0;
     this.maxHp = this.hp * Math.pow(1 + CONFIG.waveHpGrowth, wave - 1);
     this.hp = this.maxHp;
     this.dead = false;
-    this.x = 8;
-    this.y = lane === 0 ? 10 : 90;
+    this.x = MAP_DEFINITION.spawn.x;
+    this.y = MAP_DEFINITION.spawn.y;
     this.lastHpPercent = -1;
     this.el = document.createElement("div");
     this.el.className = `enemy ${this.type}${this.boss ? " boss" : ""}`;
@@ -243,7 +266,7 @@ class Enemy {
     return { x: this.x, y: this.y };
   }
   calculatePosition() {
-    return routePoint(this.lane, Math.min(1, this.progress / 100));
+    return routePoint(Math.min(1, this.pathProgress));
   }
   render() {
     const metrics = RangeSystem.metrics();
@@ -251,6 +274,7 @@ class Enemy {
   }
   update(dt) {
     this.progress += this.speed * dt;
+    this.pathProgress = Math.min(1, this.progress / 100);
     const position = this.calculatePosition();
     this.x = position.x;
     this.y = position.y;
@@ -286,14 +310,14 @@ class EnemySpawner {
     let boss = WaveManager.isBoss(n);
     if (boss) {
       let type = n % 20 === 0 ? "meteor" : "drone";
-      this.queue.push({ at: 0, type, lane: n % 2 });
+      this.queue.push({ at: 0, type, lane: 0 });
     } else {
       let count = Math.min(4 + Math.floor(n * 1.2), 25);
       for (let i = 0; i < count; i++)
         this.queue.push({
           at: i * 0.7,
           type: (i + n) % 3 === 0 ? "bug" : "slime",
-          lane: i % 2,
+          lane: 0,
         });
     }
   }
@@ -355,18 +379,20 @@ function curvePoint(points, t) {
   return { x: u ** 3 * points[0].x + 3 * u * u * t * points[1].x + 3 * u * t * t * points[2].x + t ** 3 * points[3].x,
     y: u ** 3 * points[0].y + 3 * u * u * t * points[1].y + 3 * u * t * t * points[2].y + t ** 3 * points[3].y };
 }
-function routePoint(lane, progress) {
-  const top = lane === 0;
-  const a = top ? 10 : 90;
-  const b = top ? 90 : 10;
-  const sections = [
-    [{ x: 8, y: a }, { x: 76, y: a }, { x: 76, y: 50 }, { x: 50, y: 50 }],
-    [{ x: 50, y: 50 }, { x: 24, y: 50 }, { x: 24, y: b }, { x: 92, y: b }],
-    [{ x: 92, y: b }, { x: 98, y: top ? 70 : 30 }, { x: 92, y: 50 }],
-  ];
-  const scaled = Math.min(progress, .999999) * sections.length;
+function routePoint(progressOrLane, legacyProgress) {
+  const progress = legacyProgress === undefined ? progressOrLane : legacyProgress;
+  const sections = MAP_DEFINITION.route;
+  if (progress >= 1) return { ...MAP_DEFINITION.destination };
+  const scaled = Math.max(0, progress) * sections.length;
   const section = Math.floor(scaled);
   return curvePoint(sections[section], scaled - section);
+}
+
+function routePathData() {
+  const start = MAP_DEFINITION.spawn;
+  return `M${start.x} ${start.y}` + MAP_DEFINITION.route.map((segment) =>
+    `C${segment[1].x} ${segment[1].y} ${segment[2].x} ${segment[2].y} ${segment[3].x} ${segment[3].y}`
+  ).join("");
 }
 class Targeting {
   static choose(star, enemies, pos) {
@@ -514,6 +540,10 @@ class Constellation {
     this.center = center;
     this.members = [...members];
     this.connectionOrder = [...connectionOrder];
+    this.originalComponents = members.map((index) => {
+      const star = owner.stars[index];
+      return { index, type: star.type, tier: star.tier, x: star.x, y: star.y, owner: owner.player.index };
+    });
     this.definitionId = definitionId;
     this.definition = CONSTELLATION_DEFINITIONS[definitionId];
     this.behavior = CONSTELLATION_BEHAVIORS[definitionId];
@@ -578,9 +608,11 @@ class Constellation {
     }
   }
   release() {
-    this.members.forEach((index) => {
-      this.owner.stars[index].support = false;
-      this.owner.stars[index].constellation = null;
+    this.originalComponents.forEach((saved) => {
+      const star = this.owner.stars[saved.index];
+      Object.assign(star, { type: saved.type, tier: saved.tier, x: saved.x, y: saved.y });
+      star.support = false;
+      star.constellation = null;
     });
     this.connectionOrder.length = 0;
   }
@@ -594,6 +626,7 @@ class StarManager {
     this.swapMode = false;
     this.zodiacMode = false;
     this.placementMode = false;
+    this.preview = null;
     for (let i = 0; i < MAX_STARS_PER_PLAYER; i++) {
       let b = document.createElement("button");
       b.className = "star-node";
@@ -620,6 +653,15 @@ class StarManager {
         ((event.clientY - rect.top) / rect.height) * 100,
       );
     }, (event) => this.placementMode && event.target === field);
+    field.addEventListener("pointermove", (event) => {
+      if (!this.placementMode || event.target !== field) return;
+      const rect = arena.getBoundingClientRect();
+      this.preview = {
+        x: ((event.clientX - rect.left) / rect.width) * 100,
+        y: ((event.clientY - rect.top) / rect.height) * 100,
+      };
+      this.renderPreview();
+    }, { passive: true });
   }
   pos(i) {
     const star = this.stars[i];
@@ -658,11 +700,12 @@ class StarManager {
     const edge = 28;
     const px = (x * metrics.width) / 100, py = (y * metrics.height) / 100;
     if (px < edge || px > metrics.width - edge || py < edge || py > metrics.height - edge) return false;
-    for (let lane = 0; lane < 2; lane++)
-      for (let step = 0; step <= 120; step++) {
-        const point = routePoint(lane, step / 120);
-        if (RangeSystem.distance({ x, y }, point) < 32) return false;
-      }
+    const starRadius = Math.min(27, Math.max(19, metrics.width * .055));
+    const roadClearance = MAP_DEFINITION.roadWidth / 2 + starRadius + MAP_DEFINITION.placementPadding;
+    for (let step = 0; step <= 240; step++) {
+      const point = routePoint(step / 240);
+      if (RangeSystem.distance({ x, y }, point) < roadClearance) return false;
+    }
     return !game.players.some((player) => player.manager.stars.some((star) =>
       star && RangeSystem.distance({ x, y }, star) < 46));
   }
@@ -680,6 +723,7 @@ class StarManager {
     this.stars[i] = new Star(STAR_KEYS[Math.floor(Math.random() * STAR_KEYS.length)], 1, x, y);
     this.player.resources.spend(CONFIG.summonCost);
     this.placementMode = false;
+    this.preview = null;
     this.field.classList.remove("placing");
     this.clearNormalSelection();
     game.render();
@@ -689,9 +733,25 @@ class StarManager {
   cancelPlacement() {
     if (!this.placementMode) return;
     this.placementMode = false;
+    this.preview = null;
     this.field.classList.remove("placing");
     UIManager.hint("별 배치를 취소했습니다.");
     game.render();
+  }
+  renderPreview() {
+    let preview = this.field.querySelector?.(".placement-preview");
+    if (!this.placementMode || !this.preview) {
+      preview?.remove();
+      return;
+    }
+    if (!preview) {
+      preview = document.createElement("i");
+      preview.className = "placement-preview";
+      this.field.append(preview);
+    }
+    preview.style.left = `${this.preview.x}%`;
+    preview.style.top = `${this.preview.y}%`;
+    preview.classList.toggle("invalid", !this.isValidPlacement(this.preview.x, this.preview.y));
   }
   tap(i) {
     if (!this.stars[i]) return;
@@ -762,6 +822,7 @@ class StarManager {
         ? this.stars[this.selected[0]]?.constellation
         : null;
     [...this.field.children].forEach((el, i) => {
+      if (el.className === "placement-preview" || el.className === "placement-preview invalid") return;
       let s = this.stars[i],
         picked = this.selected.includes(i);
       el.hidden = !s;
@@ -789,6 +850,7 @@ class StarManager {
       );
       el.setAttribute("aria-pressed", picked);
     });
+    this.renderPreview();
   }
 }
 class MergeSystem {
@@ -1453,6 +1515,25 @@ function bootstrapGame() {
   // Assignments are intentionally explicit so missing IDs identify themselves.
   window.BOOT_STAGE = "dom-ready";
   arena = getRequiredElement("arena");
+  const pathSvg = getRequiredElement("paths");
+  const pathData = routePathData();
+  pathSvg.querySelectorAll(".roadGlow,.road").forEach((path) => path.setAttribute("d", pathData));
+  pathSvg.querySelectorAll(".start").forEach((node) => {
+    node.setAttribute("cx", MAP_DEFINITION.spawn.x);
+    node.setAttribute("cy", MAP_DEFINITION.spawn.y);
+  });
+  pathSvg.querySelectorAll(".goal").forEach((node) => {
+    node.setAttribute("cx", MAP_DEFINITION.destination.x);
+    node.setAttribute("cy", MAP_DEFINITION.destination.y);
+  });
+  const arrowLayer = pathSvg.querySelector(".route-arrows");
+  if (arrowLayer) arrowLayer.innerHTML = MAP_DEFINITION.arrows.map((progress) => {
+    const point = routePoint(progress);
+    const before = routePoint(Math.max(0, progress - .004));
+    const after = routePoint(Math.min(1, progress + .004));
+    const angle = Math.atan2(after.y - before.y, after.x - before.x) * 180 / Math.PI + 90;
+    return `<path d="M0 -2.2L2 1.8L0 .8L-2 1.8Z" transform="translate(${point.x} ${point.y}) rotate(${angle})"/>`;
+  }).join("");
   effects = getRequiredElement("effects");
   links = getRequiredElement("links");
   ranges = getRequiredElement("ranges");
