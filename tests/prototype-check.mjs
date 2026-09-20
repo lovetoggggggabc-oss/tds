@@ -40,8 +40,8 @@ assert.match(
 assert.match(css, /grid-template-columns:\s*repeat\(5,\s*1fr\)/);
 assert.match(css, /grid-template-rows:\s*repeat\(3,\s*1fr\)/);
 assert.match(css, /\.road\s*\{[\s\S]*?stroke-width:\s*1\.35px/);
-assert.match(css, /\.field\.p2\s*\{\s*top:\s*16%/);
-assert.match(css, /\.field\.p1\s*\{\s*bottom:\s*16%/);
+assert.match(css, /\.field\.p2\s*\{\s*top:\s*9%/);
+assert.match(css, /\.field\.p1\s*\{\s*bottom:\s*9%/);
 assert.match(css, /\.range-indicator\s*\{[\s\S]*?border-radius:\s*50%/);
 assert.match(
   css,
@@ -174,7 +174,18 @@ assert.match(
 );
 assert.match(js, /p\.resources\.starlight \+= e\.reward/);
 assert.match(js, /if \(e\.boss\) p\.resources\.divinity\+\+/);
-assert.match(js, /if \(--this\.hp <= 0\)/);
+assert.match(js, /const BASE_MAX_HP = 5000/);
+assert.match(js, /this\.baseHP = BASE_MAX_HP/);
+assert.match(js, /this\.baseHP = Math\.max\(0, this\.baseHP - e\.baseDamage\)/);
+for (const [type, damage] of [["slime", 100], ["bug", 150]])
+  assert.match(js, new RegExp(`${type}: \\{[^}]*baseDamage: ${damage}`));
+for (const [name, damage] of [["코어 드론", 500], ["운석 괴물", 1000]])
+  assert.match(js, new RegExp(`name: "${name}"[\\s\\S]*?baseDamage: ${damage}`));
+assert.match(css, /\.slot\s*\{[\s\S]*?min-height:\s*44px/);
+assert.match(css, /\.slot\s*\{[\s\S]*?min-width:\s*44px/);
+assert.match(js, /function bindPointerTap/);
+assert.match(css, /\.app\s*\{[\s\S]*?width:\s*100vw;[\s\S]*?height:\s*100dvh/);
+assert.match(css, /\.star-info\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?z-index:\s*160/);
 
 const isBoss = (n) =>
   (n <= 40 && n % 10 === 0) ||

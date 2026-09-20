@@ -14,16 +14,16 @@
 }
 html,
 body {
+  width: 100%;
+  height: 100%;
   margin: 0;
-  min-height: 100%;
+  overflow: hidden;
   background: #07091d;
   color: var(--ink);
   font-family: ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
   overscroll-behavior: none;
 }
 body {
-  display: flex;
-  justify-content: center;
   background:
     radial-gradient(circle at 18% 15%, #202354 0, transparent 28%),
     radial-gradient(circle at 88% 72%, #32194f 0, transparent 30%), #07091d;
@@ -51,10 +51,11 @@ button {
   touch-action: manipulation;
 }
 .app {
-  width: min(100%, 580px);
-  min-height: 100dvh;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   padding: max(8px, env(safe-area-inset-top)) 10px
-    calc(190px + env(safe-area-inset-bottom));
+    calc(112px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -104,7 +105,8 @@ header {
 }
 .hp b {
   color: #ff8da7;
-  font-size: 18px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 .hp span {
   display: block;
@@ -125,6 +127,11 @@ header {
   background: var(--cyan);
 }
 .star-info {
+  position: absolute;
+  z-index: 160;
+  top: calc(max(8px, env(safe-area-inset-top)) + 76px);
+  left: 10px;
+  right: 10px;
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 3px 11px;
@@ -162,9 +169,9 @@ header {
 }
 .arena {
   position: relative;
-  aspect-ratio: 10/14.7;
-  width: min(100%, 560px);
-  max-width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
   align-self: center;
   border-radius: 22px;
   overflow: hidden;
@@ -204,6 +211,11 @@ header {
   inset: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none;
+}
+#links *,
+#ranges *,
+#effects * {
   pointer-events: none;
 }
 .range {
@@ -266,20 +278,20 @@ header {
 }
 .field {
   position: absolute;
-  left: 19%;
-  width: 61%;
-  height: 29%;
+  left: 10%;
+  width: 80%;
+  height: 36%;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 5px;
-  padding: 4px;
+  gap: 3px;
+  padding: 3px;
 }
 .field.p1 {
-  bottom: 16%;
+  bottom: 9%;
 }
 .field.p2 {
-  top: 16%;
+  top: 9%;
 }
 .field-label {
   position: absolute;
@@ -290,10 +302,10 @@ header {
   color: #a9b8ef;
 }
 .field-label.one {
-  bottom: 15%;
+  bottom: 8%;
 }
 .field-label.two {
-  top: 15%;
+  top: 8%;
 }
 .slot {
   position: relative;
@@ -301,8 +313,12 @@ header {
   border-radius: 10px;
   border: 1px solid rgba(127, 150, 225, 0.18);
   background: rgba(54, 64, 119, 0.18);
-  min-width: 0;
+  min-width: 44px;
   overflow: visible;
+  min-height: 44px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .slot:after {
   content: "";
@@ -355,6 +371,7 @@ header {
   filter: drop-shadow(0 0 6px currentColor);
   font-size: clamp(18px, 5vw, 28px);
   line-height: 1;
+  pointer-events: none;
 }
 .star-level {
   position: absolute;
@@ -791,7 +808,8 @@ header {
 .context-actions button {
   position: absolute;
   white-space: nowrap;
-  min-height: 34px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 7px 11px;
   border-radius: 18px;
   font-size: 12px;
@@ -1194,9 +1212,6 @@ body.codex-open {
   .app {
     gap: 4px;
   }
-  .arena {
-    width: min(76%, 400px);
-  }
   header {
     padding: 4px 9px;
   }
@@ -1211,6 +1226,10 @@ body.codex-open {
 @media (max-width: 390px) {
   .app {
     padding-inline: 6px;
+  }
+  .star-info {
+    left: 6px;
+    right: 6px;
   }
   .brand b {
     font-size: 14px;
