@@ -109,8 +109,8 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
   }),
 });
 const CONFIG = {
-  waveSeconds: 15,
-  bossWaveSeconds: 25,
+  waveSeconds: 10,
+  bossWaveSeconds: 20,
   summonCost: 30,
   swapCost: 10,
   divinationCost: 30,
@@ -624,8 +624,6 @@ class StarManager {
     this.selected = [];
     this.swapMode = false;
     this.zodiacMode = false;
-    this.placementMode = false;
-    this.preview = null;
     for (let i = 0; i < MAX_STARS_PER_PLAYER; i++) {
       let b = document.createElement("button");
       b.className = "star-node";
@@ -643,24 +641,6 @@ class StarManager {
       });
       field.append(b);
     }
-    bindPointerTap(field, (event) => {
-      if (!this.placementMode || event.target !== field) return;
-      event.stopPropagation();
-      const rect = arena.getBoundingClientRect();
-      this.summonAt(
-        ((event.clientX - rect.left) / rect.width) * 100,
-        ((event.clientY - rect.top) / rect.height) * 100,
-      );
-    }, (event) => this.placementMode && event.target === field);
-    field.addEventListener("pointermove", (event) => {
-      if (!this.placementMode || event.target !== field) return;
-      const rect = arena.getBoundingClientRect();
-      this.preview = {
-        x: ((event.clientX - rect.left) / rect.width) * 100,
-        y: ((event.clientY - rect.top) / rect.height) * 100,
-      };
-      this.renderPreview();
-    }, { passive: true });
   }
   pos(i) {
     const star = this.stars[i];
@@ -684,16 +664,6 @@ class StarManager {
       return empty;
     }, []);
   }
-  summon() {
-    if (this.placementMode) return this.cancelPlacement();
-    if (!this.emptySlots().length) return UIManager.hint("더 이상 별을 배치할 수 없습니다.");
-    if (!this.player.resources.can(CONFIG.summonCost))
-      return UIManager.hint("별빛이 부족합니다.");
-    this.placementMode = true;
-    this.field.classList.add("placing");
-    UIManager.hint("길을 피해 별을 배치할 위치를 선택하세요.");
-    game.render();
-  }
   isValidPlacement(x, y) {
     const metrics = RangeSystem.metrics();
     const edge = 28;
@@ -709,8 +679,8 @@ class StarManager {
       star && RangeSystem.distance({ x, y }, star) < 46));
   }
   summonAt(x, y) {
-    if (!this.placementMode || !this.isValidPlacement(x, y)) {
-      if (this.placementMode) UIManager.hint("길과 다른 별을 피해 배치하세요.");
+    if (this.zodiacMode || !this.isValidPlacement(x, y)) {
+      if (!this.zodiacMode) UIManager.hint("길과 다른 별을 피해 배치하세요.");
       return false;
     }
     if (!this.player.resources.can(CONFIG.summonCost)) {
@@ -721,36 +691,10 @@ class StarManager {
     if (i === undefined) return false;
     this.stars[i] = new Star(STAR_KEYS[Math.floor(Math.random() * STAR_KEYS.length)], 1, x, y);
     this.player.resources.spend(CONFIG.summonCost);
-    this.placementMode = false;
-    this.preview = null;
-    this.field.classList.remove("placing");
     this.clearNormalSelection();
     game.render();
     UIManager.summonEffect?.(this, i);
     return true;
-  }
-  cancelPlacement() {
-    if (!this.placementMode) return;
-    this.placementMode = false;
-    this.preview = null;
-    this.field.classList.remove("placing");
-    UIManager.hint("별 배치를 취소했습니다.");
-    game.render();
-  }
-  renderPreview() {
-    let preview = this.field.querySelector?.(".placement-preview");
-    if (!this.placementMode || !this.preview) {
-      preview?.remove();
-      return;
-    }
-    if (!preview) {
-      preview = document.createElement("i");
-      preview.className = "placement-preview";
-      this.field.append(preview);
-    }
-    preview.style.left = `${this.preview.x}%`;
-    preview.style.top = `${this.preview.y}%`;
-    preview.classList.toggle("invalid", !this.isValidPlacement(this.preview.x, this.preview.y));
   }
   tap(i) {
     if (!this.stars[i]) return;
@@ -779,7 +723,6 @@ class StarManager {
     return true;
   }
   exitModes() {
-    this.cancelPlacement();
     this.swapMode = false;
     this.zodiacMode = false;
     this.selected = [];
@@ -821,7 +764,6 @@ class StarManager {
         ? this.stars[this.selected[0]]?.constellation
         : null;
     [...this.field.children].forEach((el, i) => {
-      if (el.className === "placement-preview" || el.className === "placement-preview invalid") return;
       let s = this.stars[i],
         picked = this.selected.includes(i);
       el.hidden = !s;
@@ -849,7 +791,6 @@ class StarManager {
       );
       el.setAttribute("aria-pressed", picked);
     });
-    this.renderPreview();
   }
 }
 class MergeSystem {
@@ -1314,13 +1255,7 @@ class UIManager {
       const p = g.players[Number(panel.dataset.player)];
       const z = panel.querySelector("[data-act=zodiac]");
       const cancel = panel.querySelector("[data-act=zodiac-cancel]");
-      panel.classList.toggle("active-player", p.manager.selected.length > 0 || p.manager.swapMode || p.manager.zodiacMode || p.manager.placementMode);
-      const summon = panel.querySelector("[data-act=summon]");
-      const summonCancel = panel.querySelector("[data-act=summon-cancel]");
-      summon.disabled = !p.manager.placementMode && (!p.resources.can(CONFIG.summonCost) || p.manager.stars.every(Boolean));
-      summon.classList.toggle("active", p.manager.placementMode);
-      summon.textContent = p.manager.placementMode ? "배치 위치 선택 중" : `별 소환 ${CONFIG.summonCost}`;
-      if (summonCancel) summonCancel.hidden = !p.manager.placementMode;
+      panel.classList.toggle("active-player", p.manager.selected.length > 0 || p.manager.swapMode || p.manager.zodiacMode);
       z.classList.toggle("active", p.manager.zodiacMode);
       cancel.hidden = !p.manager.zodiacMode;
       const match = ZodiacSystem.exactMatch(ZodiacSystem.counts(p.manager));
@@ -1395,19 +1330,31 @@ class GameManager {
   }
   buildControls() {
     bindPointerTap(arena, (event) => {
-      // Slots handle their own taps, while every in-arena contextual control
-      // must remain actionable without a bubbling event clearing its target.
-      if (event.target.closest(".star-node, .free-field.placing, .context-actions, button, [role=button]")) return;
+      // Star and UI controls own their gestures. Only a tap that began and
+      // ended on bare map space may summon, so one pointer gesture can never
+      // select a star and also create another one behind it.
+      if (event.target.closest(".star-node, .context-actions, .star-info, .overlay, button, [role=button]")) return;
+      const manager = this.players[0].manager;
+      if (!this.running || !zodiacCodex.hidden || this.players.some((player) => player.manager.zodiacMode)) return;
+      const rect = arena.getBoundingClientRect();
+      manager.summonAt(
+        ((event.clientX - rect.left) / rect.width) * 100,
+        ((event.clientY - rect.top) / rect.height) * 100,
+      );
+    }, (event) => {
+      if (!zodiacCodex.hidden || this.players.some((player) => player.manager.zodiacMode)) return false;
+      return !event.target.closest(".star-node, .context-actions, .star-info, .overlay, button, [role=button]");
+    });
+    bindPointerTap(arena, (event) => {
+      if (event.target.closest(".star-node, .context-actions, .star-info, .overlay, button, [role=button]")) return;
       let changed = false;
       this.players.forEach((player) => {
         changed = player.manager.clearNormalSelection() || changed;
       });
       if (changed) this.render();
-    }, (event) => !event.target.closest(".star-node, .free-field.placing, .context-actions, button, [role=button]"));
+    }, (event) => !event.target.closest(".star-node, .context-actions, .star-info, .overlay, button, [role=button]"));
     controls.querySelectorAll(".game-controls").forEach((panel) => {
       const p = this.players[Number(panel.dataset.player)];
-      panel.querySelector("[data-act=summon]").addEventListener("click", () => p.manager.summon());
-      panel.querySelector("[data-act=summon-cancel]")?.addEventListener("click", () => p.manager.cancelPlacement());
       panel.querySelector("[data-act=zodiac]").addEventListener("click", () => ZodiacSystem.toggle(p.manager));
       panel.querySelector("[data-act=zodiac-cancel]").addEventListener("click", () => ZodiacSystem.cancel(p.manager));
     });

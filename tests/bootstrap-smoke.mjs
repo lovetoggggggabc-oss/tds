@@ -41,7 +41,7 @@ const elements = new Map(
 const controlPanel = new Element();
 controlPanel.dataset.player = "0";
 const actions = Object.fromEntries(
-  ["summon", "zodiac", "zodiac-cancel", "codex"].map((action) => [action, new Element()]),
+  ["zodiac", "zodiac-cancel", "codex"].map((action) => [action, new Element()]),
 );
 controlPanel.querySelector = (selector) =>
   actions[selector.match(/data-act=([^\]]+)/)?.[1]] || null;
@@ -94,11 +94,18 @@ assert.deepEqual(JSON.parse(JSON.stringify(game.players.map((player) => [
 assert.equal(game.wave.wave, 1);
 assert.equal(game.rafRunning, true);
 assert.ok(game.spawner.queue.length > 0, "wave 1 must queue enemies before the loop");
+assert.equal(game.wave.left, 10, "normal waves use the 10-second game-time interval");
+
+game.wave.wave = 9;
+game.wave.left = 0;
+game.wave.update(0);
+assert.equal(game.wave.wave, 10);
+assert.equal(game.wave.left, 20, "boss waves use the 20-second game-time interval");
 
 const firstFrame = animationFrames.splice(0);
 firstFrame.forEach((callback) => callback(16));
 assert.ok(game.enemies.length > 0, "the first animation frame must spawn an enemy");
 assert.equal(elements.has("bootError"), false, "successful boot must not display diagnostics");
-assert.equal((html.match(/<script src="game\.js\?v=31" defer><\/script>/g) || []).length, 1);
+assert.equal((html.match(/<script src="game\.js\?v=32" defer><\/script>/g) || []).length, 1);
 
 console.log("Runtime bootstrap smoke passed: DOM ready, 2 players, 30 star positions, resources, wave 1, enemy spawn, and RAF verified.");

@@ -211,50 +211,6 @@ header {
   inset: 0;
   pointer-events: none;
 }
-.free-field.placing {
-  pointer-events: auto;
-  cursor: crosshair;
-  background: radial-gradient(circle at center, rgba(98, 218, 255, 0.06), transparent 68%);
-}
-.free-field.placing::after {
-  content: "길을 피해 원하는 위치를 터치하세요";
-  position: absolute;
-  left: 50%;
-  bottom: 42px;
-  transform: translateX(-50%);
-  padding: 5px 10px;
-  border: 1px solid #7deaff88;
-  border-radius: 999px;
-  color: #e9fbff;
-  background: #11183ddd;
-  font-size: 10px;
-  font-weight: 800;
-  white-space: nowrap;
-  pointer-events: none;
-}
-.placement-preview {
-  position: absolute;
-  z-index: 20;
-  width: 46px;
-  height: 46px;
-  border: 2px solid #8ff5ff;
-  border-radius: 50%;
-  background: #62eaff2b;
-  box-shadow: 0 0 14px #62eaff;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-.placement-preview::after {
-  content: "✦";
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: #e9ffff;
-  font: 28px/1 sans-serif;
-}
-.placement-preview.invalid { border-color: #ff5577; background: #ff33552e; box-shadow: 0 0 14px #ff3355; }
-.placement-preview.invalid::after { content: "×"; color: #ff9aac; }
 .star-node {
   position: absolute;
   width: clamp(38px, 11vw, 54px);
