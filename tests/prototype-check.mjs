@@ -7,8 +7,8 @@ const [html, css, js] = await Promise.all([
   readFile("game.js", "utf8"),
 ]);
 
-assert.match(html, /href="styles\.css\?v=33"/);
-assert.match(html, /<script src="game\.js\?v=33" defer><\/script>/);
+assert.match(html, /href="styles\.css\?v=34"/);
+assert.match(html, /<script src="game\.js\?v=34" defer><\/script>/);
 assert.equal((html.match(/data-act="summon"/g) || []).length, 0);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/, "2P's direct controls must not be rendered");
@@ -177,8 +177,8 @@ assert.match(
 assert.match(js, /p\.resources\.starlight \+= e\.reward/);
 assert.match(js, /if \(e\.boss\) p\.resources\.divinity\+\+/);
 assert.match(js, /const BASE_MAX_HP = 5000/);
-assert.match(js, /this\.baseHP = BASE_MAX_HP/);
-assert.match(js, /this\.baseHP = Math\.max\(0, this\.baseHP - e\.baseDamage\)/);
+assert.match(js, /this\.base = \{ hp: BASE_MAX_HP, maxHp: BASE_MAX_HP \}/);
+assert.match(js, /this\.base\.hp = Math\.max\(0, this\.base\.hp - e\.baseDamage\)/);
 for (const [type, damage] of [["slime", 100], ["bug", 150]])
   assert.match(js, new RegExp(`${type}: \\{[^}]*baseDamage: ${damage}`));
 for (const [name, damage] of [["코어 드론", 500], ["운석 괴물", 1000]])
@@ -187,8 +187,8 @@ assert.match(css, /\.star-node\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?aspect-r
 assert.match(js, /function bindPointerTap/);
 assert.match(html, /<main class="app" id="game-shell">/);
 assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*600px\);[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
-assert.match(html, /styles\.css\?v=33/, "the deployed stylesheet URL must change when its layout changes");
-assert.match(html, /game\.js\?v=33/, "the deployed script URL must not reuse the pre-layout cache entry");
+assert.match(html, /styles\.css\?v=34/, "the deployed stylesheet URL must change when its layout changes");
+assert.match(html, /game\.js\?v=34/, "the deployed script URL must not reuse the pre-layout cache entry");
 assert.match(css, /\.star-info\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?z-index:\s*160/);
 
 const isBoss = (n) =>
