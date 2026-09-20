@@ -732,27 +732,25 @@ class MergeSystem {
   }
 }
 class SwapSystem {
-  static begin(m) {
+  static execute(m, index) {
     if (m.zodiacMode) return UIManager.hint("먼저 조디악 선택을 완료하거나 취소하세요.");
-    if (m.selected.length !== 1) return UIManager.hint("교환할 첫 별을 선택하세요.");
-    const star = m.stars[m.selected[0]];
+    const star = m.stars[index];
     if (!star || star.support || star.constellation) return UIManager.hint("별자리 구성원은 교환할 수 없습니다.");
-    if (!m.player.resources.can(CONFIG.swapCost)) return UIManager.hint("별빛이 부족합니다.");
-    m.swapMode = true;
-    UIManager.hint("교환할 상대 별을 선택하세요 · 비용 별빛 10");
-    game.render();
-  }
-  static execute(m, a, b) {
-    if (!m.swapMode || a === b) return;
-    const other = m.stars[b];
-    if (!other || other.support || other.constellation) return UIManager.hint("일반 별을 교환 대상으로 선택하세요.");
     if (!m.player.resources.spend(CONFIG.swapCost)) return UIManager.hint("별빛이 부족합니다.");
-    [m.stars[a], m.stars[b]] = [m.stars[b], m.stars[a]];
-    m.selected = [b];
+
+    const oldType = star.type;
+    const nextTypes = STAR_KEYS.filter((type) => type !== oldType);
+    star.type = nextTypes[Math.floor(Math.random() * nextTypes.length)];
+    // A type owns targeting, cadence and burst behavior. Clear all transient
+    // combat state so the replacement starts using its own rules immediately.
+    star.lock = null;
+    star.cooldown = 0;
+    star.burstLeft = 3;
+    m.selected = [index];
     m.swapMode = false;
-    UIManager.hint("두 별의 슬롯을 교환했습니다.");
+    UIManager.hint(`${star.data().name} 별로 교환했습니다.`);
     game.render();
-    UIManager.swapEffect(m, b, m.stars[b].type);
+    UIManager.swapEffect(m, index, oldType);
   }
 }
 class ZodiacSystem {
@@ -1097,7 +1095,7 @@ class UIManager {
       if (this.actionKey !== actionKey) {
         contextActions.innerHTML = `<button data-context="swap"${canSwap ? "" : " disabled"}>교환 10</button>${partner >= 0 ? `<button class="merge available" data-context="merge">합성</button>` : ""}`;
         contextActions.querySelector('[data-context="swap"]').onclick = () =>
-          SwapSystem.begin(pick.m);
+          SwapSystem.execute(pick.m, pick.index);
         contextActions.querySelector('[data-context="merge"]')?.addEventListener("click", () =>
           MergeSystem.execute(pick.m));
         this.actionKey = actionKey;
