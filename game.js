@@ -22,6 +22,7 @@ const CONFIG = {
       rate: 4,
       specialMultiplier: 15,
       specialHits: 4,
+      special: "같은 적 4회 타격 시 공격력의 1500% 피해",
     },
     radiance: {
       name: "광휘의 별자리",
@@ -29,6 +30,7 @@ const CONFIG = {
       range: 6,
       damage: 950,
       rate: 1,
+      special: "연결된 별들의 단계 합만큼 서로 다른 적에게 연쇄 공격",
     },
   },
   monsters: {
@@ -92,6 +94,10 @@ const CONFIG = {
     },
   },
 };
+// Every zodiac-facing feature reads this registry: matching, combat, labels,
+// and the codex. Adding a constellation does not require another matching
+// branch or a new hard-coded selection limit.
+const ZODIAC_RECIPES = CONFIG.constellations;
 const STAR_KEYS = Object.keys(CONFIG.stars),
   TARGET_LABELS = {
     lock: "대상 고정 공격",
@@ -332,6 +338,7 @@ class Constellation {
         if (!target.dead) {
           const specialDamage =
             currentAttackDamage * this.stats.specialMultiplier;
+          UIManager.dawnSpecial(target.position(), specialDamage);
           target.hit(specialDamage, position);
         }
         this.hitCount = 0;
@@ -430,9 +437,8 @@ class StarManager {
     if (this.zodiacMode) {
       let at = this.selected.indexOf(i);
       if (at >= 0) this.selected.splice(at, 1);
-      else if (this.selected.length < 4) this.selected.push(i);
-      else
-        return UIManager.hint("조디악 별은 최대 4개까지 선택할 수 있습니다.");
+      else this.selected.push(i);
+      ZodiacSystem.describeSelection(this);
     } else {
       let deselect = this.selected[0] === i;
       this.clearOthers();
@@ -573,40 +579,59 @@ class SwapSystem {
   }
 }
 class ZodiacSystem {
+  static counts(m) {
+    return m.selected.reduce((counts, index) => {
+      const type = m.stars[index]?.type;
+      if (type) counts[type] = (counts[type] || 0) + 1;
+      return counts;
+    }, {});
+  }
+  static exactMatch(counts) {
+    return Object.keys(ZODIAC_RECIPES).find((kind) => {
+      const requirements = ZODIAC_RECIPES[kind].recipe;
+      return (
+        Object.keys(counts).length === Object.keys(requirements).length &&
+        Object.entries(requirements).every(
+          ([type, amount]) => counts[type] === amount,
+        )
+      );
+    });
+  }
+  static possibleMatches(counts) {
+    return Object.keys(ZODIAC_RECIPES).filter((kind) =>
+      Object.entries(counts).every(
+        ([type, amount]) => (ZODIAC_RECIPES[kind].recipe[type] || 0) >= amount,
+      ),
+    );
+  }
+  static describeSelection(m) {
+    const counts = this.counts(m);
+    const exact = this.exactMatch(counts);
+    if (exact)
+      UIManager.hint(`${ZODIAC_RECIPES[exact].name}를 연결할 수 있습니다.`);
+    else if (m.selected.length && !this.possibleMatches(counts).length)
+      UIManager.hint("현재 선택으로 완성 가능한 별자리가 없습니다.");
+  }
   static toggle(m) {
     if (!m.zodiacMode) {
       m.clearOthers();
       m.swapMode = false;
       m.zodiacMode = true;
       m.selected = [];
-      UIManager.hint("조디악 선택 모드 · 중심 별부터 재료 3~4개를 고르세요.");
+      UIManager.hint("조디악 선택 모드 · 원하는 재료 별을 고르세요.");
       return game.render();
     }
     this.create(m);
   }
   static create(m) {
     let picks = m.selected;
-    if (picks.length < 3 || picks.length > 4)
-      return UIManager.hint("조디악 재료 별을 3개 또는 4개 선택하세요.");
-    let counts = {};
-    picks.forEach((i) => {
-      let s = m.stars[i];
-      if (s) counts[s.type] = (counts[s.type] || 0) + 1;
-    });
-    const kind = Object.keys(CONFIG.constellations).find((key) => {
-      const recipe = CONFIG.constellations[key].recipe;
-      return (
-        Object.keys(counts).length === Object.keys(recipe).length &&
-        Object.keys(recipe).every((type) => counts[type] === recipe[type])
-      );
-    });
+    const counts = this.counts(m);
+    const kind = this.exactMatch(counts);
     if (
       !kind ||
       picks.some((i) => m.stars[i].support || m.stars[i].constellation)
     )
-      return UIManager.hint(
-        "조합 불일치 · 새벽(청색×3+백색×1) / 광휘(적색×2+백색×1)",
-      );
+      return UIManager.hint("선택한 별과 정확히 일치하는 별자리가 없습니다.");
     let center = picks[0],
       points = picks.map((i) => m.pos(i));
     new Constellation(m, center, [...picks], kind);
@@ -671,6 +696,26 @@ class UIManager {
     );
     effects.append(line);
     game.simulationTimeout(() => line.remove(), 230);
+  }
+  static dawnSpecial(position, damage) {
+    const burst = document.createElement("div");
+    burst.className = "dawn-special";
+    burst.style.left = `${position.x}%`;
+    burst.style.top = `${position.y}%`;
+    burst.setAttribute("aria-hidden", "true");
+    burst.innerHTML = `<i class="dawn-flash"></i><i class="dawn-shockwave"></i><svg viewBox="0 0 100 70"><path d="M87 9C65 58 29 69 7 46c28 11 55-3 80-37Z"/></svg>${Array.from({ length: 8 }, (_, i) => `<i class="dawn-spark" style="--angle:${i * 45}deg"></i>`).join("")}<b>${Math.round(damage).toLocaleString()}</b>`;
+    arena.append(burst);
+    game.simulationTimeout(() => burst.remove(), 480);
+  }
+  static renderCodex() {
+    zodiacCodexList.innerHTML = Object.entries(ZODIAC_RECIPES)
+      .map(([kind, zodiac]) => {
+        const requirements = Object.entries(zodiac.recipe)
+          .map(([type, amount]) => `<span class="codex-requirement"><i style="color:${CONFIG.stars[type].color}">✦</i>${CONFIG.stars[type].name} ${"★".repeat(amount)}</span>`)
+          .join("");
+        return `<article class="zodiac-card ${kind}"><h3>${zodiac.name}</h3><div class="codex-recipe">${requirements}</div><dl><div><dt>공격력</dt><dd>${zodiac.damage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.rate}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><p><strong>특수</strong> ${zodiac.special}</p></article>`;
+      })
+      .join("");
   }
   static zodiacComplete(center, members) {
     members.forEach((p, i) =>
@@ -870,8 +915,11 @@ class UIManager {
       !p.resources.can(CONFIG.summonCost) || p.manager.stars.every(Boolean);
     z.classList.toggle("active", p.manager.zodiacMode);
     cancel.hidden = !p.manager.zodiacMode;
+    const match = ZodiacSystem.exactMatch(ZodiacSystem.counts(p.manager));
     z.textContent = p.manager.zodiacMode
-      ? `연결 실행 (${p.manager.selected.length})`
+      ? match
+        ? `${ZODIAC_RECIPES[match].name} 연결`
+        : "별자리 재료 선택 중"
       : "조디악";
     this.renderInfo(g);
   }
@@ -905,6 +953,13 @@ class GameManager {
     controls
       .querySelector("[data-act=zodiac-cancel]")
       .addEventListener("click", () => ZodiacSystem.cancel(p.manager));
+    controls.querySelector("[data-act=codex]").addEventListener("click", () => {
+      UIManager.renderCodex();
+      zodiacCodex.hidden = false;
+    });
+    zodiacCodex.querySelector("[data-close-codex]").addEventListener("click", () => {
+      zodiacCodex.hidden = true;
+    });
   }
   simulationTimeout(callback, milliseconds) {
     return setTimeout(callback, milliseconds / this.speed);
@@ -953,6 +1008,7 @@ restart.onclick = () => location.reload();
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 window.__TDS__ = {
   CONFIG,
+  ZODIAC_RECIPES,
   game,
   classes: { Enemy, WaveManager, Star, Targeting, RangeSystem, Constellation },
 };
