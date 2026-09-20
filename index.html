@@ -13,27 +13,34 @@
   </head>
   <body>
     <main class="app" id="game-shell">
-      <header>
-        <div class="brand"><small>CO-OP DEFENSE</small><b>별빛 수호대</b></div>
+      <header class="game-hud">
+        <div class="brand"><b>별자리 디펜스</b><small>ZODIAC DEFENSE</small></div>
         <div class="wave">
-          <b>WAVE <span id="wave">0</span></b
-          ><span>다음 웨이브 <strong id="timer">0.0</strong>초</span>
+          <b>WAVE <span id="wave">0</span></b><i aria-hidden="true"></i>
+          <span><strong class="clock">◷</strong> <strong id="timer">00:00</strong><small>다음 웨이브까지</small></span>
         </div>
         <div class="resources" aria-label="플레이어별 보유 자원">
-          <span>2P ✦<b id="starlight2">0</b> ◇<b id="divinity2">0</b></span>
-          <span>1P ✦<b id="starlight1">0</b> ◇<b id="divinity1">0</b></span>
+          <span class="primary-resource"><i>✦</i><b id="starlight1">0</b><em>별빛</em></span>
+          <span class="primary-resource divinity"><i>◆</i><b id="divinity1">0</b><em>신성</em></span>
+          <span class="partner-resource">2P ✦ <b id="starlight2">0</b> · ◆ <b id="divinity2">0</b></span>
         </div>
-        <div class="hp">
-          <b id="hp">HP 400/400</b><span>1P·2P 공용</span
-          ><button class="speed" id="speed" aria-label="게임 속도 변경">
-            1× 속도
-          </button>
-        </div>
+        <div class="hp"><b id="hp">♥ 400 / 400</b><span>ASTRAL CORE</span></div>
+        <aside class="next-wave" aria-label="다음 적 정보">
+          <small>NEXT ENEMY</small><b>다음 적 정보</b><div id="nextEnemies"></div>
+        </aside>
       </header>
       <aside class="star-info" id="starInfo" hidden aria-live="polite"></aside>
       <section class="arena" id="arena" aria-label="게임 필드">
-        <div class="planet a"></div>
+        <div class="planet a"><i></i><i></i><i></i></div>
         <div class="planet b"></div>
+        <div class="space-dust" aria-hidden="true"></div>
+        <div class="asteroids" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <svg class="decorative-constellations" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <g class="decor blue"><path d="M8 21 16 16 20 25 11 31"/><circle cx="8" cy="21" r=".7"/><circle cx="16" cy="16" r=".65"/><circle cx="20" cy="25" r=".75"/><circle cx="11" cy="31" r=".55"/></g>
+          <g class="decor gold"><path d="M79 68 88 73 84 83 93 88"/><circle cx="79" cy="68" r=".55"/><circle cx="88" cy="73" r=".8"/><circle cx="84" cy="83" r=".55"/><circle cx="93" cy="88" r=".7"/></g>
+          <g class="decor red"><path d="M7 62 14 56 20 65"/><circle cx="7" cy="62" r=".6"/><circle cx="14" cy="56" r=".7"/><circle cx="20" cy="65" r=".55"/></g>
+          <g class="decor green"><path d="M81 24 90 29 86 37"/><circle cx="81" cy="24" r=".55"/><circle cx="90" cy="29" r=".7"/><circle cx="86" cy="37" r=".55"/></g>
+        </svg>
         <svg
           id="paths"
           viewBox="0 0 100 100"
@@ -46,7 +53,9 @@
           <path class="roadStars" />
           <g class="route-arrows arrow"></g>
           <g class="cosmic-base">
+            <path class="base-wing" d="M45 4 40 2 42 7 38 10 45 8M55 4 60 2 58 7 62 10 55 8" />
             <path class="base-shield" d="M50 0.8 55 3.5 55 8.5 50 11.2 45 8.5 45 3.5Z" />
+            <circle class="base-orbit" cx="50" cy="6" r="4.7" />
             <circle class="goal goalPulse" cx="50" cy="6" r="5.5" />
             <circle class="goal" cx="50" cy="6" r="3.5" />
             <circle class="base-core" cx="50" cy="6" r="1.35" />
@@ -56,7 +65,9 @@
             ✦
           </text>
           <g class="spawn-portal">
+            <circle class="portal-aura" cx="50" cy="94" r="6.2" />
             <circle class="portal-rim" cx="50" cy="94" r="5" />
+            <circle class="portal-runes" cx="50" cy="94" r="4.25" />
             <circle class="start" cx="50" cy="94" r="3.5" />
             <path class="portal-swirl" d="M47.5 94c1.2-2.4 5.3-2 5.4.5.1 2-3.4 2.6-4.1.7-.5-1.4 1.8-2.2 2.5-.8" />
           </g>
@@ -110,6 +121,11 @@
           </div>
         </div>
       </section>
+      <nav class="side-controls" aria-label="게임 설정">
+        <button type="button" disabled aria-label="일시정지 (사용할 수 없음)">Ⅱ</button>
+        <button type="button" class="speed" id="speed" aria-label="게임 속도 변경">×1</button>
+        <button type="button" disabled aria-label="설정 (사용할 수 없음)">⚙</button>
+      </nav>
       <section
         class="zodiac-codex"
         id="zodiacCodex"
@@ -130,7 +146,7 @@
         <section class="game-controls" data-player="0" aria-label="1P 게임 조작">
           <b class="player-badge">1P</b>
           <button type="button" class="zodiac-cancel" data-act="zodiac-cancel" hidden>조디악 실행 취소</button>
-          <button type="button" data-act="zodiac">조디악</button>
+          <button type="button" data-act="zodiac"><i>✦</i><span>조디악<small>ZODIAC</small></span></button>
           <button type="button" class="codex-button" data-act="codex">별자리 도감</button>
         </section>
       </nav>
