@@ -22,11 +22,30 @@ assert.match(
 assert.match(css, /grid-template-columns:\s*repeat\(5,\s*1fr\)/);
 assert.match(css, /grid-template-rows:\s*repeat\(3,\s*1fr\)/);
 assert.match(css, /\.road\s*\{[\s\S]*?stroke-width:\s*1\.35px/);
+assert.match(css, /\.field\.p2\s*\{\s*top:\s*16%/);
+assert.match(css, /\.field\.p1\s*\{\s*bottom:\s*16%/);
+assert.match(css, /\.range-indicator\s*\{[\s\S]*?border-radius:\s*50%/);
 assert.match(js, /this\.stars = Array\(15\)\.fill\(null\)/);
 assert.match(js, /startStarlight:\s*5000/);
 assert.match(js, /startDivinity:\s*50/);
 assert.match(js, /summonCost:\s*30/);
 assert.match(js, /swapCost:\s*10/);
+assert.match(js, /slime:\s*\{[^}]*hp:\s*500/);
+assert.match(js, /bug:\s*\{[^}]*hp:\s*800/);
+assert.match(js, /name:\s*"코어 드론"[\s\S]*?hp:\s*10000/);
+assert.match(js, /name:\s*"운석 괴물"[\s\S]*?hp:\s*20000/);
+assert.match(js, /Math\.pow\(1 \+ CONFIG\.waveHpGrowth, wave - 1\)/);
+assert.match(
+  js,
+  /rangeIndicator\.style\.width = diameter \+ "px";\s*rangeIndicator\.style\.height = diameter \+ "px"/,
+);
+assert.match(js, /static partner\(m\)/);
+assert.match(js, /s\.tier\+\+;\s*m\.stars\[b\] = null/);
+assert.doesNotMatch(
+  js,
+  /data-act="merge"/,
+  "merge must only be presented beside the selected star",
+);
 assert.match(
   js,
   /this\.selected = deselect \? \[\] : \[i\]/,

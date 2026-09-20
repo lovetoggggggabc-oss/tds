@@ -7,25 +7,24 @@ const CONFIG = {
   startDivinity: 50,
   startHP: 5,
   rangeUnit: 6.3,
+  waveHpGrowth: 0.12,
   tierDamage: [1, 1.7, 2.8, 4.4],
   whiteBurstInterval: 0.16,
   whiteBurstRest: 2,
   constellation: { range: 9, damagePerTier: 150, cooldown: 0.55 },
   monsters: {
-    slime: { name: "어둠 슬라임", icon: "●", hp: 100, speed: 4.6, reward: 1 },
-    bug: { name: "암흑 벌레", icon: "◆", hp: 70, speed: 7, reward: 2 },
+    slime: { name: "어둠 슬라임", hp: 500, speed: 4.6, reward: 1 },
+    bug: { name: "암흑 벌레", hp: 800, speed: 7, reward: 2 },
     drone: {
       name: "코어 드론",
-      icon: "◉",
-      hp: 2500,
+      hp: 10000,
       speed: 2.8,
       reward: 30,
       boss: true,
     },
     meteor: {
       name: "운석 괴물",
-      icon: "☄",
-      hp: 5000,
+      hp: 20000,
       speed: 1.8,
       reward: 50,
       boss: true,
@@ -103,12 +102,12 @@ class Enemy {
     this.type = type;
     this.lane = lane;
     this.progress = 0;
-    this.maxHp = this.hp * Math.pow(1.12, wave - 1);
+    this.maxHp = this.hp * Math.pow(1 + CONFIG.waveHpGrowth, wave - 1);
     this.hp = this.maxHp;
     this.dead = false;
     this.el = document.createElement("div");
-    this.el.className = "enemy" + (this.boss ? " boss" : "");
-    this.el.innerHTML = `<div class="bar"><i></i></div><span>${this.icon}</span><small>${this.boss ? this.name : ""}</small>`;
+    this.el.className = `enemy ${this.type}${this.boss ? " boss" : ""}`;
+    this.el.innerHTML = `<div class="bar" aria-hidden="true"><i></i></div><span class="enemy-body"></span><small>${this.boss ? this.name : ""}</small>`;
     arena.append(this.el);
     this.render();
   }
@@ -394,6 +393,21 @@ class StarManager {
   }
 }
 class MergeSystem {
+  static partner(m) {
+    if (m.selected.length !== 1 || m.zodiacMode || m.merging) return -1;
+    let a = m.selected[0],
+      s = m.stars[a];
+    if (!s || s.constellation || s.support || s.tier >= 4) return -1;
+    return m.stars.findIndex(
+      (x, i) =>
+        i !== a &&
+        x &&
+        !x.support &&
+        !x.constellation &&
+        x.type === s.type &&
+        x.tier === s.tier,
+    );
+  }
   static execute(m) {
     if (m.zodiacMode)
       return UIManager.hint("먼저 조디악 선택을 완료하거나 취소하세요.");
@@ -403,21 +417,23 @@ class MergeSystem {
       s = m.stars[a];
     if (s.constellation || s.support || s.tier >= 4)
       return UIManager.hint("이 별은 합칠 수 없습니다.");
-    let b = m.stars.findIndex(
-      (x, i) =>
-        i !== a &&
-        x &&
-        !x.support &&
-        !x.constellation &&
-        x.type === s.type &&
-        x.tier === s.tier,
-    );
+    let b = this.partner(m);
     if (b < 0) return UIManager.hint("같은 종류·단계의 별이 필요합니다.");
-    s.tier++;
-    m.stars[b] = null;
-    m.selectOnly(a);
-    UIManager.hint(`${s.data().name} 별 ${s.tier}단계 완성!`);
-    game.render();
+    m.merging = true;
+    UIManager.mergeEffect(m, b, a);
+    game.simulationTimeout(() => {
+      s.tier++;
+      m.stars[b] = null;
+      m.merging = false;
+      m.selectOnly(a);
+      UIManager.hint(`${s.data().name} 별 ${s.tier}단계 완성!`);
+      game.render();
+      m.field.children[a].classList.add("merge-flash");
+      game.simulationTimeout(
+        () => m.field.children[a].classList.remove("merge-flash"),
+        430,
+      );
+    }, 380);
   }
 }
 class SwapSystem {
@@ -550,6 +566,20 @@ class UIManager {
       1200,
     );
   }
+  static mergeEffect(m, fromIndex, toIndex) {
+    let from = m.pos(fromIndex),
+      to = m.pos(toIndex),
+      dot = document.createElement("i");
+    dot.className = "merge-particle";
+    dot.style.left = from.x + "%";
+    dot.style.top = from.y + "%";
+    arena.append(dot);
+    requestAnimationFrame(() => {
+      dot.style.transform = `translate(${((to.x - from.x) * arena.clientWidth) / 100}px, ${((to.y - from.y) * arena.clientHeight) / 100}px) scale(.45)`;
+      dot.style.opacity = "0";
+    });
+    game.simulationTimeout(() => dot.remove(), 420);
+  }
   static selected(g) {
     for (let i = g.players.length - 1; i >= 0; i--) {
       let m = g.players[i].manager;
@@ -563,6 +593,8 @@ class UIManager {
     if (!pick) {
       starInfo.hidden = true;
       ranges.innerHTML = "";
+      rangeIndicator.hidden = true;
+      mergeFloat.hidden = true;
       return;
     }
     let s = pick.m.stars[pick.index],
@@ -573,7 +605,23 @@ class UIManager {
     starInfo.hidden = false;
     starInfo.style.setProperty("--star-color", d.color);
     starInfo.innerHTML = `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
-    ranges.innerHTML = `<ellipse class="range" cx="${p.x}" cy="${p.y}" rx="${d.range * CONFIG.rangeUnit}" ry="${(d.range * CONFIG.rangeUnit) / 0.68}"/>`;
+    ranges.innerHTML = "";
+    let diameter = (arena.clientWidth * d.range * CONFIG.rangeUnit * 2) / 100;
+    rangeIndicator.hidden = false;
+    rangeIndicator.style.left = p.x + "%";
+    rangeIndicator.style.top = p.y + "%";
+    rangeIndicator.style.width = diameter + "px";
+    rangeIndicator.style.height = diameter + "px";
+    let partner = MergeSystem.partner(pick.m),
+      slot = pick.m.field.children[pick.index].getBoundingClientRect(),
+      ar = arena.getBoundingClientRect();
+    mergeFloat.hidden = false;
+    mergeFloat.disabled = partner < 0;
+    mergeFloat.classList.toggle("available", partner >= 0);
+    mergeFloat.classList.toggle("below", slot.top - ar.top < 55);
+    mergeFloat.style.left = p.x + "%";
+    mergeFloat.style.top = `${((slot.top - ar.top + (slot.top - ar.top < 55 ? slot.height + 5 : -5)) / ar.height) * 100}%`;
+    mergeFloat.onclick = () => MergeSystem.execute(pick.m);
   }
   static render(g) {
     wave.textContent = g.wave.wave;
@@ -649,11 +697,9 @@ class GameManager {
     this.players.forEach((p, i) => {
       let el = document.createElement("div");
       el.className = "player";
-      el.innerHTML = `<div class="player-head"><b>${i + 1}P 마법사</b><span class="wallet"></span></div><div class="actions"><button class="primary" data-act="summon">✦ 소환 30</button><button data-act="merge">합성</button><button data-act="swap">교환 10</button><button data-act="zodiac">조디악 선택</button><button data-act="release">해제 ◇1</button></div>`;
+      el.innerHTML = `<div class="player-head"><b>${i + 1}P 마법사</b><span class="wallet"></span></div><div class="actions"><button class="primary" data-act="summon">✦ 소환 30</button><button data-act="swap">교환 10</button><button data-act="zodiac">조디악 선택</button><button data-act="release">해제 ◇1</button></div>`;
       controls.append(el);
       el.querySelector("[data-act=summon]").onclick = () => p.manager.summon();
-      el.querySelector("[data-act=merge]").onclick = () =>
-        MergeSystem.execute(p.manager);
       el.querySelector("[data-act=swap]").onclick = () =>
         SwapSystem.begin(p.manager);
       el.querySelector("[data-act=zodiac]").onclick = () =>
