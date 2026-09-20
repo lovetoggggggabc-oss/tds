@@ -27,7 +27,7 @@ window.addEventListener("unhandledrejection", (event) => {
 
 let arena, effects, links, ranges, rangeIndicator, contextActions, hint;
 let dawnMoon, starInfo, controls, zodiacCodex, zodiacCodexList;
-let wave, timer, hp, starlight1, divinity1, starlight2, divinity2;
+let wave, timer, hp, starlight1, divinity1, starlight2, divinity2, nextEnemies;
 let speed, restart, finalWave, gameover;
 let game = null;
 const CONSTELLATION_IDS = Object.freeze({
@@ -516,6 +516,16 @@ class WaveManager {
         UIManager.alert(`⚠ BOSS WAVE ${this.wave}`);
     }
   }
+}
+
+function nextWaveSummary(currentWave) {
+  const n = currentWave + 1;
+  if (WaveManager.isBoss(n))
+    return [{ type: n % 20 === 0 ? "meteor" : "drone", count: 1 }];
+  const count = Math.min(4 + Math.floor(n * 1.2), 25);
+  let slime = 0, bug = 0;
+  for (let i = 0; i < count; i++) (i + n) % 3 === 0 ? bug++ : slime++;
+  return [{ type: "slime", count: slime }, { type: "bug", count: bug }].filter((entry) => entry.count);
 }
 class Star {
   constructor(type, tier = 1, x = 50, y = 50) {
@@ -1623,15 +1633,19 @@ class UIManager {
       z.classList.toggle("active", p.manager.zodiacMode);
       cancel.hidden = !p.manager.zodiacMode;
       const match = ZodiacSystem.exactMatch(ZodiacSystem.counts(p.manager));
-      z.textContent = p.manager.zodiacMode ? (match ? `${ZODIAC_RECIPES[match].name} 연결` : "조디악 선택 중") : "조디악";
+      const zodiacLabel = p.manager.zodiacMode
+        ? (match ? `${ZODIAC_RECIPES[match].name} 연결` : "조디악 선택 중")
+        : "조디악";
+      z.innerHTML = `<i>✦</i><span>${zodiacLabel}<small>ZODIAC</small></span>`;
     });
     this.renderInfo(g);
   }
   static renderHud(g, force = false) {
+    const seconds = Math.max(0, Math.ceil(g.wave.left));
     const values = {
       wave: String(g.wave.wave),
-      timer: Math.max(0, g.wave.left).toFixed(1),
-      hp: `HP ${Math.round(g.base.hp).toLocaleString()}/${Math.round(g.base.maxHp).toLocaleString()}`,
+      timer: `00:${String(seconds).padStart(2, "0")}`,
+      hp: `♥ ${Math.round(g.base.hp).toLocaleString()} / ${Math.round(g.base.maxHp).toLocaleString()}`,
       starlight1: String(g.players[0].resources.starlight),
       divinity1: String(g.players[0].resources.divinity),
       starlight2: String(g.players[1].resources.starlight),
@@ -1643,6 +1657,13 @@ class UIManager {
       if (force || this.hudValues[key] !== value)
         elements[key].textContent = value;
       this.hudValues[key] = value;
+    }
+    const nextWave = g.wave.wave + 1;
+    if (force || this.hudValues.nextWave !== nextWave) {
+      nextEnemies.innerHTML = nextWaveSummary(g.wave.wave)
+        .map(({ type, count }) => `<span>${CONFIG.monsters[type].boss ? "◈" : "◉"} ${CONFIG.monsters[type].name} ×${count}</span>`)
+        .join("");
+      this.hudValues.nextWave = nextWave;
     }
   }
 }
@@ -1874,6 +1895,7 @@ function bootstrapGame() {
   divinity1 = getRequiredElement("divinity1");
   starlight2 = getRequiredElement("starlight2");
   divinity2 = getRequiredElement("divinity2");
+  nextEnemies = getRequiredElement("nextEnemies");
   speed = getRequiredElement("speed");
   restart = getRequiredElement("restart");
   finalWave = getRequiredElement("finalWave");
@@ -1883,7 +1905,7 @@ function bootstrapGame() {
   game = new GameManager();
   speed.onclick = () => {
     game.speed = game.speed === 1 ? 2 : 1;
-    speed.textContent = `${game.speed}× 속도`;
+    speed.textContent = `×${game.speed}`;
     speed.classList.toggle("active", game.speed === 2);
     arena.classList.toggle("speed-2", game.speed === 2);
   };
