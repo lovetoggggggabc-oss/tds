@@ -46,15 +46,14 @@ const MAP_DEFINITIONS = Object.freeze({
     id: "cosmic_s_01",
     roadWidth: 34,
     placementPadding: 3,
-    spawn: Object.freeze({ x: 50, y: 96 }),
-    destination: Object.freeze({ x: 50, y: 4 }),
+    spawn: Object.freeze({ x: 50, y: 94 }),
+    destination: Object.freeze({ x: 50, y: 6 }),
     route: Object.freeze([
-      Object.freeze([{ x: 50, y: 96 }, { x: 50, y: 88 }, { x: 82, y: 87 }, { x: 82, y: 72 }]),
-      Object.freeze([{ x: 82, y: 72 }, { x: 82, y: 57 }, { x: 18, y: 59 }, { x: 18, y: 43 }]),
-      Object.freeze([{ x: 18, y: 43 }, { x: 18, y: 27 }, { x: 82, y: 29 }, { x: 82, y: 15 }]),
-      Object.freeze([{ x: 82, y: 15 }, { x: 82, y: 7 }, { x: 57, y: 8 }, { x: 50, y: 4 }]),
+      Object.freeze([{ x: 50, y: 94 }, { x: 50, y: 86 }, { x: 20, y: 86 }, { x: 26, y: 70 }]),
+      Object.freeze([{ x: 26, y: 70 }, { x: 30, y: 55 }, { x: 78, y: 57 }, { x: 76, y: 39 }]),
+      Object.freeze([{ x: 76, y: 39 }, { x: 74, y: 23 }, { x: 30, y: 25 }, { x: 50, y: 6 }]),
     ]),
-    arrows: Object.freeze([0.12, 0.36, 0.61, 0.84]),
+    arrows: Object.freeze([0.14, 0.38, 0.63, 0.86]),
   }),
 });
 const MAP_DEFINITION = MAP_DEFINITIONS.cosmic_s_01;
@@ -1517,7 +1516,7 @@ function bootstrapGame() {
   arena = getRequiredElement("arena");
   const pathSvg = getRequiredElement("paths");
   const pathData = routePathData();
-  pathSvg.querySelectorAll(".roadGlow,.road").forEach((path) => path.setAttribute("d", pathData));
+  pathSvg.querySelectorAll(".roadGlow,.roadEdge,.road,.roadStars").forEach((path) => path.setAttribute("d", pathData));
   pathSvg.querySelectorAll(".start").forEach((node) => {
     node.setAttribute("cx", MAP_DEFINITION.spawn.x);
     node.setAttribute("cy", MAP_DEFINITION.spawn.y);

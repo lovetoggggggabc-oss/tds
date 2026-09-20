@@ -7,8 +7,8 @@ const [html, css, js] = await Promise.all([
   readFile("game.js", "utf8"),
 ]);
 
-assert.match(html, /href="styles\.css\?v=30"/);
-assert.match(html, /<script src="game\.js\?v=30" defer><\/script>/);
+assert.match(html, /href="styles\.css\?v=31"/);
+assert.match(html, /<script src="game\.js\?v=31" defer><\/script>/);
 assert.equal((html.match(/data-act="summon"/g) || []).length, 1);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/, "2P's direct controls must not be rendered");
@@ -33,8 +33,11 @@ assert.match(html, /class="game-controls"/);
 assert.equal((html.match(/>SPAWN</g) || []).length, 1, "the arena has one spawn");
 assert.equal((html.match(/>DESTINATION</g) || []).length, 1, "the arena has one destination");
 assert.match(js, /const MAP_DEFINITIONS = Object\.freeze/);
-assert.match(js, /spawn: Object\.freeze\(\{ x: 50, y: 96 \}\)/);
-assert.match(js, /destination: Object\.freeze\(\{ x: 50, y: 4 \}\)/);
+assert.match(js, /spawn: Object\.freeze\(\{ x: 50, y: 94 \}\)/);
+assert.match(js, /destination: Object\.freeze\(\{ x: 50, y: 6 \}\)/);
+assert.equal((html.match(/class="road"/g) || []).length, 1, "the arena has one road");
+assert.match(html, /class="roadStars"/, "the road carries a subtle particle layer");
+assert.match(js, /\.roadGlow,\.roadEdge,\.road,\.roadStars/, "all visible road layers share routePathData");
 assert.match(html, /data-act="summon-cancel"/, "placement mode needs an explicit cancel control");
 assert.match(css, /\.free-field\.placing/);
 assert.match(css, /\.road\s*\{[\s\S]*?stroke-width:\s*34px/);
@@ -186,8 +189,8 @@ assert.match(css, /\.star-node\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?aspect-r
 assert.match(js, /function bindPointerTap/);
 assert.match(html, /<main class="app" id="game-shell">/);
 assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*600px\);[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
-assert.match(html, /styles\.css\?v=30/, "the deployed stylesheet URL must change when its layout changes");
-assert.match(html, /game\.js\?v=30/, "the deployed script URL must not reuse the pre-layout cache entry");
+assert.match(html, /styles\.css\?v=31/, "the deployed stylesheet URL must change when its layout changes");
+assert.match(html, /game\.js\?v=31/, "the deployed script URL must not reuse the pre-layout cache entry");
 assert.match(css, /\.star-info\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?z-index:\s*160/);
 
 const isBoss = (n) =>
