@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=27" />
+    <link rel="stylesheet" href="styles.css?v=28" />
   </head>
   <body>
     <main class="app" id="game-shell">
@@ -65,10 +65,17 @@
         ></svg>
         <div id="rangeIndicator" class="range-indicator" hidden></div>
         <div id="contextActions" class="context-actions" hidden></div>
-        <span class="field-label two">2P FIELD</span>
-        <div class="field p2" id="field-1"></div>
-        <span class="field-label one">1P FIELD</span>
-        <div class="field p1" id="field-0"></div>
+        <div class="arena-layout">
+          <section class="field-zone" aria-label="2P 배치 영역">
+            <span class="field-label">2P FIELD</span>
+            <div class="field p2" id="field-1"></div>
+          </section>
+          <div class="path-zone" aria-hidden="true"></div>
+          <section class="field-zone" aria-label="1P 배치 영역">
+            <span class="field-label">1P FIELD</span>
+            <div class="field p1" id="field-0"></div>
+          </section>
+        </div>
         <div class="hint" id="hint" aria-live="polite">별을 소환해 공동 도착지를 지키세요!</div>
         <div id="dawnMoon" class="dawn-moon" hidden aria-hidden="true">
           <svg viewBox="0 0 200 200" role="presentation">
@@ -132,6 +139,6 @@
         </section>
       </nav>
     </main>
-    <script src="game.js?v=27" defer></script>
+    <script src="game.js?v=28" defer></script>
   </body>
 </html>

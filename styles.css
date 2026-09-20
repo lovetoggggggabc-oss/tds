@@ -172,8 +172,7 @@ header {
 }
 .arena {
   position: relative;
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
   width: 100%;
   align-self: center;
   border-radius: 22px;
@@ -184,6 +183,18 @@ header {
     inset 0 0 50px #0008,
     0 14px 32px #0005;
 }
+.arena-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto 120px auto;
+  gap: 10px;
+  width: 100%;
+  padding: 18px 0 22px;
+  pointer-events: none;
+}
+.field-zone { position: relative; width: 100%; }
+.path-zone { min-height: 120px; }
 .planet {
   position: absolute;
   border-radius: 50%;
@@ -280,8 +291,8 @@ header {
   }
 }
 .field {
-  position: absolute;
-  left: 12%;
+  position: relative;
+  margin: 0 auto;
   width: 76%;
   height: auto;
   aspect-ratio: 5 / 3;
@@ -290,26 +301,17 @@ header {
   grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: 3px;
   padding: 3px;
-}
-.field.p1 {
-  bottom: 5%;
-}
-.field.p2 {
-  top: 5%;
+  pointer-events: auto;
 }
 .field-label {
   position: absolute;
+  z-index: 2;
+  top: 0;
   right: 2%;
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.12em;
   color: #a9b8ef;
-}
-.field-label.one {
-  bottom: 4%;
-}
-.field-label.two {
-  top: 4%;
 }
 .slot {
   position: relative;
@@ -1133,7 +1135,7 @@ header {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 4px 14px 16px;
@@ -1156,9 +1158,8 @@ body.codex-open {
   flex: 0 0 auto;
   flex-direction: column;
   height: auto;
-  min-height: 0;
   overflow: hidden;
-  padding: 15px;
+  padding: 14px;
   border: 1px solid #82dfff55;
   border-radius: 17px;
   background: linear-gradient(135deg, rgba(43, 62, 126, .8), rgba(18, 23, 66, .92));
@@ -1167,16 +1168,23 @@ body.codex-open {
 }
 .zodiac-card.radiance { border-color: #ffb68a66; background: linear-gradient(135deg, rgba(105, 40, 66, .82), rgba(32, 20, 62, .94)); }
 .zodiac-card h3 { margin: 0 0 10px; color: #effdff; font-size: 19px; }
-.codex-combination { position: relative; display: flex; flex: 0 0 auto; flex-direction: column; overflow: hidden; padding: 10px 9px 9px; border: 1px solid #9cecff3d; border-radius: 14px; background: radial-gradient(circle at 50% 0, #5ecfff20, transparent 58%), #050a2799; box-shadow: inset 0 0 18px #7ddfff12; }
+.codex-preview-wrap {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  flex: 0 0 180px;
+  overflow: hidden;
+  border: 1px solid #9cecff3d;
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% 0, #5ecfff20, transparent 58%), #050a2799;
+}
+.codex-recipe { margin-top: 10px; padding: 9px; border-radius: 12px; background: #050a2766; }
 .zodiac-card h4 { display: flex; align-items: baseline; gap: 7px; margin: 0 0 8px; color: #78e7ff; font-size: 9px; letter-spacing: .15em; }
 .zodiac-card h4 span { color: #bcc9ee; font-size: 10px; letter-spacing: 0; }
 .codex-preview {
   display: block;
   width: 100%;
-  height: 180px;
-  min-height: 180px;
-  max-height: 180px;
-  flex: 0 0 180px;
+  height: 100%;
   overflow: hidden;
   pointer-events: none;
 }
@@ -1227,7 +1235,7 @@ body.codex-open {
 .zodiac-card p { margin: 7px 0 0; color: #dbe8ff; font-size: 11px; line-height: 1.55; }
 .zodiac-card p strong { display: block; color: #8be9ff; margin-bottom: 2px; }
 .zodiac-card p span { white-space: normal; overflow-wrap: anywhere; }
-.codex-specials { position: static; flex: 0 0 auto; }
+.codex-special { flex: 0 0 auto; }
 .overlay[hidden] {
   display: none;
 }

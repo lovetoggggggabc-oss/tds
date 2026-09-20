@@ -7,8 +7,8 @@ const [html, css, js] = await Promise.all([
   readFile("game.js", "utf8"),
 ]);
 
-assert.match(html, /href="styles\.css\?v=27"/);
-assert.match(html, /<script src="game\.js\?v=27" defer><\/script>/);
+assert.match(html, /href="styles\.css\?v=28"/);
+assert.match(html, /<script src="game\.js\?v=28" defer><\/script>/);
 assert.equal((html.match(/data-act="summon"/g) || []).length, 1);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/, "2P's direct controls must not be rendered");
@@ -22,7 +22,7 @@ assert.match(css, /\.codex-list\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\
 assert.match(css, /-webkit-overflow-scrolling:\s*touch/);
 assert.match(css, /\.codex-panel\s*\{[\s\S]*?height:\s*min\(90dvh,\s*900px\)/);
 assert.match(css, /#game-shell\s*\{[\s\S]*?max-width:\s*600px;[\s\S]*?margin:\s*0 auto/);
-assert.match(css, /\.codex-preview\s*\{[\s\S]*?min-height:\s*180px/);
+assert.match(css, /\.codex-preview-wrap\s*\{[\s\S]*?height:\s*180px/);
 assert.match(js, /preserveAspectRatio="xMidYMid meet"/);
 assert.match(css, /body\.codex-open\s*\{[\s\S]*?overflow:\s*hidden/);
 assert.match(html, /id="dawnMoon"/);
@@ -31,8 +31,7 @@ assert.match(css, /\.dawn-special\s*\{[\s\S]*?pointer-events:\s*none/);
 assert.doesNotMatch(html, /1P 마법사|2P 마법사|class="wallet"|class="players"/);
 assert.match(html, /class="game-controls"/);
 assert.ok(
-  html.indexOf('class="field-label two"') <
-    html.indexOf('class="field-label one"'),
+  html.indexOf('id="field-1"') < html.indexOf('id="field-0"'),
   "2P field must be above 1P",
 );
 assert.match(
@@ -43,8 +42,9 @@ assert.match(
 assert.match(css, /grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
 assert.match(css, /grid-template-rows:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
 assert.match(css, /\.road\s*\{[\s\S]*?stroke-width:\s*1\.35px/);
-assert.match(css, /\.field\.p2\s*\{\s*top:\s*5%/);
-assert.match(css, /\.field\.p1\s*\{\s*bottom:\s*5%/);
+assert.match(html, /class="path-zone"/);
+assert.match(css, /\.arena-layout\s*\{[\s\S]*?grid-template-rows:\s*auto 120px auto/);
+assert.match(css, /\.path-zone\s*\{\s*min-height:\s*120px/);
 assert.match(css, /\.range-indicator\s*\{[\s\S]*?border-radius:\s*50%/);
 assert.match(
   css,
@@ -161,7 +161,7 @@ assert.match(
   "the codex must render the complete shared registry",
 );
 assert.match(js, /flatMap\(\(\[type, amount\]\)/, "the recipe must render one icon per required star");
-assert.match(css, /\.codex-preview\s*\{[^}]*min-height:\s*180px/, "constellation previews must be prominent");
+assert.match(css, /\.codex-preview-wrap\s*\{[^}]*height:\s*180px/, "constellation previews must be prominent");
 assert.match(css, /\.codex-preview \*\s*\{[^}]*pointer-events:\s*none/, "codex decorations must not intercept scrolling");
 assert.match(js, /previewLayout:\s*Object\.freeze/g, "every constellation must define a visual-only layout");
 assert.match(js, /this\.discoveredConstellations = new Set\(\)/);
@@ -194,8 +194,8 @@ assert.match(js, /function bindPointerTap/);
 assert.match(html, /<main class="app" id="game-shell">/);
 assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*600px\);[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
 assert.match(css, /\.field\s*\{[\s\S]*?grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
-assert.match(html, /styles\.css\?v=27/, "the deployed stylesheet URL must change when its layout changes");
-assert.match(html, /game\.js\?v=27/, "the deployed script URL must not reuse the pre-direct-summon cache entry");
+assert.match(html, /styles\.css\?v=28/, "the deployed stylesheet URL must change when its layout changes");
+assert.match(html, /game\.js\?v=28/, "the deployed script URL must not reuse the pre-layout cache entry");
 assert.match(css, /\.star-info\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?z-index:\s*160/);
 
 const isBoss = (n) =>
