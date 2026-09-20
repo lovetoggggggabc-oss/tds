@@ -45,18 +45,31 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     recipe: Object.freeze({ blue: 3, white: 1 }), attackDamage: 500,
     attackSpeed: 4, range: 4, targeting: "highest", completionEffect: "dawnMoon",
     specialMultiplier: 15, specialHits: 4,
+    previewLayout: Object.freeze({
+      nodes: Object.freeze([[18, 67], [36, 42], [61, 28], [82, 48]]),
+      edges: Object.freeze([[0, 1], [1, 2], [2, 3]]),
+    }),
     abilities: Object.freeze(["같은 적을 4회 공격하면 현재 공격력의 1500% 특수 피해 (기본 공격력 기준 7,500)"]),
   }),
   [CONSTELLATION_IDS.RADIANCE]: Object.freeze({
     id: CONSTELLATION_IDS.RADIANCE, name: "광휘의 별자리",
     recipe: Object.freeze({ red: 2, white: 1 }), attackDamage: 950,
     attackSpeed: 1, range: 6, targeting: "highest",
+    previewLayout: Object.freeze({
+      nodes: Object.freeze([[18, 70], [50, 24], [82, 70]]),
+      edges: Object.freeze([[0, 1], [1, 2], [2, 0]]),
+      order: Object.freeze([0, 2, 1]),
+    }),
     abilities: Object.freeze(["구성 별들의 단계 합만큼 서로 다른 적에게 연쇄 공격. 각 대상은 광휘의 별자리 공격력만큼 피해"]),
   }),
   [CONSTELLATION_IDS.SAGITTARIUS]: Object.freeze({
     id: CONSTELLATION_IDS.SAGITTARIUS, name: "궁수자리",
     recipe: Object.freeze({ sky: 2, blue: 2 }), attackDamage: 400,
     attackSpeed: 6, range: 6, targeting: "highest",
+    previewLayout: Object.freeze({
+      nodes: Object.freeze([[18, 68], [43, 48], [67, 25], [58, 76]]),
+      edges: Object.freeze([[0, 1], [1, 2], [1, 3], [3, 2]]),
+    }),
     abilities: Object.freeze([
       "같은 적 집중 공격: 20타 공격력 +1000%, 40타 +2000%, 60타에 모든 아군 공격력 +1000% (10초). 타겟 변경 시 집중 초기화",
     ]),
@@ -65,6 +78,10 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     id: CONSTELLATION_IDS.ASTROLOGER, name: "점성술자리",
     recipe: Object.freeze({ orange: 2 }), attackDamage: 10,
     attackSpeed: 1, range: 3, targeting: "highest", contextualAction: "divination",
+    previewLayout: Object.freeze({
+      nodes: Object.freeze([[24, 68], [76, 30]]),
+      edges: Object.freeze([[0, 1]]),
+    }),
     abilities: Object.freeze([
       "공격 성공 시 별빛 1 + 현재 활성화된 완성 별자리 수 획득",
       "별빛 점술 30: 50% 확률로 +60, 실패 시 추가 -15 (별빛은 0 미만이 되지 않음)",
@@ -626,6 +643,9 @@ class StarManager {
   }
   tap(i) {
     if (!this.stars[i]) {
+      // Empty space is inert while assembling a zodiac. Only the explicit
+      // cancel control is allowed to discard that ordered multi-selection.
+      if (this.zodiacMode) return;
       if (this.clearNormalSelection()) game.render();
       return;
     }
@@ -637,9 +657,9 @@ class StarManager {
       else this.selected.push(i);
       ZodiacSystem.describeSelection(this);
     } else {
-      let deselect = this.selected[0] === i;
       this.clearOthers();
-      this.selected = deselect ? [] : [i];
+      // Re-tapping the selected star keeps its contextual controls open.
+      this.selected = [i];
       this.swapMode = false;
     }
     game.render();
@@ -843,6 +863,7 @@ class ZodiacSystem {
     let center = picks[0],
       points = picks.map((i) => m.pos(i));
     new Constellation(m, center, [...picks], definitionId, connectionOrder);
+    game.discoverConstellation(definitionId);
     m.exitModes();
     UIManager.zodiacComplete(points);
     if (CONSTELLATION_DEFINITIONS[definitionId].completionEffect === "dawnMoon") UIManager.showDawnMoon();
@@ -960,11 +981,21 @@ class UIManager {
     zodiacCodexList.innerHTML = Object.entries(ZODIAC_RECIPES)
       .map(([definitionId, zodiac]) => {
         const recipeEntries = Object.entries(zodiac.recipe);
-        const stars = recipeEntries
-          .flatMap(([type, amount]) => Array.from({ length: amount }, () =>
-            `<span class="codex-star" style="--star-color:${CONFIG.stars[type].color}"><i aria-hidden="true">✦</i><b>${CONFIG.stars[type].name}</b></span>`,
-          ))
-          .join("");
+        // Types always come from the recipe registry. previewLayout only
+        // supplies presentation coordinates and never participates in matching.
+        const recipeTypes = recipeEntries.flatMap(([type, amount]) =>
+          Array.from({ length: amount }, () => type));
+        const displayTypes = (zodiac.previewLayout.order || recipeTypes.map((_, i) => i))
+          .map((index) => recipeTypes[index]);
+        const edges = zodiac.previewLayout.edges.map(([from, to]) => {
+          const a = zodiac.previewLayout.nodes[from];
+          const b = zodiac.previewLayout.nodes[to];
+          return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
+        }).join("");
+        const stars = zodiac.previewLayout.nodes.map(([x, y], index) => {
+          const type = displayTypes[index];
+          return `<g class="codex-star" style="--star-color:${CONFIG.stars[type].color}" transform="translate(${x} ${y})"><circle r="9"/><text aria-hidden="true">✦</text></g>`;
+        }).join("");
         const summary = recipeEntries
           .map(([type, amount]) => `${CONFIG.stars[type].name} ×${amount}`)
           .join(" / ");
@@ -972,7 +1003,8 @@ class UIManager {
         const abilities = specials.map((special, index) =>
           `<p><strong>특수능력${specials.length > 1 ? ` ${index + 1}` : ""}</strong><span>${special}</span></p>`,
         ).join("");
-        return `<article class="zodiac-card ${definitionId.toLowerCase()}"><h3>${zodiac.name}</h3><section class="codex-combination" aria-label="필요한 별 조합: ${summary}"><h4>STAR RECIPE <span>필요한 별 조합</span></h4><div class="codex-recipe">${stars}</div><div class="codex-recipe-summary">${summary}</div></section><dl><div><dt>공격력</dt><dd>${zodiac.attackDamage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.attackSpeed}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><div class="codex-specials">${abilities}</div></article>`;
+        const discovered = game?.discoveredConstellations.has(definitionId);
+        return `<article class="zodiac-card ${definitionId.toLowerCase()} ${discovered ? "discovered" : "undiscovered"}" data-constellation="${definitionId}"><h3>${zodiac.name}</h3><section class="codex-combination" aria-label="필요한 별 조합: ${summary}"><h4>STAR RECIPE <span>필요한 별</span></h4><svg class="codex-preview" viewBox="0 0 100 100" role="img" aria-label="${zodiac.name} 별자리 연결 그림"><g class="codex-edges">${edges}</g><g class="codex-nodes">${stars}</g></svg><div class="codex-recipe-summary">${summary}</div></section><dl><div><dt>공격력</dt><dd>${zodiac.attackDamage}</dd></div><div><dt>공격속도</dt><dd>${zodiac.attackSpeed}회/초</dd></div><div><dt>사거리</dt><dd>${zodiac.range}</dd></div></dl><div class="codex-specials">${abilities}</div></article>`;
       })
       .join("");
   }
@@ -1207,6 +1239,9 @@ class GameManager {
     this.spatial = new SpatialGrid();
     this.gameTime = 0;
     this.attackBuffUntil = 0;
+    // A discovery lasts for this game even if its field constellation is later
+    // released. It is intentionally not derived from active towers.
+    this.discoveredConstellations = new Set();
     this.tasks = [];
     this.dirty = true;
     this.lastHudUpdate = 0;
@@ -1235,6 +1270,11 @@ class GameManager {
     window.BOOT_STAGE = "starting-loop";
     this.rafRunning = true;
     requestAnimationFrame((t) => this.loop(t));
+  }
+  discoverConstellation(definitionId) {
+    if (this.discoveredConstellations.has(definitionId)) return;
+    this.discoveredConstellations.add(definitionId);
+    if (!zodiacCodex.hidden) UIManager.renderCodex();
   }
   buildControls() {
     bindPointerTap(arena, (event) => {
