@@ -1430,12 +1430,22 @@ class StarManager {
       else this.selected.push(i);
       ZodiacSystem.describeSelection(this);
     } else {
-      this.clearOthers();
-      // Re-tapping the selected star keeps its contextual controls open.
-      this.selected = [i];
-      this.swapMode = false;
+      this.selectStar(i);
     }
     game.render();
+  }
+  // Selection is intentionally state-only. Exchange is a separate explicit
+  // command so rendering a contextual button can never spend currency.
+  selectStar(i) {
+    if (!this.stars[i]) return false;
+    this.clearOthers();
+    this.selected = [i];
+    this.swapMode = false;
+    return true;
+  }
+  exchangeSelectedStar() {
+    if (this.selected.length !== 1) return false;
+    return SwapSystem.execute(this, this.selected[0]);
   }
   selectOnly(i) {
     this.selected = [i];
@@ -2100,10 +2110,18 @@ class UIManager {
       let actionKey = `${pick.player}:${pick.index}:star:${s.type}:${s.tier}:${canSwap}:${partner}`;
       if (this.actionKey !== actionKey) {
         contextActions.innerHTML = `<button class="action-above" data-context="swap"${canSwap ? "" : " disabled"}>교환 10</button>${partner >= 0 ? `<button class="merge available action-below" data-context="merge">합성</button>` : ""}`;
-        contextActions.querySelector('[data-context="swap"]').onclick = () =>
-          SwapSystem.execute(pick.m, pick.index);
-        contextActions.querySelector('[data-context="merge"]')?.addEventListener("click", () =>
-          MergeSystem.execute(pick.m));
+        // Require a fresh pointerdown/up gesture that began on the action.
+        // This prevents iPad's compatibility click from the selecting touch
+        // activating a button that was rendered beneath that same finger.
+        bindPointerTap(contextActions.querySelector('[data-context="swap"]'), (event) => {
+          event.stopPropagation();
+          pick.m.exchangeSelectedStar();
+        });
+        const mergeButton = contextActions.querySelector('[data-context="merge"]');
+        if (mergeButton) bindPointerTap(mergeButton, (event) => {
+          event.stopPropagation();
+          MergeSystem.execute(pick.m);
+        });
         this.actionKey = actionKey;
       }
     } else {
@@ -2528,11 +2546,6 @@ class MapVoteController {
 function renderActiveMap() {
   const pathSvg = getRequiredElement("paths"); const pathData = routePathData();
   pathSvg.querySelectorAll(".roadGlow,.roadEdge,.road,.roadStars").forEach((path) => path.setAttribute("d", pathData));
-  pathSvg.querySelector(".spawn-portal")?.setAttribute("transform", `translate(${activeMap.spawn.x} ${activeMap.spawn.y})`);
-  pathSvg.querySelector(".cosmic-base")?.setAttribute("transform", `translate(${activeMap.destination.x} ${activeMap.destination.y})`);
-  const spawnLabel = pathSvg.querySelector(".start-label"), destinationLabel = pathSvg.querySelector(".destination-label");
-  if (spawnLabel) { spawnLabel.setAttribute("x", activeMap.spawn.x); spawnLabel.setAttribute("y", Math.max(3, activeMap.spawn.y - 5)); }
-  if (destinationLabel) { destinationLabel.setAttribute("x", activeMap.destination.x); destinationLabel.setAttribute("y", Math.min(98, activeMap.destination.y + 6)); }
   const arrowLayer = pathSvg.querySelector(".route-arrows");
   if (arrowLayer) arrowLayer.innerHTML = activeMap.arrows.map((progress) => { const point = routePoint(progress), before = routePoint(progress-.004), after = routePoint(progress+.004); const angle = Math.atan2(after.y-before.y,after.x-before.x)*180/Math.PI+90; return `<path d="M0 -2.2L2 1.8L0 .8L-2 1.8Z" transform="translate(${point.x} ${point.y}) rotate(${angle})"/>`; }).join("");
   arrowLayer?.classList.toggle("visible", game?.phase === "PREPARING");
@@ -2704,7 +2717,7 @@ function bootstrapGame() {
     if (currentScreen !== SCREEN_STATES.BATTLE_MENU) return false;
     mapVote = new MapVoteController(["local"]); showScreen(SCREEN_STATES.MAP_VOTE);
     const cards = getRequiredElement("map-vote-cards"), result = getRequiredElement("map-vote-result"); result.hidden = true;
-    cards.innerHTML = Object.values(MAP_DEFINITIONS).map((map) => `<button type="button" data-map-vote="${map.id}"><svg viewBox="0 0 100 100" aria-label="${map.name} 실제 경로"><path d="${routePathData(map)}"/><circle class="mini-spawn" cx="${map.spawn.x}" cy="${map.spawn.y}" r="3"/><circle class="mini-base" cx="${map.destination.x}" cy="${map.destination.y}" r="3"/></svg><strong>${map.name}</strong><small>출발 ● · 기지 ✦</small><b><span data-votes>0</span>표</b><i>✓</i></button>`).join("");
+    cards.innerHTML = Object.values(MAP_DEFINITIONS).map((map) => `<button type="button" data-map-vote="${map.id}"><svg viewBox="0 0 100 100" aria-label="${map.name} 실제 경로"><defs><linearGradient id="route-${map.id}" x1="0" x2="1"><stop stop-color="#8c7dff"/><stop offset="1" stop-color="#73edff"/></linearGradient></defs><g class="mini-stars"><circle cx="16" cy="16" r="1"/><circle cx="83" cy="24" r=".7"/><circle cx="76" cy="82" r="1.1"/></g><path style="stroke:url(#route-${map.id})" d="${routePathData(map)}"/></svg><span class="map-card-copy"><small>CELESTIAL FIELD</small><strong>${map.name}</strong><em>실제 전장 경로</em></span><b>✦ <span data-votes>0</span>표</b><i aria-label="내가 선택한 맵">✓</i></button>`).join("");
     const refreshVotes = () => { cards.querySelectorAll("[data-map-vote]").forEach((card) => { const id=card.dataset.mapVote; card.classList.toggle("selected",mapVote.mapVotes.local===id); card.querySelector("[data-votes]").textContent=Object.values(mapVote.mapVotes).filter((v)=>v===id).length; }); };
     cards.querySelectorAll("[data-map-vote]").forEach((card) => card.onclick = () => { mapVote.vote("local", card.dataset.mapVote); refreshVotes(); });
     let previous = performance.now(); const frame = (now) => { const selected = mapVote.tick((now-previous)/1000); previous=now; getRequiredElement("map-vote-time").textContent=Math.ceil(mapVote.remainingVoteTime); if (!selected) return void(mapVoteRaf=requestAnimationFrame(frame));
@@ -2814,8 +2827,8 @@ function bootstrapGame() {
       getRequiredElement("draw-result-grid").innerHTML = results.map((result, index) => result.kind === "relic"
         ? `<article class="draw-result relic-result" style="--result-order:${index}"><em>${result.isNew ? "NEW" : "보유 중"}</em><i>${RELIC_DEFINITIONS[result.id].icon}</i><b>${RELIC_DEFINITIONS[result.id].name}</b><small>${RELIC_DEFINITIONS[result.id].description}</small></article>`
         : result.kind === "star"
-        ? `<article class="draw-result star-result" style="--star-color:${STAR_TYPES[result.id].color};--result-order:${index}"><i>✦</i><b>${STAR_TYPES[result.id].name} 별</b></article>`
-        : `<article class="draw-result constellation-result constellation-${result.id.toLowerCase()}" style="--result-order:${index};--identity:${CONSTELLATION_SUMMON_COLORS[result.id][0]}">${result.isNew ? "<em>NEW</em>" : "<em>보유 중</em>"}${constellationPreview(CONSTELLATION_DEFINITIONS[result.id])}<b>${CONSTELLATION_DEFINITIONS[result.id].name}</b><strong>${result.id}</strong>${result.guaranteed ? "<small>확정 소환</small>" : ""}</article>`).join("");
+        ? `<article class="draw-result star-result" style="--star-color:${STAR_TYPES[result.id].color};--result-order:${index}"><small>일반 별 획득</small><i>✦</i><b>${STAR_TYPES[result.id].name} 별</b><span>${STAR_TYPES[result.id].name} · Stage 1</span></article>`
+        : `<article class="draw-result constellation-result constellation-${result.id.toLowerCase()}" style="--result-order:${index};--identity:${CONSTELLATION_SUMMON_COLORS[result.id][0]}">${result.isNew ? "<em>NEW</em>" : "<em>보유 중</em>"}<small>별자리 획득</small>${constellationPreview(CONSTELLATION_DEFINITIONS[result.id])}<b>${CONSTELLATION_DEFINITIONS[result.id].name}</b><span>조합 · ${Object.entries(CONSTELLATION_DEFINITIONS[result.id].recipe).map(([type,count])=>`${STAR_TYPES[type.toUpperCase()].name}×${count}`).join(" · ")}</span><span>핵심 능력 · ${CONSTELLATION_DEFINITIONS[result.id].specialDescriptions[0]}</span>${result.guaranteed ? "<strong>확정 소환</strong>" : ""}</article>`).join("");
       summonController.begin(results);
       updateMetaCurrency(); renderCollection(); renderRelics();
     };
@@ -2847,8 +2860,10 @@ function bootstrapGame() {
       const unread = Number(!updateClaimed) + Number(!meteorClaimed);
       node.hidden = unread === 0; node.textContent = unread;
     });
-    const updateButton=getRequiredElement("claim-update-reward"); updateButton.disabled=updateClaimed; updateButton.textContent=updateClaimed?"수령 완료":"보상 수령";
-    const meteorButton=getRequiredElement("claim-meteor-mail"); meteorButton.disabled=meteorClaimed; meteorButton.textContent=meteorClaimed?"수령 완료":"보상 수령";
+    const updateButton=getRequiredElement("claim-update-reward"); updateButton.disabled=updateClaimed; updateButton.textContent=updateClaimed?"✓ 수령 완료":"받기";
+    const updateCard=getRequiredElement("update-mail-card"); updateCard.classList.toggle("claimed",updateClaimed); updateCard.querySelector("i")?.replaceChildren(updateClaimed?"✓":"NEW");
+    const meteorCard=getRequiredElement("meteor-mail-card"); meteorCard.classList.toggle("claimed",meteorClaimed); meteorCard.querySelector("i")?.replaceChildren(meteorClaimed?"✓":"NEW");
+    const meteorButton=getRequiredElement("claim-meteor-mail"); meteorButton.disabled=meteorClaimed; meteorButton.textContent=meteorClaimed?"✓ 수령 완료":"받기";
   };
   document.querySelectorAll?.("[data-open-mail]").forEach((button)=>button.onclick=()=>{refreshMail();setModalOpen(mailDialog,true);});
   const claimUpdateReward = getRequiredElement("claim-update-reward"); claimUpdateReward.onclick=()=>{ if(playerProgress.claimedMail[UPDATE_REWARD_ID]) return; playerProgress.claimedMail[UPDATE_REWARD_ID]=true; playerProgress.starDust+=3000; savePlayerProgress(); refreshMail(); updateMetaCurrency(); };

@@ -1922,3 +1922,60 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 .star.stage-4{--stage-glow:1;--stage-scale:1.04;animation:stageFourPulse 1.8s ease-in-out infinite}.star.stage-4 .star-core{filter:brightness(1.3)}.star.stage-4 .star-halo{inset:-8%;border:2px double var(--star-color);box-shadow:0 0 12px var(--star-color),inset 0 0 8px var(--star-color)}.star.stage-4 .star-orbit{inset:-18%;opacity:.9;border:1px dashed var(--star-color);animation:starOrbit 5s linear infinite}.star.stage-4 .star-sparks{opacity:1;box-shadow:22px 2px 0 -5px #fff,-20px 10px 0 -5px var(--star-color),3px -21px 0 -6px #fff}
 @keyframes starOrbit{to{transform:rotate(360deg)}}@keyframes stageFourPulse{50%{filter:drop-shadow(0 0 9px var(--star-color));transform:scale(1.08)}}
 @media(prefers-reduced-motion:reduce){.star.stage-3 .star-orbit,.star.stage-4,.star.stage-4 .star-orbit{animation:none}}
+
+/* Battle HUD overlays never participate in the shell's flex sizing. */
+.battle-map-area{display:block;flex:1 1 0;min-height:0;padding:0 8px}
+.battle-map-area .arena{width:100%;height:100%}
+.battle-overlay-layer{position:absolute;z-index:var(--layer-hud);inset:0;pointer-events:none}
+.battle-overlay-layer .star-info{position:absolute;top:clamp(112px,18cqh,148px);left:12px;right:70px;width:auto;max-height:min(22cqh,170px);overflow:auto;display:grid;gap:7px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--star-color,#9adfff) 52%,transparent);border-radius:14px;background:linear-gradient(135deg,#080d2eea,#21154ad9);box-shadow:inset 0 0 22px #7863ff16,0 8px 24px #0008;backdrop-filter:blur(8px);pointer-events:auto}
+.battle-overlay-layer .star-info[hidden]{display:none}
+.battle-overlay-layer .star-info strong{grid-row:auto;font-size:clamp(14px,3.4cqw,18px)}
+.battle-overlay-layer .star-info .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px;line-height:1.35}
+.battle-overlay-layer .side-controls{position:absolute;top:clamp(112px,18cqh,148px);right:12px;display:grid;gap:8px;padding:0;pointer-events:none}
+.battle-overlay-layer .side-controls button{position:relative;pointer-events:auto;width:48px;height:44px;min-width:44px;min-height:44px;border-radius:14px}
+.battle-overlay-layer .binding-status-slot{position:absolute;top:104px;left:10px;right:68px;pointer-events:none}
+
+/* Endpoint coordinates remain gameplay data; no endpoint marker is painted. */
+.spawn-portal,.cosmic-base,.start-label,.destination-label{display:none!important;animation:none!important}
+
+/* Four static silhouettes shared by BLUE/WHITE/YELLOW/ORANGE/RED/PURPLE/GREEN. */
+.star{--stage-scale:1;--ray-size:70%;--core-size:1em;position:relative;display:grid;place-items:center;transform:scale(var(--stage-scale));filter:drop-shadow(0 0 4px color-mix(in srgb,var(--star-color) 55%,transparent));animation:none!important}
+.star-core{font-size:var(--core-size);filter:none!important}
+.star-core:before,.star-core:after{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:var(--ray-size);height:2px;translate:-50% -50%;background:linear-gradient(90deg,transparent,var(--star-color),transparent);opacity:.48}
+.star-core:after{rotate:90deg}
+.star.stage-1{--stage-scale:1;--ray-size:58%;--core-size:.9em}
+.star.stage-1 .star-halo{inset:13%;opacity:.26;border-style:dotted}
+.star.stage-2{--stage-scale:1.08;--ray-size:82%;--core-size:1em}
+.star.stage-2 .star-halo{inset:1%;opacity:.72}.star.stage-2 .star-orbit{inset:-5%;opacity:.7;border:1px solid var(--star-color);animation:none}
+.star.stage-2 .star-sparks{width:4px;height:4px;inset:50%;border-radius:50%;opacity:1;box-shadow:19px -8px 0 -1px #fff,-18px 9px 0 -1px var(--star-color)}
+.star.stage-3{--stage-scale:1.16;--ray-size:108%;--core-size:1.08em}
+.star.stage-3 .star-halo{inset:-9%;opacity:.9;border-width:2px;box-shadow:0 0 10px var(--star-color)}
+.star.stage-3 .star-orbit{inset:-17%;opacity:.9;border:1px solid var(--star-color);border-left-color:transparent;animation:none}
+.star.stage-3 .star-sparks{width:4px;height:4px;inset:50%;border-radius:50%;opacity:1;box-shadow:22px 0 0 -1px #fff,-21px -9px 0 -1px var(--star-color),7px -23px 0 -1px #fff,-8px 22px 0 -1px var(--star-color)}
+.star.stage-4{--stage-scale:1.24;--ray-size:132%;--core-size:1.18em}
+.star.stage-4:after{content:"✧";position:absolute;z-index:5;color:#fff;font-size:.42em;text-shadow:0 0 5px var(--star-color)}
+.star.stage-4 .star-halo{inset:-15%;opacity:1;border:3px double var(--star-color);box-shadow:0 0 14px var(--star-color),inset 0 0 9px var(--star-color)}
+.star.stage-4 .star-orbit{inset:-25%;opacity:1;border:2px dotted var(--star-color);box-shadow:inset 0 0 0 5px #0000,0 0 0 5px color-mix(in srgb,var(--star-color) 20%,transparent);animation:none}
+.star.stage-4 .star-sparks{width:5px;height:5px;inset:50%;border-radius:20%;opacity:1;rotate:45deg;box-shadow:25px 0 0 -1px #fff,-24px 11px 0 -1px var(--star-color),7px -26px 0 -1px #fff,-10px 25px 0 -1px var(--star-color),20px 20px 0 -2px #fff}
+
+/* Celestial battlefield ballot. */
+.map-vote-screen{background:radial-gradient(ellipse at 18% 25%,#6b35a640,transparent 34%),radial-gradient(ellipse at 82% 70%,#167ba33d,transparent 38%),linear-gradient(165deg,#06091f,#11072d)}
+.map-vote-screen>header:after{content:"✦  ·  ✧  ·  ✦";display:block;margin:10px;color:#9fdfff99;letter-spacing:.6em}
+.map-vote-screen h1{padding:8px 14px;border:1px solid #9de7ff42;border-radius:18px;background:#0b1035aa;box-shadow:inset 0 0 18px #765dff22}
+.map-vote-cards{gap:13px;padding:5px}
+.map-vote-cards button{position:relative;grid-template-columns:116px minmax(0,1fr) auto;min-height:150px;overflow:hidden;border-color:#8da8ff66;background:radial-gradient(circle at 15% 25%,#875bc42c,transparent 35%),linear-gradient(135deg,#19235aee,#0a0d2bee);box-shadow:inset 0 1px #fff2,0 10px 22px #0005}
+.map-vote-cards button:before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(#fff 0 1px,transparent 1.5px);background-size:31px 37px;opacity:.18}
+.map-vote-cards svg{position:relative;z-index:1;border:1px solid #89b8ff55;background:radial-gradient(circle at 50% 50%,#273468,#04071d 70%);box-shadow:inset 0 0 18px #57cfff1f}
+.map-vote-cards .mini-stars{fill:#fff}.map-card-copy{position:relative;z-index:1;display:grid;gap:5px}.map-card-copy small{color:#80dfff;letter-spacing:.12em}.map-card-copy em{color:#aebcdf;font-size:12px;font-style:normal}
+.map-vote-cards button.selected{border-color:#b8fbff;box-shadow:0 0 24px #55dfff88,inset 0 0 28px #7185ff55;animation:none}.map-vote-cards button.selected:after{content:"내 선택";position:absolute;right:10px;top:9px;padding:3px 7px;border-radius:10px;color:#092137;background:#9ff6ff;font-size:10px;font-weight:900}
+
+/* Starlight mailbox states. */
+.mail-panel{border:1px solid #a78dff88!important;background:radial-gradient(circle at 85% 8%,#7556bd45,transparent 28%),linear-gradient(155deg,#101743,#170b37)!important;box-shadow:0 24px 70px #000b,0 0 28px #765cff33!important}
+.mail-panel .modal-title{background:linear-gradient(90deg,#1c275a,#281347)}.mail-panel .modal-title small{color:#8fe9ff;font-size:9px;letter-spacing:.16em}.mail-panel .modal-title h2{margin:3px 0}
+.mail-list article{position:relative;padding:15px;border-color:#829eff88;background:linear-gradient(135deg,#141d4de8,#101238e8);box-shadow:inset 0 0 18px #738dff13}
+.mail-list article>i{position:absolute;right:12px;top:12px;padding:3px 7px;border-radius:9px;color:#10213c;background:#8ff1ff;font-size:9px;font-style:normal;font-weight:900}
+.mail-list article h3{padding-right:46px;color:#f4f6ff}.mail-list article strong{color:#ffe891}.mail-list article button{min-width:92px;background:linear-gradient(100deg,#7965e9,#4fbbdc)}
+.mail-list article.claimed{opacity:.55;filter:saturate(.6)}.mail-list article.claimed>i{color:#d8ffe6;background:#316b58}.mail-list article.claimed button{background:#343b60}
+
+/* Result cards state what was acquired; constellation cards carry recipe and ability. */
+.draw-result span{display:block;color:#c9d5f5;font-size:9px;line-height:1.35}.star-result small{color:var(--star-color);font-weight:900;letter-spacing:.12em}.constellation-result span{max-width:100%;color:#e2e7ff;font-size:8px}.constellation-result>small{color:#fff1a5;font-weight:900;letter-spacing:.13em}

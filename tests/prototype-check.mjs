@@ -7,8 +7,8 @@ const [html, css, js] = await Promise.all([
   readFile("game.js", "utf8"),
 ]);
 
-assert.match(html, /href="styles\.css\?v=44"/);
-assert.match(html, /<script src="game\.js\?v=44" defer><\/script>/);
+assert.match(html, /href="styles\.css\?v=45"/);
+assert.match(html, /<script src="game\.js\?v=45" defer><\/script>/);
 assert.equal((html.match(/data-act="summon"/g) || []).length, 0);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/, "2P's direct controls must not be rendered");
@@ -53,8 +53,8 @@ assert.match(css, /\.dawn-moon\s*\{[\s\S]*?pointer-events:\s*none/);
 assert.match(css, /\.dawn-special\s*\{[\s\S]*?pointer-events:\s*none/);
 assert.doesNotMatch(html, /1P 마법사|2P 마법사|class="wallet"|class="players"/);
 assert.match(html, /class="game-controls"/);
-assert.equal((html.match(/>출발</g) || []).length, 1, "the arena has one spawn");
-assert.equal((html.match(/>기지</g) || []).length, 1, "the arena has one destination");
+assert.equal((html.match(/>출발</g) || []).length, 0, "spawn remains logical and has no arena visual");
+assert.equal((html.match(/>기지</g) || []).length, 0, "destination remains logical and has no arena visual");
 assert.match(js, /const MAP_DEFINITIONS = Object\.freeze/);
 assert.match(js, /spawn: Object\.freeze\(\{ x: 50, y: 94 \}\)/);
 assert.match(js, /destination: Object\.freeze\(\{ x: 50, y: 6 \}\)/);
@@ -92,7 +92,7 @@ assert.match(js.slice(js.indexOf("  summonAt(x, y) {"), js.indexOf("  tap(i) {")
   "successful summoning must clear normal selection");
 assert.match(js, /swapCost:\s*10/);
 assert.match(js, /const nextTypes = STAR_KEYS\.filter\(\(type\) => type !== oldType\)/);
-assert.match(js, /SwapSystem\.execute\(pick\.m, pick\.index\)/);
+assert.match(js, /pick\.m\.exchangeSelectedStar\(\)/);
 assert.match(css, /\.context-actions button\s*\{[\s\S]*?touch-action:\s*manipulation/);
 assert.match(css, /\.context-actions \.action-above\s*\{[\s\S]*?translate\(-50%,\s*calc\(-100% - 18px\)\)/);
 assert.match(css, /\.context-actions \.action-below\s*\{[\s\S]*?translate\(-50%,\s*18px\)/);
@@ -206,8 +206,8 @@ assert.match(css, /\.star-node\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?aspect-r
 assert.match(js, /function bindPointerTap/);
 assert.match(html, /<main class="app battle-screen" id="game-shell" hidden>/);
 assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*var\(--game-shell-width\);[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
-assert.match(html, /styles\.css\?v=44/, "the deployed stylesheet URL must change when its layout changes");
-assert.match(html, /game\.js\?v=44/, "the deployed script URL must not reuse the pre-layout cache entry");
+assert.match(html, /styles\.css\?v=45/, "the deployed stylesheet URL must change when its layout changes");
+assert.match(html, /game\.js\?v=45/, "the deployed script URL must not reuse the pre-layout cache entry");
 assert.match(js, /const actionEdgeInset = 66;[\s\S]*?arenaRect\.height - actionEdgeInset/,
   "context actions reserve a complete touch target above and below edge stars");
 assert.match(css, /\.star-info\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?z-index:\s*160/);
