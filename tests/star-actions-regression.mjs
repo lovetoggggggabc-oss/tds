@@ -41,7 +41,7 @@ const { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, St
   context.testApi;
 playerProgress.ownedConstellations = Object.keys(CONSTELLATION_DEFINITIONS);
 playerProgress.equippedConstellations = Object.keys(CONSTELLATION_DEFINITIONS);
-assert.deepEqual(Object.keys(CONSTELLATION_DEFINITIONS), ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER", "GUARDIAN", "TWILIGHT", "BOND", "LINK"]);
+assert.deepEqual(Object.keys(CONSTELLATION_DEFINITIONS), ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER", "GUARDIAN", "TWILIGHT", "BOND", "LINK", "STRIKE", "HORIZON"]);
 for (const [id, definition] of Object.entries(CONSTELLATION_DEFINITIONS))
   assert.equal(definition.id, id, `${id} must carry its stable definition id`);
 assert.deepEqual(JSON.parse(JSON.stringify(CONSTELLATION_DEFINITIONS.TWILIGHT.recipe)), { red: 2, white: 1, blue: 1 });

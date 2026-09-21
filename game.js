@@ -35,7 +35,7 @@ let controlsBound = false;
 let toastTimer = 0;
 const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
-const PROGRESS_SCHEMA_VERSION = 3;
+const PROGRESS_SCHEMA_VERSION = 4;
 const STAR_DUST_GRANT_ID = "starDust5000_v1";
 const METEOR_GRANT_ID = "meteorFragments20_v2";
 const STAR_DUST_GRANT_AMOUNT = 5000;
@@ -77,6 +77,8 @@ function normalizeStarId(value) {
   const raw = String(value || "");
   return LEGACY_STAR_IDS[raw] || LEGACY_STAR_IDS[raw.toUpperCase()] || raw.toUpperCase();
 }
+const STAR_LEVEL_COSTS = Object.freeze({ 1: Object.freeze({ copies: 2, shards: 4 }), 2: Object.freeze({ copies: 4, shards: 10 }), 3: Object.freeze({ copies: 8, shards: 25 }), 4: Object.freeze({ copies: 16, shards: 60 }), 5: Object.freeze({ copies: 32, shards: 100 }), 6: Object.freeze({ copies: 64, shards: 200 }) });
+const CONSTELLATION_LEVEL_COSTS = Object.freeze({ 1: Object.freeze({ copies: 2, galaxyFragments: 3 }), 2: Object.freeze({ copies: 4, galaxyFragments: 10 }), 3: Object.freeze({ copies: 8, galaxyFragments: 20 }) });
 function normalizeStarCollection(saved, legacyStars) {
   const source = saved?.starCollection;
   const legacy = legacyStars || {};
@@ -86,7 +88,7 @@ function normalizeStarCollection(saved, legacyStars) {
     const level = entry && typeof entry === "object" ? entry.level : 1;
     return [id, {
       count: Math.max(0, Math.floor(Number(count) || 0)),
-      level: Math.min(4, Math.max(1, Math.floor(Number(level) || 1))),
+      level: Math.min(7, Math.max(1, Math.floor(Number(level) || 1))),
     }];
   }));
 }
@@ -95,12 +97,23 @@ function syncOwnedStars(progress) {
     .filter(([, entry]) => entry.count > 0).map(([id, entry]) => [id, entry.count]));
 }
 function starLevelCosts(level) {
-  if (level >= 4) return null;
-  const copies = 2 ** level;
-  return { copies, shards: copies / 2 };
+  return STAR_LEVEL_COSTS[level] || null;
 }
-function starLevelDamageMultiplier(level) { return 1 + (Math.min(4, Math.max(1, level)) - 1) * .2; }
-function starLevelAttackSpeedBonus(level) { return (Math.min(4, Math.max(1, level)) - 1) * .1; }
+function starLevelDamageMultiplier(level) { return 1 + (Math.min(7, Math.max(1, level)) - 1) * .2; }
+function starLevelAttackSpeedBonus(level) { return (Math.min(7, Math.max(1, level)) - 1) * .1; }
+function constellationLevelDamageMultiplier(level) { return 1 + (Math.min(4, Math.max(1, level)) - 1) * .5; }
+function constellationLevelAttackSpeedBonus(level) { return (Math.min(4, Math.max(1, level)) - 1) * .5; }
+function normalizeConstellationCollection(saved, owned) {
+  const source = saved?.constellationCollection || {};
+  return Object.fromEntries(owned.map((id) => [id, { owned: true, copies: Math.max(0, Math.floor(Number(source[id]?.copies) || 0)), level: Math.min(4, Math.max(1, Math.floor(Number(source[id]?.level) || 1))) }]));
+}
+function upgradeConstellation(id) {
+  const entry = playerProgress.constellationCollection[id];
+  const cost = entry && CONSTELLATION_LEVEL_COSTS[entry.level];
+  if (!cost || entry.copies < cost.copies || playerProgress.galaxyFragments < cost.galaxyFragments) return false;
+  entry.copies -= cost.copies; playerProgress.galaxyFragments -= cost.galaxyFragments; entry.level++;
+  savePlayerProgress(); return true;
+}
 function upgradeStar(id) {
   const entry = playerProgress.starCollection[id];
   const cost = entry && starLevelCosts(entry.level);
@@ -136,9 +149,11 @@ function loadPlayerProgress() {
       starDust: Math.max(0, Math.floor(Number(legacyDust) || 0)) + (dustGranted ? 0 : STAR_DUST_GRANT_AMOUNT),
       starShards: Math.max(0, Math.floor(Number(saved?.starShards) || 0)),
       meteorFragments: Math.max(0, Number.isFinite(saved?.meteorFragments) ? Math.floor(saved.meteorFragments) : 0) + (meteorGranted ? 0 : METEOR_GRANT_AMOUNT),
+      galaxyFragments: Math.max(0, Math.floor(Number(saved?.galaxyFragments) || 0)),
       starCollection: normalizeStarCollection(saved, ownedStars),
       ownedStars,
       ownedConstellations,
+      constellationCollection: normalizeConstellationCollection(saved, ownedConstellations),
       equippedConstellations,
       constellationPity: Math.min(GACHA_RULES.pityLimit - 1, Math.max(0, Number.isFinite(saved?.constellationPity) ? Math.floor(saved.constellationPity) : 0)),
       ownedRelics: [...new Set((saved?.ownedRelics || []).filter((id) => RELIC_DEFINITIONS[id]))],
@@ -148,7 +163,7 @@ function loadPlayerProgress() {
     return progress;
   } catch (_error) {
     specialGrantApplied = true;
-    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, ownedRelics: [], oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true } };
+    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, galaxyFragments: 0, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], constellationCollection: normalizeConstellationCollection(null, STARTER_COLLECTION.ownedConstellations), equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, ownedRelics: [], oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true } };
     syncOwnedStars(progress);
     return progress;
   }
@@ -168,7 +183,7 @@ function performConstellationDraws(count, random = Math.random) {
   const next = {
     pity: playerProgress.constellationPity,
     stars: { ...playerProgress.ownedStars },
-    constellations: [...playerProgress.ownedConstellations],
+    constellations: [...playerProgress.ownedConstellations], collection: Object.fromEntries(Object.entries(playerProgress.constellationCollection).map(([id, entry]) => [id, { ...entry }])),
   };
   const constellationIds = Object.keys(CONSTELLATION_DEFINITIONS);
   const starIds = Object.keys(STAR_TYPES);
@@ -178,7 +193,8 @@ function performConstellationDraws(count, random = Math.random) {
     if (guaranteed || random() < GACHA_RULES.constellationChance) {
       const id = constellationIds[Math.min(constellationIds.length - 1, Math.floor(random() * constellationIds.length))];
       const isNew = !next.constellations.includes(id);
-      if (isNew) next.constellations.push(id);
+      if (isNew) { next.constellations.push(id); next.collection[id] = { owned: true, copies: 0, level: 1 }; }
+      else next.collection[id].copies++;
       next.pity = 0;
       results.push({ kind: "constellation", id, isNew, guaranteed });
     } else {
@@ -194,6 +210,7 @@ function performConstellationDraws(count, random = Math.random) {
   playerProgress.ownedStars = next.stars;
   Object.entries(next.stars).forEach(([id, count]) => { playerProgress.starCollection[id].count = count; });
   playerProgress.ownedConstellations = next.constellations;
+  playerProgress.constellationCollection = next.collection;
   savePlayerProgress();
   return results;
 }
@@ -222,6 +239,8 @@ const CONSTELLATION_IDS = Object.freeze({
   TWILIGHT: "TWILIGHT",
   BOND: "BOND",
   LINK: "LINK",
+  STRIKE: "STRIKE",
+  HORIZON: "HORIZON",
 });
 const BASE_MAX_HP = 400;
 const BASE_MAX_STARS = 21;
@@ -370,6 +389,20 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       "연결 단계 합 10/20/30마다 공격력이 +100%씩 누적 증가합니다.",
     ]),
   }),
+  [CONSTELLATION_IDS.STRIKE]: Object.freeze({
+    id: CONSTELLATION_IDS.STRIKE, name: "일격의 자리",
+    recipe: Object.freeze({ red: 1, white: 2, purple: 1 }), attackDamage: 725,
+    attackSpeed: 3.15, range: 4.45, targeting: "highest", contextualAction: "strike",
+    previewLayout: Object.freeze({ nodes: Object.freeze([[15, 52], [39, 28], [65, 45], [84, 72]]), edges: Object.freeze([[0, 1], [1, 2], [2, 3]]) }),
+    specialDescriptions: Object.freeze(["보스 피해 ×2.20, 일반 몬스터 피해 ×0.85.", "명중할 때 일격 스택 +1. 일격 가하기는 스택당 현재 공격력 +0.35%의 피해를 주고 스택을 소모합니다."]),
+  }),
+  [CONSTELLATION_IDS.HORIZON]: Object.freeze({
+    id: CONSTELLATION_IDS.HORIZON, name: "지평선의 자리",
+    recipe: Object.freeze({ green: 2, purple: 1 }), attackDamage: 0,
+    attackSpeed: 0, range: 0, targeting: "none", supportOnly: true, contextualAction: "horizonFocus",
+    previewLayout: Object.freeze({ nodes: Object.freeze([[17, 52], [50, 50], [83, 48]]), edges: Object.freeze([[0, 1], [1, 2]]) }),
+    specialDescriptions: Object.freeze(["직접 공격하지 않습니다. 지평선의 초점으로 다른 활성 별자리의 능력 정의를 독립적으로 계승합니다.", "힘을 계승당한 원본 별자리는 공격 cycle마다 15% 확률로 추가 공격을 1회 합니다."]),
+  }),
 });
 playerProgress.ownedConstellations = playerProgress.ownedConstellations.filter((id) => CONSTELLATION_DEFINITIONS[id]);
 playerProgress.equippedConstellations = playerProgress.equippedConstellations
@@ -422,7 +455,12 @@ const CONFIG = {
       baseDamage: 1000,
       allyCombatDamage: 300,
       boss: true,
+      bossAbility: "meteorShot",
+      abilityDelay: 1,
     },
+    kingSlime: { name: "우주 킹슬라임", hp: 14000, speed: 2.2, reward: 35, baseDamage: 600, allyCombatDamage: 210, boss: true, bossAbility: "summonSlimes", abilityDelay: .8 },
+    timeRunner: { name: "시공간 러너", hp: 18000, speed: 3.6, reward: 45, baseDamage: 800, allyCombatDamage: 250, boss: true, bossAbility: "timeSprint", abilityDelay: 5, speedMultiplier: 3.2, abilityDuration: 3 },
+    galaxySlayer: { name: "은하 학살자", hp: 30000, speed: 1.55, reward: 70, baseDamage: 1400, allyCombatDamage: 380, boss: true, bossAbility: "severZodiac", abilityDelay: 5 },
   },
   stars: Object.freeze(Object.fromEntries(Object.values(STAR_TYPES).map(({ id: _id, key, ...definition }) => [key, Object.freeze(definition)]))),
 };
@@ -499,6 +537,11 @@ class Enemy {
     this.maxHp = this.hp * Math.pow(1 + CONFIG.waveHpGrowth, wave - 1);
     this.hp = this.maxHp;
     this.dead = false;
+    this.isBoss = this.boss === true;
+    this.spawnTime = game?.gameTime || 0;
+    this.abilityTriggered = false;
+    this.speedBoostUntil = 0;
+    this.bossRewardClaimed = false;
     this.engagedAlly = null;
     // Status effects use simulation time; no per-enemy timers are needed.
     this.statusEffects = { bindUntil: 0 };
@@ -526,12 +569,31 @@ class Enemy {
     this.el.style.transform = `translate3d(${(this.x * metrics.width) / 100}px, ${(this.y * metrics.height) / 100}px, 0)`;
   }
   update(dt) {
+    if (this.bossAbility && !this.abilityTriggered && game.gameTime - this.spawnTime >= (this.abilityDelay || 0)) {
+      this.abilityTriggered = true;
+      if (this.bossAbility === "summonSlimes") {
+        this.el.classList.add("boss-casting", "slime-pulse");
+        const summonedHp = Math.max(1, this.hp * .5);
+        for (let index = 0; index < 4; index++) {
+          const slime = new Enemy("slime", 0, 1); slime.maxHp = summonedHp; slime.hp = summonedHp;
+          slime.progress = Math.max(0, this.progress - 1 + index * .45); slime.pathProgress = slime.progress / 100;
+          Object.assign(slime, slime.calculatePosition()); slime.updateHealthBar(); slime.render(); slime.el.classList.add("summoned-slime"); game.enemies.push(slime);
+        }
+      } else if (this.bossAbility === "timeSprint") {
+        this.speedBoostUntil = game.gameTime + this.abilityDuration; this.el.classList.add("runner-boost");
+      } else if (this.bossAbility === "meteorShot") game.fireBossMeteor(this);
+      else if (this.bossAbility === "severZodiac") game.forceDismantleRandom(this);
+    }
+    if (this.bossAbility === "timeSprint") {
+      this.el.classList.toggle("runner-charging", !this.abilityTriggered);
+      if (this.speedBoostUntil && game.gameTime >= this.speedBoostUntil) { this.speedBoostUntil = 0; this.el.classList.remove("runner-boost"); }
+    }
     const bound = this.statusEffects.bindUntil > game.gameTime;
     this.el.classList.toggle("bound", bound);
     if (bound) return;
     if (this.engagedAlly && !this.engagedAlly.dead) return;
     this.engagedAlly = null;
-    this.progress += this.speed * dt;
+    this.progress += this.speed * (this.speedBoostUntil > game.gameTime ? this.speedMultiplier : 1) * dt;
     this.pathProgress = Math.min(1, this.progress / 100);
     const position = this.calculatePosition();
     this.x = position.x;
@@ -543,6 +605,7 @@ class Enemy {
     } else this.render();
   }
   hit(n, from, sourceConstellation = null) {
+    if (this.dead || n <= 0) return false;
     this.hp -= n;
     UIManager.beam(from, this.position());
     if (this.hp <= 0 && !this.dead) {
@@ -550,6 +613,7 @@ class Enemy {
       this.el.remove();
       game.kill(this, sourceConstellation);
     } else this.updateHealthBar();
+    return true;
   }
   applyBind(duration) {
     // Reapplication refreshes the deadline rather than stacking timers.
@@ -671,7 +735,7 @@ class EnemySpawner {
   wave(n) {
     let boss = WaveManager.isBoss(n);
     if (boss) {
-      let type = n % 20 === 0 ? "meteor" : "drone";
+      let type = bossTypeForWave(n);
       this.queue.push({ at: 0, type, lane: 0 });
     } else {
       let count = Math.min(4 + Math.floor(n * 1.2), 25);
@@ -690,6 +754,9 @@ class EnemySpawner {
       this.game.enemies.push(new Enemy(x.type, x.lane, this.game.wave.wave));
     }
   }
+}
+function bossTypeForWave(n) {
+  return ({ 10: "kingSlime", 20: "timeRunner", 30: "meteor", 40: "galaxySlayer" })[n] || (n % 20 === 0 ? "meteor" : "drone");
 }
 class WaveManager {
   constructor(game) {
@@ -721,7 +788,7 @@ class WaveManager {
 function nextWaveSummary(currentWave) {
   const n = currentWave + 1;
   if (WaveManager.isBoss(n))
-    return [{ type: n % 20 === 0 ? "meteor" : "drone", count: 1 }];
+    return [{ type: bossTypeForWave(n), count: 1 }];
   const count = Math.min(4 + Math.floor(n * 1.2), 25);
   let slime = 0, bug = 0;
   for (let i = 0; i < count; i++) (i + n) % 3 === 0 ? bug++ : slime++;
@@ -980,6 +1047,16 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
       target.hit(constellation.currentDamage(), origin, constellation);
     },
   }),
+  [CONSTELLATION_IDS.STRIKE]: Object.freeze({
+    createRuntime: (constellation) => ({ componentStageSum: constellation.componentStageSum, strikeStacks: 0 }),
+    attack(constellation, target, origin) {
+      if (target.hit(constellation.strikeDamageFor(target), origin, constellation)) { constellation.runtime.strikeStacks++; game.markDirty(); }
+    },
+  }),
+  [CONSTELLATION_IDS.HORIZON]: Object.freeze({
+    createRuntime: (constellation) => ({ componentStageSum: constellation.componentStageSum, inheritedDefinitionId: null, inheritedRuntime: null }),
+    update() {}, attack() {},
+  }),
 });
 class Constellation {
   constructor(owner, center, members, definitionId, connectionOrder = members) {
@@ -1011,6 +1088,17 @@ class Constellation {
   }
   attack(dt) {
     this.behavior.update?.(this, dt);
+    if (this.definition.supportOnly) {
+      if (!this.runtime.inheritedDefinitionId || this.inheritanceRunning) return;
+      const inheritedDefinition = CONSTELLATION_DEFINITIONS[this.runtime.inheritedDefinitionId];
+      const inheritedBehavior = CONSTELLATION_BEHAVIORS[this.runtime.inheritedDefinitionId];
+      const saved = { definition: this.definition, behavior: this.behavior, runtime: this.runtime };
+      this.definition = inheritedDefinition; this.behavior = inheritedBehavior; this.runtime = saved.runtime.inheritedRuntime; this.inheritanceRunning = true;
+      this.attack(dt);
+      saved.runtime.inheritedRuntime = this.runtime;
+      this.definition = saved.definition; this.behavior = saved.behavior; this.runtime = saved.runtime; this.inheritanceRunning = false;
+      return;
+    }
     this.cooldown -= dt;
     const position = this.owner.pos(this.center);
     if (this.target && (this.target.dead || !RangeSystem.contains(position, this.target.position(), this.effectiveRange())))
@@ -1030,6 +1118,8 @@ class Constellation {
       this.behavior.onTargetChanged?.(this, target);
     }
     this.behavior.attack(this, target, position);
+    if (this.inheritedByHorizon && Math.random() < .15 && !target.dead)
+      this.behavior.attack(this, target, position);
     if (this.definition.targeting === "random" || this.definitionId === CONSTELLATION_IDS.RADIANCE) this.resetTarget();
     else if (target.dead) this.resetTarget();
     const attackSpeed = this.effectiveAttackSpeed(target);
@@ -1041,7 +1131,20 @@ class Constellation {
       ? 1 + this.runtime.radianceKillBonus
       : 1;
     const linkMultiplier = this.definitionId === CONSTELLATION_IDS.LINK ? this.linkDamageMultiplier() : 1;
-    return getStageScaledDamage(this) * linkMultiplier * killMultiplier * allyMultiplier * localMultiplier * relicEffect("BLESSING_OF_STARS");
+    const level = playerProgress.constellationCollection[this.definitionId]?.level || 1;
+    return getStageScaledDamage(this) * constellationLevelDamageMultiplier(level) * linkMultiplier * killMultiplier * allyMultiplier * localMultiplier * relicEffect("BLESSING_OF_STARS");
+  }
+  strikeDamageFor(target, bonusMultiplier = 1) {
+    return this.currentDamage(bonusMultiplier) * (target.isBoss ? 2.2 : .85);
+  }
+  unleashStrike() {
+    if (this.definitionId !== CONSTELLATION_IDS.STRIKE || this.runtime.strikeStacks <= 0) return false;
+    const origin = this.owner.pos(this.center);
+    const target = Targeting.choose({ data: () => ({ range: this.effectiveRange(), target: this.definition.targeting }) }, game.enemies, origin);
+    if (!target) return false;
+    const stacks = this.runtime.strikeStacks;
+    if (!target.hit(this.strikeDamageFor(target, 1 + stacks * .0035), origin, this)) return false;
+    this.runtime.strikeStacks = 0; UIManager.strikeBurst(origin, target.position(), stacks); game.markDirty(); return true;
   }
   linkedConstellationStageSum() {
     if (Number.isFinite(game?.activeConstellationStageSum))
@@ -1106,9 +1209,10 @@ class Constellation {
   }
   effectiveAttackSpeed(target = this.target) {
     const globalModifier = (this.owner.alliedAttackSpeedModifier?.() || 1) * relicEffect("SONG_OF_CONSTELLATIONS");
+    const levelBonus = constellationLevelAttackSpeedBonus(playerProgress.constellationCollection[this.definitionId]?.level || 1);
     if (this.definitionId === CONSTELLATION_IDS.TWILIGHT && target && !target.dead && target.hp <= target.maxHp * 0.50)
-      return this.definition.attackSpeed * globalModifier * 2;
-    return this.definition.attackSpeed * globalModifier;
+      return (this.definition.attackSpeed + levelBonus) * globalModifier * 2;
+    return (this.definition.attackSpeed + levelBonus) * globalModifier;
   }
   startTwilightTranscendence() {
     if (this.definitionId !== CONSTELLATION_IDS.TWILIGHT || this.runtime.transcendenceUntil > game.gameTime) return;
@@ -1169,6 +1273,10 @@ class Constellation {
   }
   release() {
     this.behavior.dispose?.(this);
+    if (this.definitionId === CONSTELLATION_IDS.HORIZON && this.inheritedTarget) {
+      const oldTarget = this.inheritedTarget; this.inheritedTarget = null;
+      oldTarget.inheritedByHorizon = game.players.some((p) => p.manager.activeConstellations().some((c) => c !== this && c.definitionId === CONSTELLATION_IDS.HORIZON && c.inheritedTarget === oldTarget));
+    }
     this.originalComponents.forEach((saved) => {
       const star = this.owner.stars[saved.index];
       Object.assign(star, { type: saved.type, tier: saved.tier, x: saved.x, y: saved.y });
@@ -1274,6 +1382,17 @@ class StarManager {
   }
   tap(i) {
     if (!this.stars[i]) return;
+    if (this.horizonFocusSource) {
+      const target = this.stars[i].constellation;
+      if (!target || target.definitionId === CONSTELLATION_IDS.HORIZON || target === this.horizonFocusSource) return UIManager.hint("다른 활성 별자리를 선택하세요.");
+      const horizon = this.horizonFocusSource;
+      if (horizon.inheritedTarget) horizon.inheritedTarget.inheritedByHorizon = game.players.some((p) => p.manager.activeConstellations().some((c) => c !== horizon && c.definitionId === CONSTELLATION_IDS.HORIZON && c.inheritedTarget === horizon.inheritedTarget));
+      horizon.inheritedTarget = target;
+      horizon.runtime.inheritedDefinitionId = target.definitionId;
+      horizon.runtime.inheritedRuntime = target.behavior.createRuntime(horizon);
+      target.inheritedByHorizon = true;
+      this.horizonFocusSource = null; UIManager.horizonLink(horizon.owner.pos(horizon.center), target.owner.pos(target.center)); UIManager.hint(`${target.definition.name}의 힘을 계승했습니다.`); game.render(); return;
+    }
     if (this.swapMode && this.selected.length === 1 && this.selected[0] !== i)
       return SwapSystem.execute(this, this.selected[0], i);
     if (this.zodiacMode) {
@@ -1302,6 +1421,7 @@ class StarManager {
     this.swapMode = false;
     this.zodiacMode = false;
     this.selected = [];
+    this.horizonFocusSource = null;
   }
   update(dt) {
     this.stars.forEach((s, i) => {
@@ -1648,6 +1768,15 @@ class UIManager {
     );
     this.addTransient(line, effects, 230);
   }
+  static strikeBurst(from, to, stacks) {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line"); line.setAttribute("class", "strike-beam");
+    [["x1", from.x], ["y1", from.y], ["x2", to.x], ["y2", to.y]].forEach(([key, value]) => line.setAttribute(key, value));
+    line.style.setProperty("--strike-power", Math.min(1, stacks / 100)); this.addTransient(line, effects, 420);
+  }
+  static horizonLink(from, to) {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line"); line.setAttribute("class", "horizon-focus-line");
+    [["x1", from.x], ["y1", from.y], ["x2", to.x], ["y2", to.y]].forEach(([key, value]) => line.setAttribute(key, value)); this.addTransient(line, effects, 650);
+  }
   static bondStrike(position) {
     const strike = document.createElement("i");
     strike.className = "bond-strike";
@@ -1868,8 +1997,10 @@ class UIManager {
           const thresholds = [10, 20, 30].filter((threshold) => linked >= threshold).length;
           return `<span>자신의 재료 단계 합: ${constellation.componentStageSum}</span><span>연결된 다른 별자리 단계 합: ${linked}</span><span>계승 배율: ×${Math.max(1, linked)}</span><span>임계치 강화: +${thresholds * 100}%</span>`;
         })() : "";
+    const strikeInfo = constellation?.definitionId === CONSTELLATION_IDS.STRIKE ? `<span>일격 스택: ${constellation.runtime.strikeStacks}</span>` : "";
+    const horizonInfo = constellation?.definitionId === CONSTELLATION_IDS.HORIZON ? `<span>계승 대상: ${constellation.runtime.inheritedDefinitionId ? CONSTELLATION_DEFINITIONS[constellation.runtime.inheritedDefinitionId].name : "없음"}</span>` : "";
     starInfo.innerHTML = constellation
-      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합: ${constellation.componentStageSum}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span>${linkInfo}<span>현재 공격력: ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellation.definitionId === CONSTELLATION_IDS.TWILIGHT && constellation.target?.hp <= constellation.target?.maxHp * .5 ? constellationStats.attackSpeed * 2 : constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellation.effectiveRange()}</span>${bondInfo}${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/5</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : ""}${twilightInfo}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
+      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합: ${constellation.componentStageSum}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span>${linkInfo}${strikeInfo}${horizonInfo}<span>현재 공격력: ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellation.definitionId === CONSTELLATION_IDS.TWILIGHT && constellation.target?.hp <= constellation.target?.maxHp * .5 ? constellationStats.attackSpeed * 2 : constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellation.effectiveRange()}</span>${bondInfo}${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/5</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : ""}${twilightInfo}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
       : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? constellation.effectiveRange() : d.range,
@@ -1890,14 +2021,16 @@ class UIManager {
       const isAstrologer = constellation.definitionId === CONSTELLATION_IDS.ASTROLOGER;
       const isGuardian = constellation.definitionId === CONSTELLATION_IDS.GUARDIAN;
       const isBond = constellation.definitionId === CONSTELLATION_IDS.BOND;
+      const isStrike = constellation.definitionId === CONSTELLATION_IDS.STRIKE;
+      const isHorizon = constellation.definitionId === CONSTELLATION_IDS.HORIZON;
       const canDivine = isAstrologer && pick.m.player.resources.can(CONFIG.divinationCost);
       const canUseGuardianLight = isGuardian && pick.m.player.resources.can(CONFIG.guardianLightCost);
       const canOfferBond = isBond && constellation.runtime.bindChance < 1 && pick.m.player.resources.can(CONFIG.bondOfferingCost);
       // definitionId is deliberately part of the cache key: actions from a
       // previous tower type must never survive a selection/type change.
-      let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}:${canUseGuardianLight}:${canOfferBond}:${constellation.runtime.bindChance}`;
+      let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}:${canUseGuardianLight}:${canOfferBond}:${constellation.runtime.bindChance}:${constellation.runtime.strikeStacks || 0}:${constellation.runtime.inheritedDefinitionId || "none"}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 50</button>` : ""}${isBond ? `<button class="bond-offering action-above" data-context="bond-offering"${canOfferBond ? "" : " disabled"}>별빛 헌납 200</button>` : ""}<button class="${isAstrologer || isGuardian || isBond ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
+        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 50</button>` : ""}${isBond ? `<button class="bond-offering action-above" data-context="bond-offering"${canOfferBond ? "" : " disabled"}>별빛 헌납 200</button>` : ""}${isStrike ? `<button class="strike-action action-above" data-context="strike"${constellation.runtime.strikeStacks ? "" : " disabled"}>일격 가하기</button>` : ""}${isHorizon ? `<button class="horizon-action action-above" data-context="horizon">지평선의 초점</button>` : ""}<button class="${isAstrologer || isGuardian || isBond || isStrike || isHorizon ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
         if (isAstrologer)
           contextActions.querySelector('[data-context="divination"]').onclick = () =>
             DivinationSystem.execute(pick.m, pick.index);
@@ -1907,6 +2040,8 @@ class UIManager {
         if (isBond)
           contextActions.querySelector('[data-context="bond-offering"]').onclick = () =>
             BondOfferingSystem.execute(pick.m, pick.index);
+        if (isStrike) contextActions.querySelector('[data-context="strike"]').onclick = () => constellation.unleashStrike();
+        if (isHorizon) contextActions.querySelector('[data-context="horizon"]').onclick = () => { pick.m.horizonFocusSource = constellation; pick.m.selected = []; UIManager.hint("계승할 다른 별자리를 선택하세요."); game.render(); };
         contextActions.querySelector('[data-context="release"]').onclick = () =>
           ZodiacSystem.release(pick.m, pick.index);
         this.actionKey = actionKey;
@@ -2013,6 +2148,7 @@ class GameManager {
     this.phase = "PREPARING";
     this.preparationRemaining = PREPARATION_SECONDS;
     this.battleRewardGranted = false;
+    this.galaxyFragmentsEarned = 0;
     const initialBaseHp = BASE_MAX_HP + (hasRelic("STEADFAST_HEART") ? RELIC_DEFINITIONS.STEADFAST_HEART.effectValue : 0);
     this.base = { hp: initialBaseHp, maxHp: initialBaseHp };
     Object.defineProperty(this, "baseHP", {
@@ -2144,6 +2280,24 @@ class GameManager {
     UIManager.guardianPortal();
     this.alliedUnits.push(new GuardianUnit(this.base));
   }
+  fireBossMeteor(enemy) {
+    const projectile = document.createElement("i"); projectile.className = "boss-meteor-projectile";
+    projectile.style.left = `${enemy.x}%`; projectile.style.top = `${enemy.y}%`; arena.append(projectile);
+    requestAnimationFrame(() => { projectile.style.left = `${MAP_DEFINITION.destination.x}%`; projectile.style.top = `${MAP_DEFINITION.destination.y}%`; });
+    this.simulationTimeout(() => {
+      projectile.remove(); const impact = document.createElement("i"); impact.className = "base-meteor-impact"; impact.style.left = `${MAP_DEFINITION.destination.x}%`; impact.style.top = `${MAP_DEFINITION.destination.y}%`; UIManager.addTransient(impact, arena, 500);
+      this.base.hp = Math.max(0, this.base.hp - 20); this.markDirty(); if (this.base.hp <= 0) { this.running = false; finishBattle?.(this); }
+    }, 650);
+  }
+  forceDismantleRandom(enemy) {
+    const active = this.players.flatMap((player) => player.manager.activeConstellations());
+    if (!active.length) return false;
+    const target = active[Math.floor(Math.random() * active.length)];
+    UIManager.horizonLink(enemy.position(), target.owner.pos(target.center));
+    target.centerElement()?.classList.add("forced-sever");
+    this.simulationTimeout(() => { target.release(); target.owner.selected = []; this.recomputeCombatCaches(); this.render(); }, 320);
+    return true;
+  }
   kill(e, sourceConstellation = null) {
     this.players.forEach((p) => {
       p.resources.starlight += e.reward;
@@ -2151,6 +2305,9 @@ class GameManager {
     });
     this.clearEnemyReferences(e);
     sourceConstellation?.registerKill();
+    if (e.type === "galaxySlayer" && !e.bossRewardClaimed) {
+      e.bossRewardClaimed = true; playerProgress.galaxyFragments++; this.galaxyFragmentsEarned++; savePlayerProgress();
+    }
     this.markDirty();
   }
   leak(e) {
@@ -2254,7 +2411,7 @@ const SUMMON_STATES = Object.freeze({ START: "SUMMON_START", FORMING: "CONSTELLA
 const CONSTELLATION_SUMMON_COLORS = Object.freeze({
   DAWN: ["#e7e5ff", "#9d75ff"], RADIANCE: ["#fffef0", "#ffd65c"], SAGITTARIUS: ["#65baff", "#ffe06b"],
   ASTROLOGER: ["#bd75ff", "#ffd96b"], GUARDIAN: ["#d9f8ff", "#5dbdff"], TWILIGHT: ["#9a48dc", "#ff4d68"],
-  BOND: ["#f7fff9", "#55db85"], LINK: ["#b16cff", "#ff5064"],
+  BOND: ["#f7fff9", "#55db85"], LINK: ["#b16cff", "#ff5064"], STRIKE: ["#ff5064", "#e9dfff"], HORIZON: ["#55db85", "#b16cff"],
 });
 
 function summonSequencePreview(results) {
@@ -2367,6 +2524,7 @@ function bootstrapGame() {
     document.querySelectorAll?.("[data-meteor-fragments]").forEach((node) => {
       node.textContent = playerProgress.meteorFragments.toLocaleString("ko-KR");
     });
+    document.querySelectorAll?.("[data-galaxy-fragments]").forEach((node) => { node.textContent = playerProgress.galaxyFragments.toLocaleString("ko-KR"); });
     document.querySelectorAll?.("[data-draw]").forEach((button) => {
       const balance = button.dataset.draw === "relic" ? playerProgress.meteorFragments : playerProgress.starDust;
       button.disabled = balance < Number(button.dataset.cost);
@@ -2418,16 +2576,20 @@ function bootstrapGame() {
       const entry = playerProgress.starCollection[star.id];
       const cost = starLevelCosts(entry.level);
       const canUpgrade = cost && entry.count >= cost.copies && playerProgress.starShards >= cost.shards;
-      return `<article class="collection-card star-collection-card ${entry.count ? "owned" : "locked"}" style="--star-color:${star.color}"><div class="collection-star">✦</div><h3>${star.name} 별</h3><b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.4 · MAX"}</b><div class="star-upgrade-details"><span>보유 별: <b>${entry.count}${cost ? ` / ${cost.copies}` : ""}</b></span><span>별조각: <b>${playerProgress.starShards}${cost ? ` / ${cost.shards}` : ""}</b></span>${cost ? `<small>다음 비용 · ${star.name} 별 ×${cost.copies} + 별조각 ×${cost.shards}</small>` : `<small>최대 레벨 · 복사본은 계속 보관됩니다.</small>`}</div><button type="button" data-upgrade-star="${star.id}"${canUpgrade ? "" : " disabled"}>${cost ? "레벨업" : "MAX"}</button></article>`;
+      return `<article class="collection-card star-collection-card ${entry.count ? "owned" : "locked"}" style="--star-color:${star.color}"><div class="collection-star">✦</div><h3>${star.name} 별</h3><b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.7 · MAX"}</b><div class="star-upgrade-details"><span>보유 별: <b>${entry.count}${cost ? ` / ${cost.copies}` : ""}</b></span><span>별조각: <b>${playerProgress.starShards}${cost ? ` / ${cost.shards}` : ""}</b></span>${cost ? `<small>다음 비용 · ${star.name} 별 ×${cost.copies} + 별조각 ×${cost.shards}</small>` : `<small>최대 레벨 · 복사본은 계속 보관됩니다.</small>`}</div><button type="button" data-upgrade-star="${star.id}"${canUpgrade ? "" : " disabled"}>${cost ? "레벨업" : "MAX"}</button></article>`;
     }).join("");
     getRequiredElement("constellation-collection").innerHTML = Object.values(CONSTELLATION_DEFINITIONS).map((definition) => {
       const owned = playerProgress.ownedConstellations.includes(definition.id);
       const order = playerProgress.equippedConstellations.indexOf(definition.id);
-      return `<button type="button" class="collection-card constellation-collection-card ${owned ? "owned" : "locked"} ${order >= 0 ? "equipped" : ""}" data-equip-constellation="${definition.id}">${order >= 0 ? `<b class="equip-order">${order + 1}</b>` : ""}${constellationPreview(definition)}<h3>${definition.name}</h3><small>${!owned ? "🔒 미획득" : order >= 0 ? "전투 장착 중" : "전투에 장착"}</small></button>`;
+      const entry = playerProgress.constellationCollection[definition.id];
+      const cost = entry && CONSTELLATION_LEVEL_COSTS[entry.level];
+      const canUpgrade = cost && entry.copies >= cost.copies && playerProgress.galaxyFragments >= cost.galaxyFragments;
+      return `<article class="collection-card constellation-collection-card ${owned ? "owned" : "locked"} ${order >= 0 ? "equipped" : ""}">${order >= 0 ? `<b class="equip-order">${order + 1}</b>` : ""}${constellationPreview(definition)}<h3>${definition.name}</h3>${owned ? `<b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.4 · MAX"}</b><div class="constellation-upgrade-details"><span>복사본 <b>${entry.copies}${cost ? ` / ${cost.copies}` : ""}</b></span><span>은하파편 <b>${playerProgress.galaxyFragments}${cost ? ` / ${cost.galaxyFragments}` : ""}</b></span></div><div class="collection-actions"><button type="button" data-equip-constellation="${definition.id}">${order >= 0 ? "장착 해제" : "전투 장착"}</button><button type="button" data-upgrade-constellation="${definition.id}"${canUpgrade ? "" : " disabled"}>${cost ? `Lv.${entry.level + 1} 강화` : "MAX"}</button></div>` : "<small>🔒 미획득</small>"}</article>`;
     }).join("");
     document.querySelectorAll("[data-deck-count]").forEach((node) => { node.textContent = playerProgress.equippedConstellations.length; });
     document.querySelectorAll("[data-equip-constellation]").forEach((button) => { button.onclick = () => { const result = toggleEquippedConstellation(button.dataset.equipConstellation); if (!result.ok) showToast(result.message); renderCollection(); }; });
     document.querySelectorAll("[data-upgrade-star]").forEach((button) => { button.onclick = () => { if (upgradeStar(button.dataset.upgradeStar)) { updateMetaCurrency(); renderCollection(); } }; });
+    document.querySelectorAll("[data-upgrade-constellation]").forEach((button) => { button.onclick = () => { if (upgradeConstellation(button.dataset.upgradeConstellation)) { updateMetaCurrency(); renderCollection(); } }; });
   };
   const renderRelics = () => {
     getRequiredElement("relic-collection").innerHTML = Object.values(RELIC_DEFINITIONS).map((relic) => {
@@ -2462,7 +2624,7 @@ function bootstrapGame() {
     const rewardMultiplier = relicEffect("SUPERNOVA_TEAR");
     const reward = Math.floor(reachedWave * 4 * rewardMultiplier);
     const shardReward = reachedWave * 2;
-    const meteorReward = Math.floor(Math.floor(reachedWave / 20) * rewardMultiplier);
+    const meteorReward = Math.floor(reachedWave / 5);
     if (!battle.battleRewardGranted) {
       battle.battleRewardGranted = true;
       battle.starDustReward = reward;
@@ -2480,6 +2642,10 @@ function bootstrapGame() {
     getRequiredElement("dustReward").textContent = battle.starDustReward ?? reward;
     getRequiredElement("shardReward").textContent = battle.starShardReward ?? shardReward;
     getRequiredElement("meteorFragmentReward").textContent = battle.meteorFragmentReward ?? meteorReward;
+    const galaxyReward = battle.galaxyFragmentsEarned || 0;
+    getRequiredElement("galaxyFragmentReward").textContent = galaxyReward;
+    getRequiredElement("galaxyRewardRow").hidden = galaxyReward === 0;
+    gameover.classList.remove("reveal-results"); void gameover.offsetWidth; gameover.classList.add("reveal-results");
     gameover.hidden = false;
     exitDialog.hidden = true;
     updateMetaCurrency();
@@ -2559,7 +2725,7 @@ function bootstrapGame() {
   showMainMenu();
   if (specialGrantApplied) showToast("특별 지급\n별가루 +5,000\n운석조각 +20");
   const diagnostics = {
-    CONFIG, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, playerProgress, performConstellationDraws, performRelicDraws, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, upgradeStar, summonController,
+    CONFIG, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, playerProgress, performConstellationDraws, performRelicDraws, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
     showMainMenu, showBattleMenu, showGacha, startBattle, leaveBattle, finishBattle,
