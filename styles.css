@@ -2023,6 +2023,19 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 .star-level{right:-1px;top:-1px;min-width:13px;height:13px;padding:0 3px;border-color:color-mix(in srgb,currentColor 55%,transparent);background:#080b23b8;color:#e9efffcc;font-size:8px;box-shadow:none}
 .collection-star .star-glyph{width:78px;height:78px}.collection-star.stage-1 .star-glyph{width:58px;height:58px}.collection-star.stage-2 .star-glyph{width:70px;height:70px}.collection-star.stage-3 .star-glyph{width:74px;height:78px}
 
+/* Final stage treatment stays static and structural: each promotion adds
+   rays, luminous satellites and another orbital contour without timers. */
+.star.stage-1{--stage-scale:1}.star.stage-1 .star-halo{display:block!important;inset:18%;opacity:.22;border-style:dotted}.star.stage-1 .star-orbit{display:none!important}
+.star.stage-2{--stage-scale:1.08}.star.stage-2 .star-halo{display:block!important;inset:4%;opacity:.66;border-width:1px}.star.stage-2 .star-orbit{display:none!important}
+.star.stage-3{--stage-scale:1.16}.star.stage-3 .star-halo{display:block!important;inset:-6%;opacity:.8;border-width:1px;box-shadow:0 0 8px color-mix(in srgb,var(--star-color) 65%,transparent)}.star.stage-3 .star-orbit{display:block!important;inset:-14%;opacity:.72;border:1px solid var(--star-color);border-left-color:transparent;animation:none!important}
+.star.stage-4{--stage-scale:1.24}.star.stage-4 .star-halo{display:block!important;inset:-11%;opacity:1;border:3px double var(--star-color);box-shadow:0 0 12px var(--star-color),inset 0 0 7px var(--star-color)}.star.stage-4 .star-orbit{display:block!important;inset:-21%;opacity:.9;border:2px dotted var(--star-color);box-shadow:0 0 0 4px color-mix(in srgb,var(--star-color) 16%,transparent);animation:none!important}
+
+.map-vote-countdown{display:inline-flex;align-items:baseline;gap:4px;margin:4px 0 10px;padding:6px 13px;border:1px solid #849cff55;border-radius:999px;background:#090d2bc9;color:#aebfe8;font-size:clamp(12px,3cqw,15px)}
+.map-vote-countdown strong{min-width:3.2ch;color:#fff0a8;font-size:1.2em;font-variant-numeric:tabular-nums;text-shadow:0 0 8px #ffe68488}
+
+/* SKIP remains reachable with either thumb and clear of top safe-area UI. */
+.skip-summon{top:auto;bottom:max(18px,env(safe-area-inset-bottom));right:max(14px,env(safe-area-inset-right));min-width:76px;min-height:40px;background:#090c28df;box-shadow:0 5px 18px #0009}
+
 /* One emblem is anchored to the constellation's real center member. The
    original component stars and link SVG stay visible beneath it. */
 .star-node.constellation:before{display:none}
