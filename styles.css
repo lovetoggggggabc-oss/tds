@@ -1989,27 +1989,39 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 .wave>b>small{color:#91a2cf;font:800 clamp(10px,2.3cqw,13px)/1 system-ui;letter-spacing:.12em}
 .wave>b>#wave{min-width:1ch;max-width:100%;color:#f5fbff;font:900 clamp(30px,7.2cqw,42px)/.9 Georgia,serif;letter-spacing:-.04em;text-shadow:0 0 5px #fff8,0 0 12px #718cff;overflow:visible}
 
-/* Normal stars: four genuinely different silhouettes, scaled only 100/106/
-   112/118%. Circular decoration is intentionally subordinate or absent. */
-.star{inset:8%;--stage-scale:1;--stage-glow:.2;filter:drop-shadow(0 0 4px var(--star-color))!important}
+/* Normal stars use a compact four-step visual language: rounded star, orbiting
+   star, faceted crystal, then a brilliant core with a colour-family relic. */
+.star{inset:5%;--stage-scale:1;--stage-glow:.2;filter:drop-shadow(0 0 3px var(--star-color)) drop-shadow(0 0 7px color-mix(in srgb,var(--star-color) 45%,transparent))!important}
 .star-core{display:grid;width:100%;height:100%;place-items:center;font-size:0!important;text-shadow:none!important}
-.star-glyph{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 3px var(--star-color))}
-.star-glyph .star-ray{fill:var(--star-color);stroke:color-mix(in srgb,var(--star-color) 76%,#fff);stroke-width:.8;stroke-linejoin:round}
-.star-glyph .star-core-dot{fill:#fff;stroke:var(--star-color);stroke-width:3}
-.star-glyph .star-inner{fill:#fff;stroke:var(--star-color);stroke-width:2}
-.star-glyph .star-core-ring{fill:color-mix(in srgb,var(--star-color) 68%,transparent);stroke:#fff;stroke-width:1.5}
-.star-glyph .star-inner-highlight,.star-glyph .star-sparkle{fill:#fff;stroke:var(--star-color);stroke-width:1}
-.star-glyph .stage-two-sparkles{fill:#fff;opacity:.8}
+.star-glyph{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 2px #fff8) drop-shadow(0 0 5px var(--star-color))}
+.star-glyph .star-body{fill:var(--star-color);stroke:color-mix(in srgb,var(--star-color) 38%,#fff);stroke-width:2;stroke-linejoin:round}
+.star-glyph .rounded-star{stroke-linejoin:round}
+.star-glyph .body-highlight{fill:#fff;opacity:.32}
+.star-glyph .facet{fill:color-mix(in srgb,var(--star-color) 76%,#17255a);opacity:.66}
+.star-glyph .facet-light{fill:#fff;opacity:.28}
+.star-glyph .orbit{fill:none;stroke:color-mix(in srgb,var(--star-color) 45%,#fff);stroke-width:2.2;stroke-linecap:round}
+.star-glyph .orbit-back{opacity:.38;stroke-dasharray:54 80}
+.star-glyph .orbit-front{opacity:.95;stroke-dasharray:52 82;stroke-dashoffset:67;filter:drop-shadow(0 0 2px var(--star-color))}
+.star-glyph .major-orbit{stroke-width:2.8}.star-glyph .final-orbit{stroke-width:3.2}
+.star-glyph .orbit-moon{fill:#fff;stroke:var(--star-color);stroke-width:2}.star-glyph .orbit-moon.small{opacity:.9}
+.star-glyph .star-sparkle,.star-glyph .crystal-shard{fill:#fff;stroke:var(--star-color);stroke-width:1}
+.star-glyph .final-core{fill:#fff;stroke:var(--star-color);stroke-width:3;stroke-linejoin:round;filter:drop-shadow(0 0 4px #fff)}
+.star-glyph .core-highlight{fill:var(--star-color);stroke:#fff;stroke-width:1.2;stroke-linejoin:round}
+.star-glyph .type-ornament{fill:var(--star-color);stroke:#fff;stroke-width:1.4;stroke-linejoin:round;filter:drop-shadow(0 0 3px var(--star-color))}
+.star-glyph .planet-ornament ellipse{fill:none;stroke:var(--star-color);stroke-width:2}.star-glyph .planet-ornament circle{fill:#fff;stroke:var(--star-color);stroke-width:2}
+.star-glyph .flame-ornament{fill:#ff6a54}.star-glyph .flame-ornament .ornament-highlight{fill:#ffd066;stroke:#ff7658}
+.star-glyph .moon-ornament{fill:#f3dbff;stroke:#b16cff}.star-glyph .leaf-ornament{fill:#8dffab;stroke:#55db85}
+.star-type-white{--star-color:#fff0df}.star-type-yellow{--star-color:#ffc94f}.star-type-orange{--star-color:#ff6859}
 .star-core:before,.star-core:after{display:none!important}
 .star-halo,.star-orbit{display:none!important}
-.star.stage-1{--stage-scale:1}.star.stage-1 .star-glyph{width:70%;height:70%;opacity:.9}
-.star.stage-2{--stage-scale:1.06}.star.stage-2 .star-glyph{width:82%;height:82%}
-.star.stage-3{--stage-scale:1.12}.star.stage-3 .star-glyph{width:92%;height:100%}
-.star.stage-4{--stage-scale:1.18}.star.stage-4 .star-glyph{width:100%;height:100%}
+.star.stage-1{--stage-scale:1}.star.stage-1 .star-glyph{width:66%;height:66%;opacity:.96}
+.star.stage-2{--stage-scale:1.03}.star.stage-2 .star-glyph{width:84%;height:84%}
+.star.stage-3{--stage-scale:1.06}.star.stage-3 .star-glyph{width:96%;height:100%}
+.star.stage-4{--stage-scale:1.08}.star.stage-4 .star-glyph{width:100%;height:100%}
 .star .star-sparks{display:none}
 .star.stage-4:after{display:none!important}
 .star-level{right:-1px;top:-1px;min-width:13px;height:13px;padding:0 3px;border-color:color-mix(in srgb,currentColor 55%,transparent);background:#080b23b8;color:#e9efffcc;font-size:8px;box-shadow:none}
-.collection-star .star-glyph{width:72px;height:72px}.collection-star.stage-1 .star-glyph{width:58px;height:58px}.collection-star.stage-2 .star-glyph{width:64px;height:64px}.collection-star.stage-3 .star-glyph{width:68px;height:72px}
+.collection-star .star-glyph{width:78px;height:78px}.collection-star.stage-1 .star-glyph{width:58px;height:58px}.collection-star.stage-2 .star-glyph{width:70px;height:70px}.collection-star.stage-3 .star-glyph{width:74px;height:78px}
 
 /* One emblem is anchored to the constellation's real center member. The
    original component stars and link SVG stay visible beneath it. */

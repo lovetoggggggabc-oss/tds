@@ -67,9 +67,12 @@ const STAR_TYPES = Object.freeze({
   WHITE: Object.freeze({ id: "WHITE", key: "white", name: "백색", color: "#ffffff", damage: 100, rate: 3.5, range: 6, target: "burst" }),
   YELLOW: Object.freeze({ id: "YELLOW", key: "yellow", name: "황색", color: "#ffd84d", damage: 75, rate: 2, range: 7, target: "random" }),
   ORANGE: Object.freeze({ id: "ORANGE", key: "orange", name: "주황색", color: "#ffad45", damage: 125, rate: 1.5, range: 4, target: "nearest" }),
-  RED: Object.freeze({ id: "RED", key: "red", name: "적색", color: "#ff5064", damage: 200, rate: 1, range: 5, target: "highest" }),
-  PURPLE: Object.freeze({ id: "PURPLE", key: "purple", name: "보라색", color: "#b16cff", damage: 100, rate: 1, range: 4.5, target: "lowest" }),
-  GREEN: Object.freeze({ id: "GREEN", key: "green", name: "초록색", color: "#55db85", damage: 0, rate: 0, range: 0, target: "none", support: "alliedAttackSpeed" }),
+  // RED remains a compatibility key because existing saves and constellation
+  // recipes depend on its combat profile. It belongs to the orange visual
+  // family, so the player-facing palette still uses the requested six names.
+  RED: Object.freeze({ id: "RED", key: "red", name: "주황색", color: "#ff665b", damage: 200, rate: 1, range: 5, target: "highest" }),
+  PURPLE: Object.freeze({ id: "PURPLE", key: "purple", name: "자색", color: "#b16cff", damage: 100, rate: 1, range: 4.5, target: "lowest" }),
+  GREEN: Object.freeze({ id: "GREEN", key: "green", name: "녹색", color: "#55db85", damage: 0, rate: 0, range: 0, target: "none", support: "alliedAttackSpeed" }),
 });
 const STARTER_COLLECTION = Object.freeze({
   ownedStars: Object.freeze({ BLUE: 1, WHITE: 1, YELLOW: 1, ORANGE: 1, RED: 1 }),
@@ -1549,29 +1552,42 @@ class StarManager {
   }
 }
 
-// One shared visual grammar keeps all seven colours identifiable while stage
-// controls the core, halo, rays and orbit rather than merely scaling the star.
-function symmetricRays(angles, length, halfWidth, className = "star-ray") {
-  // A single tapered ray is rotated around (50, 50), guaranteeing that every
-  // opposing pair has identical length, width and distance from the centre.
-  const ray = `M50 ${50 - length}L${50 + halfWidth} 46L${50 + halfWidth} 54Z`;
-  return angles.map((angle) => `<path class="${className}" d="${ray}" transform="rotate(${angle} 50 50)"/>`).join("");
-}
+// The four silhouettes deliberately progress from soft mascot-like geometry to
+// a faceted celestial relic. Decorations stay inside the node's visual bounds
+// so they never affect placement, selection, range, or combat hit testing.
 function symmetricSparkles(distance, size) {
   return [0, 90, 180, 270].map((angle) =>
     `<path class="star-sparkle" d="M50 ${50 - distance - size}l${size} ${size} ${-size} ${size} ${-size} ${-size}Z" transform="rotate(${angle} 50 50)"/>`
   ).join("");
 }
-function normalStarGlyph(tier) {
-  const cardinals = [0, 90, 180, 270];
-  const diagonals = [45, 135, 225, 315];
-  const shapes = {
-    1: `${symmetricRays(cardinals, 27, 5)}<circle class="star-core-dot" cx="50" cy="50" r="6"/>`,
-    2: `${symmetricRays([...cardinals, ...diagonals], 32, 4.5)}<circle class="star-core-dot" cx="50" cy="50" r="8"/><path class="stage-two-sparkles" d="M24 28l2 2-2 2-2-2Zm52 44 2 2-2 2-2-2Z"/>`,
-    3: `${symmetricRays(cardinals, 43, 5.5, "star-ray star-ray-major")}${symmetricRays(diagonals, 27, 4, "star-ray star-ray-minor")}<circle class="star-core-ring" cx="50" cy="50" r="11"/><path class="star-inner" d="M50 38 62 50 50 62 38 50Z"/>${symmetricSparkles(39, 2)}`,
-    4: `${symmetricRays(cardinals, 41, 5, "star-ray star-ray-major")}${symmetricRays(diagonals, 31, 4, "star-ray star-ray-minor")}<path class="star-inner" d="M50 36 54 46 64 50 54 54 50 64 46 54 36 50 46 46Z"/><path class="star-inner-highlight" d="M50 43 53 47 57 50 53 53 50 57 47 53 43 50 47 47Z"/>${symmetricSparkles(44, 2.5)}`,
+function starFinalOrnaments(type) {
+  const family = type === "red" ? "orange" : type;
+  const ornaments = {
+    blue: '<g class="type-ornament crystal-ornament"><path d="M18 23l5-9 5 9-5 10Zm54 0 5-9 5 9-5 10Z"/><path d="M14 67l4-7 4 7-4 8Zm64 0 4-7 4 7-4 8Z"/></g>',
+    white: '<g class="type-ornament prism-ornament"><path d="M20 25l4-8 4 8-4 8Zm52 0 4-8 4 8-4 8Z"/><path d="M17 69l3-6 3 6-3 7Zm60 0 3-6 3 6-3 7Z"/></g>',
+    yellow: '<g class="type-ornament planet-ornament"><circle cx="18" cy="62" r="6"/><ellipse cx="18" cy="62" rx="10" ry="3"/><circle cx="82" cy="38" r="6"/><ellipse cx="82" cy="38" rx="10" ry="3"/></g>',
+    orange: '<g class="type-ornament flame-ornament"><path d="M24 67c-11-7-10-18-3-26-1 8 4 10 7 15 3 5 1 9-4 11Zm52 0c11-7 10-18 3-26 1 8-4 10-7 15-3 5-1 9 4 11Z"/><path class="ornament-highlight" d="M19 58c-7-6-6-13-2-18 0 6 3 8 5 11Zm62 0c7-6 6-13 2-18 0 6-3 8-5 11Z"/></g>',
+    purple: '<g class="type-ornament moon-ornament"><path d="M22 19a9 9 0 1 0 8 14 7 7 0 1 1-8-14Zm56 0a9 9 0 1 1-8 14 7 7 0 1 0 8-14Z"/></g>',
+    green: '<g class="type-ornament leaf-ornament"><path d="M17 35c1-8 6-12 13-11-1 7-5 12-13 11Zm66 0c-1-8-6-12-13-11 1 7 5 12 13 11ZM20 70c2-7 7-10 13-8-2 7-7 10-13 8Zm60 0c-2-7-7-10-13-8 2 7 7 10 13 8Z"/></g>',
   };
-  return `<svg class="star-glyph" viewBox="0 0 100 100" aria-hidden="true">${shapes[tier] || shapes[1]}</svg>`;
+  return ornaments[family] || "";
+}
+function starStageThreeOrnaments(type) {
+  const family = type === "red" ? "orange" : type;
+  if (family === "orange") return '<g class="type-ornament flame-ornament stage-three-ornament"><path d="M20 69c-7-5-6-12-2-17 0 5 3 7 5 10 1 3 0 5-3 7Zm60 0c7-5 6-12 2-17 0 5-3 7-5 10-1 3 0 5 3 7Z"/></g>';
+  if (family === "green") return '<g class="type-ornament leaf-ornament stage-three-ornament"><path d="M17 31c2-7 7-9 12-7-2 6-6 9-12 7Zm66 0c-2-7-7-9-12-7 2 6 6 9 12 7Z"/></g>';
+  return "";
+}
+function normalStarGlyph(tier, type = "white") {
+  const roundedStar = '<path class="star-body rounded-star" d="M50 15C54 15 58 31 62 34c4 3 21 1 22 6 2 5-13 13-15 18-1 5 6 20 2 23-4 4-16-8-21-8s-17 12-21 8c-4-3 3-18 2-23-2-5-17-13-15-18 1-5 18-3 22-6 4-3 8-19 12-19Z"/>';
+  const facetedStar = '<path class="star-body faceted-star" d="M50 9 61 35 89 38 67 57 74 85 50 70 26 85 33 57 11 38 39 35Z"/><path class="facet facet-light" d="M50 9 50 50 39 35Z"/><path class="facet" d="M50 9 61 35 50 50Z"/><path class="facet facet-light" d="M11 38 50 50 33 57Z"/><path class="facet" d="M89 38 67 57 50 50Z"/><path class="facet facet-light" d="M26 85 50 50 50 70Z"/>';
+  const shapes = {
+    1: `${roundedStar}<path class="body-highlight" d="M50 21c4 7 6 13 9 16-8-3-16-2-23 1 5-4 10-6 14-17Z"/>`,
+    2: `<ellipse class="orbit orbit-back" cx="50" cy="51" rx="42" ry="18" transform="rotate(-12 50 51)"/>${roundedStar}<ellipse class="orbit orbit-front" cx="50" cy="51" rx="42" ry="18" transform="rotate(-12 50 51)"/><circle class="orbit-moon" cx="12" cy="58" r="5"/><circle class="orbit-moon small" cx="86" cy="35" r="3"/>${symmetricSparkles(42, 2)}`,
+    3: `<ellipse class="orbit orbit-back major-orbit" cx="50" cy="51" rx="45" ry="19" transform="rotate(-12 50 51)"/>${starStageThreeOrnaments(type)}${facetedStar}<ellipse class="orbit orbit-front major-orbit" cx="50" cy="51" rx="45" ry="19" transform="rotate(-12 50 51)"/>${symmetricSparkles(43, 2.5)}<path class="crystal-shard" d="M18 24l4-7 4 7-4 8Zm56 52 4-8 4 8-4 8Z"/>`,
+    4: `<ellipse class="orbit orbit-back final-orbit" cx="50" cy="51" rx="47" ry="20" transform="rotate(-12 50 51)"/>${starFinalOrnaments(type)}${facetedStar}<ellipse class="orbit orbit-front final-orbit" cx="50" cy="51" rx="47" ry="20" transform="rotate(-12 50 51)"/><path class="final-core" d="M50 32 57 43 68 50 57 57 50 68 43 57 32 50 43 43Z"/><path class="core-highlight" d="M50 39 54 46 61 50 54 54 50 61 46 54 39 50 46 46Z"/>${symmetricSparkles(45, 2.4)}`,
+  };
+  return `<svg class="star-glyph star-type-${type === "red" ? "orange" : type}" viewBox="0 0 100 100" aria-hidden="true">${shapes[tier] || shapes[1]}</svg>`;
 }
 function constellationSignature(definitionId) {
   const art = {
@@ -1589,7 +1605,7 @@ function constellationSignature(definitionId) {
   return art[definitionId] ? `<span class="constellation-signature signature-${definitionId.toLowerCase()}"><svg viewBox="0 0 100 100" aria-hidden="true">${art[definitionId]}</svg></span>` : "";
 }
 function renderNormalStarVisual(star, pickOrder = 0, signatureId = "") {
-  return `<span class="star stage-${star.tier}" style="--star-color:${star.data().color};color:${star.data().color}"><i class="star-halo"></i><i class="star-orbit"></i><span class="star-core">${normalStarGlyph(star.tier)}</span><i class="star-sparks"></i><b class="star-level">${star.tier}</b>${signatureId ? constellationSignature(signatureId) : ""}${pickOrder ? `<em class="pick-order">${pickOrder}</em>` : ""}</span>`;
+  return `<span class="star stage-${star.tier}" style="--star-color:${star.data().color};color:${star.data().color}"><i class="star-halo"></i><i class="star-orbit"></i><span class="star-core">${normalStarGlyph(star.tier, star.type)}</span><i class="star-sparks"></i><b class="star-level">${star.tier}</b>${signatureId ? constellationSignature(signatureId) : ""}${pickOrder ? `<em class="pick-order">${pickOrder}</em>` : ""}</span>`;
 }
 class MergeSystem {
   static partner(m) {
@@ -2716,7 +2732,7 @@ function bootstrapGame() {
       const cost = starLevelCosts(entry.level);
       const canUpgrade = cost && entry.count >= cost.copies && playerProgress.starShards >= cost.shards;
       const visualStage = Math.min(4, Math.ceil(entry.level / 2));
-      return `<article class="collection-card star-collection-card ${entry.count ? "owned" : "locked"}" style="--star-color:${star.color}"><div class="collection-star stage-${visualStage}">${normalStarGlyph(visualStage)}</div><h3>${star.name} 별</h3><b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.7 · MAX"}</b><div class="star-upgrade-details"><span>보유 별: <b>${entry.count}${cost ? ` / ${cost.copies}` : ""}</b></span><span>별조각: <b>${playerProgress.starShards}${cost ? ` / ${cost.shards}` : ""}</b></span>${cost ? `<small>다음 비용 · ${star.name} 별 ×${cost.copies} + 별조각 ×${cost.shards}</small>` : `<small>최대 레벨 · 복사본은 계속 보관됩니다.</small>`}</div><button type="button" data-upgrade-star="${star.id}"${canUpgrade ? "" : " disabled"}>${cost ? "레벨업" : "MAX"}</button></article>`;
+      return `<article class="collection-card star-collection-card ${entry.count ? "owned" : "locked"}" style="--star-color:${star.color}"><div class="collection-star stage-${visualStage}">${normalStarGlyph(visualStage, star.key)}</div><h3>${star.name} 별</h3><b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.7 · MAX"}</b><div class="star-upgrade-details"><span>보유 별: <b>${entry.count}${cost ? ` / ${cost.copies}` : ""}</b></span><span>별조각: <b>${playerProgress.starShards}${cost ? ` / ${cost.shards}` : ""}</b></span>${cost ? `<small>다음 비용 · ${star.name} 별 ×${cost.copies} + 별조각 ×${cost.shards}</small>` : `<small>최대 레벨 · 복사본은 계속 보관됩니다.</small>`}</div><button type="button" data-upgrade-star="${star.id}"${canUpgrade ? "" : " disabled"}>${cost ? "레벨업" : "MAX"}</button></article>`;
     }).join("");
     getRequiredElement("constellation-collection").innerHTML = Object.values(CONSTELLATION_DEFINITIONS).map((definition) => {
       const owned = playerProgress.ownedConstellations.includes(definition.id);
