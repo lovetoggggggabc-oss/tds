@@ -509,10 +509,17 @@ const CONFIG = {
 // allowance keeps a deliberate tap responsive while rejecting drags.
 function bindPointerTap(element, callback, shouldStart = () => true) {
   let gesture = null;
-  const cancel = () => { gesture = null; };
+  const cancel = (event) => {
+    if (gesture && event?.pointerId === gesture.id && element.hasPointerCapture?.(gesture.id))
+      element.releasePointerCapture(gesture.id);
+    gesture = null;
+  };
   element.addEventListener("pointerdown", (event) => {
     if (!event.isPrimary || event.button > 0 || !shouldStart(event)) return;
-    gesture = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    // A contextual control created after this point has no matching gesture
+    // record. Therefore the selecting pointerup (and Safari compatibility
+    // click) can never activate that newly-created control.
+    gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, target: event.currentTarget };
     element.setPointerCapture?.(event.pointerId);
   });
   element.addEventListener("pointermove", (event) => {
@@ -523,9 +530,18 @@ function bindPointerTap(element, callback, shouldStart = () => true) {
   element.addEventListener("pointercancel", cancel);
   element.addEventListener("pointerup", (event) => {
     if (!gesture || gesture.id !== event.pointerId) return;
-    cancel();
+    cancel(event);
     event.preventDefault();
+    event.stopPropagation();
     callback(event);
+  });
+  // Pointer gestures are authoritative. In particular, never turn Safari's
+  // synthetic click after touchend into a second action. Keyboard activation
+  // remains handled explicitly by each control.
+  element.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.detail === 0 && shouldStart(event)) callback(event);
   });
 }
 // Every zodiac-facing feature reads this registry: matching, combat, labels,
@@ -1845,14 +1861,6 @@ class UIManager {
     arena.append(d);
     setTimeout(() => d.remove(), 1700);
   }
-  static guardianPortal() {
-    const portal = document.createElement("div");
-    portal.className = "guardian-portal";
-    portal.style.left = `${activeMap.destination.x}%`;
-    portal.style.top = `${activeMap.destination.y}%`;
-    portal.setAttribute("aria-hidden", "true");
-    this.addTransient(portal, arena, 650);
-  }
   static beam(a, b) {
     let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("class", "beam");
@@ -2392,7 +2400,6 @@ class GameManager {
     this.dirty = true;
   }
   summonGuardian(componentStageSum = 0) {
-    UIManager.guardianPortal();
     this.alliedUnits.push(new GuardianUnit(this.base, componentStageSum));
   }
   fireBossMeteor(enemy) {
@@ -2768,7 +2775,7 @@ function bootstrapGame() {
     cards.innerHTML = Object.values(MAP_DEFINITIONS).map((map) => `<button type="button" data-map-vote="${map.id}"><svg viewBox="0 0 100 100" aria-label="${map.name} 실제 경로"><defs><linearGradient id="route-${map.id}" x1="0" x2="1"><stop stop-color="#8c7dff"/><stop offset="1" stop-color="#73edff"/></linearGradient></defs><g class="mini-stars"><circle cx="16" cy="16" r="1"/><circle cx="83" cy="24" r=".7"/><circle cx="76" cy="82" r="1.1"/></g><path style="stroke:url(#route-${map.id})" d="${routePathData(map)}"/></svg><span class="map-card-copy"><small>CELESTIAL FIELD</small><strong>${map.name}</strong><em>실제 전장 경로</em></span><b>✦ <span data-votes>0</span>표</b><i aria-label="내가 선택한 맵">✓</i></button>`).join("");
     const refreshVotes = () => { cards.querySelectorAll("[data-map-vote]").forEach((card) => { const id=card.dataset.mapVote; card.classList.toggle("selected",mapVote.mapVotes.local===id); card.querySelector("[data-votes]").textContent=Object.values(mapVote.mapVotes).filter((v)=>v===id).length; }); };
     cards.querySelectorAll("[data-map-vote]").forEach((card) => card.onclick = () => { mapVote.vote("local", card.dataset.mapVote); refreshVotes(); });
-    let previous = performance.now(); const frame = (now) => { const selected = mapVote.tick((now-previous)/1000); previous=now; getRequiredElement("map-vote-time").textContent=Math.ceil(mapVote.remainingVoteTime); if (!selected) return void(mapVoteRaf=requestAnimationFrame(frame));
+    let previous = performance.now(); const frame = (now) => { const selected = mapVote.tick((now-previous)/1000); previous=now; getRequiredElement("map-vote-time").textContent=mapVote.remainingVoteTime.toFixed(1); if (!selected) return void(mapVoteRaf=requestAnimationFrame(frame));
       setActiveMap(selected); cards.querySelectorAll("[data-map-vote]").forEach((card)=>{card.classList.toggle("winner",card.dataset.mapVote===selected);card.classList.toggle("faded",card.dataset.mapVote!==selected);}); result.querySelector("strong").textContent=activeMap.name; result.hidden=false; setTimeout(startBattle,2000);
     }; mapVoteRaf=requestAnimationFrame(frame); return true;
   };
