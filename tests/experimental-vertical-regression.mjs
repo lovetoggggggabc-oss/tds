@@ -12,7 +12,7 @@ assert.match(js, /manager\.cameraY = clampCameraY\(drag\.camera - delta\)/);
 assert.match(js, /if \(drag\.moved\) \{ event\.preventDefault\(\); event\.stopImmediatePropagation\(\); \}/);
 assert.match(js, /this\.cameraCleanup\?\.\(\)/);
 assert.match(js, /this\.el\.style\.visibility = y < -100/);
-assert.match(html, /id="play-experimental"/);
+assert.match(html, /data-battle-mode="vertical"/);
 assert.match(html, /id="battleWorld"/);
 assert.match(html, /id="experimentalMinimap"/);
 assert.match(css, /\.arena\.experimental-vertical \.battle-world\{height:280%/);

@@ -20,9 +20,9 @@ assert.match(css, /\.map-random-cards article\.active/);
 assert.match(css, /@keyframes randomMapWinner/);
 
 assert.match(css, /\.battle-mode-grid\{[^}]*flex:1[^}]*min-height:0[^}]*overflow-y:auto[^}]*overflow-x:hidden[^}]*-webkit-overflow-scrolling:touch[^}]*padding:[^}]*env\(safe-area-inset-bottom\)/);
-assert.match(js, /const showBattleMenu = \(\) => showScreen\(SCREEN_STATES\.BATTLE_MENU\)/);
+assert.match(js, /const showBattleMenu = \(\) => \{[\s\S]*showScreen\(SCREEN_STATES\.BATTLE_MENU\)/);
 assert.match(js, /\[data-open-battle\][\s\S]*navigateOnce\(showBattleMenu\)/);
-assert.match(js, /const intentionalActivation = event\.detail === 0 \|\| playIntentArmed/);
+assert.match(js, /currentScreen === SCREEN_STATES\.BATTLE_MENU && !modeSelectionLocked/);
 
 assert.match(js, /id: "battle_system_update_random_map_v1"/);
 assert.match(js, /const unread=NEWS_ITEMS\.filter\(\(item\)=>!playerProgress\.readNewsIds\[item\.id\]\)\.length/);

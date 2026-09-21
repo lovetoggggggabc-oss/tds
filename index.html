@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=52" />
+    <link rel="stylesheet" href="styles.css?v=53" />
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
@@ -102,16 +102,14 @@
         <div><small>BATTLE</small><h1 id="battle-menu-title">전투</h1></div>
       </header>
       <div class="battle-mode-grid" aria-label="게임 모드 선택">
-        <article class="stage-card mode-card normal-mode">
-          <div class="stage-map mode-visual" aria-hidden="true"><span></span><i>✦</i><b>∞</b></div>
-          <div class="mode-body"><small class="mode-eyebrow">NORMAL · ENDLESS</small><h2 class="mode-title">일반 모드</h2><p class="mode-description">기존 일반 전장에서 플레이합니다.</p><strong class="mode-meta">랜덤 전장 · 무한 웨이브</strong>
-          <button type="button" class="mode-play-button" id="play-battle"><span>일반 모드 플레이</span></button></div>
-        </article>
-        <article class="stage-card mode-card experimental-mode">
-          <div class="stage-map mode-visual vertical-map" aria-hidden="true"><span></span><i>↕</i><b>β</b></div>
-          <div class="mode-body"><small class="mode-eyebrow">VERTICAL · BETA</small><h2 class="mode-title">세로 대전장 BETA</h2><p class="mode-description">스크롤 가능한 거대한 세로형 전장에서 플레이합니다.</p><strong class="mode-meta">거대 성운 항로 · BETA</strong>
-          <button type="button" class="mode-play-button" id="play-experimental"><span>세로 대전장 플레이</span></button></div>
-        </article>
+        <button type="button" class="stage-card mode-card normal-mode" data-battle-mode="normal" aria-label="일반 모드, 터치하여 플레이">
+          <span class="stage-map mode-visual" aria-hidden="true"><span></span><i>✦</i><b>∞</b></span>
+          <span class="mode-body"><small class="mode-eyebrow">NORMAL · ENDLESS</small><span class="mode-title">일반 모드</span><span class="mode-description">기존 일반 전장에서 플레이합니다.</span><strong class="mode-meta">랜덤 전장 · 무한 웨이브</strong><span class="mode-tap-hint"><i aria-hidden="true">▶</i> 터치하여 플레이</span></span>
+        </button>
+        <button type="button" class="stage-card mode-card experimental-mode" data-battle-mode="vertical" aria-label="세로 대전장 BETA, 터치하여 플레이">
+          <span class="stage-map mode-visual vertical-map" aria-hidden="true"><span></span><i>↕</i><b>β</b></span>
+          <span class="mode-body"><small class="mode-eyebrow">VERTICAL · BETA</small><span class="mode-title">세로 대전장 BETA</span><span class="mode-description">스크롤 가능한 거대한 세로형 전장에서 플레이합니다.</span><strong class="mode-meta">거대 성운 항로 · BETA</strong><span class="mode-tap-hint"><i aria-hidden="true">▶</i> 터치하여 플레이</span></span>
+        </button>
       </div>
     </section>
 
