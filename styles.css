@@ -1927,10 +1927,15 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 .battle-map-area{display:block;flex:1 1 0;min-height:0;padding:0 8px}
 .battle-map-area .arena{width:100%;height:100%}
 .battle-overlay-layer{position:absolute;z-index:var(--layer-hud);inset:0;pointer-events:none}
-.battle-overlay-layer .star-info{position:absolute;top:clamp(112px,18cqh,148px);left:12px;right:70px;width:auto;max-height:min(22cqh,170px);overflow:auto;display:grid;gap:7px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--star-color,#9adfff) 52%,transparent);border-radius:14px;background:linear-gradient(135deg,#080d2eea,#21154ad9);box-shadow:inset 0 0 22px #7863ff16,0 8px 24px #0008;backdrop-filter:blur(8px);pointer-events:auto}
+.battle-overlay-layer .star-info{position:absolute;top:clamp(112px,18cqh,148px);left:clamp(12px,5cqw,28px);right:auto;width:min(76cqw,640px);max-width:calc(100% - clamp(92px,18cqw,120px));min-width:0;height:auto;max-height:min(46cqh,390px);overflow-x:hidden;overflow-y:auto;display:grid;grid-template-columns:minmax(0,1fr);grid-auto-flow:row;align-items:start;justify-content:stretch;gap:8px;padding:11px 13px;border:1px solid color-mix(in srgb,var(--star-color,#9adfff) 52%,transparent);border-radius:14px;background:linear-gradient(135deg,#080d2eea,#21154ad9);box-shadow:inset 0 0 22px #7863ff16,0 8px 24px #0008;backdrop-filter:blur(8px);pointer-events:auto;writing-mode:horizontal-tb;white-space:normal;word-break:keep-all;overflow-wrap:break-word}
 .battle-overlay-layer .star-info[hidden]{display:none}
-.battle-overlay-layer .star-info strong{grid-row:auto;font-size:clamp(14px,3.4cqw,18px)}
-.battle-overlay-layer .star-info .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px;line-height:1.35}
+.battle-overlay-layer .star-info strong{grid-row:auto;min-width:0;font-size:clamp(14px,3.4cqw,18px);line-height:1.35;white-space:normal}
+.battle-overlay-layer .star-info .info-section{display:grid;min-width:0;gap:3px;padding-top:6px;border-top:1px solid #91a7dd2e}
+.battle-overlay-layer .star-info .info-section>b{color:#a9edff;font-size:.9em}
+.battle-overlay-layer .star-info .info-section p{min-width:0;margin:0;color:#e8edff;line-height:1.45;white-space:normal;word-break:keep-all;overflow-wrap:break-word}
+.battle-overlay-layer .star-info .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));min-width:0;gap:4px 12px;line-height:1.4}
+.battle-overlay-layer .star-info .stats span{min-width:0;white-space:normal;word-break:keep-all;overflow-wrap:break-word}
+.battle-overlay-layer .star-info .ability p{color:#fff}
 .battle-overlay-layer .side-controls{position:absolute;top:clamp(112px,18cqh,148px);right:12px;display:grid;gap:8px;padding:0;pointer-events:none}
 .battle-overlay-layer .side-controls button{position:relative;pointer-events:auto;width:48px;height:44px;min-width:44px;min-height:44px;border-radius:14px}
 .battle-overlay-layer .binding-status-slot{position:absolute;top:104px;left:10px;right:68px;pointer-events:none}

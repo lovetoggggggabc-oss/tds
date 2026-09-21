@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 const [js, css, html] = await Promise.all([readFile("game.js", "utf8"), readFile("styles.css", "utf8"), readFile("index.html", "utf8")]);
-assert.match(js, /baseEnemyHp: 250, waveHpGrowth: \.008, enemyCountMultiplier: 1/);
-assert.match(js, /baseEnemyHp: 300, waveHpGrowth: \.015, enemyCountMultiplier: 2, startingStarlight: 1500, startingDivinity: 30/);
+assert.match(js, /baseEnemyHp: 250, enemyCountMultiplier: 1/);
+assert.match(js, /baseEnemyHp: 300, waveHpGrowth: \.04, enemyCountMultiplier: 2, startingStarlight: 1500, startingDivinity: 30/);
 assert.match(js, /reachedWave < 10 \? 0 : \(reachedWave - 9\) \* 5/);
 assert.match(js, /Math\.floor\(reachedWave \/ 5\) \* 2/);
 assert.match(js, /n === 10 \|\| \(n >= 15 && n % 5 === 0\)/);
