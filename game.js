@@ -120,11 +120,11 @@ function upgradeRelic(id) {
 }
 const LEGACY_STAR_IDS = Object.freeze({ SKY: "YELLOW", SKYBLUE: "YELLOW", LIGHT_BLUE: "YELLOW", sky: "YELLOW", skyblue: "YELLOW", light_blue: "YELLOW" });
 const STAR_TYPES = Object.freeze({
-  BLUE: Object.freeze({ id: "BLUE", key: "blue", name: "청색", color: "#4d83ff", damage: 50, rate: 4, range: 5, target: "lock" }),
-  WHITE: Object.freeze({ id: "WHITE", key: "white", name: "백색", color: "#ffffff", damage: 100, rate: 3.5, range: 6, target: "burst" }),
-  YELLOW: Object.freeze({ id: "YELLOW", key: "yellow", name: "황색", color: "#ffd84d", damage: 75, rate: 2, range: 7, target: "random" }),
+  BLUE: Object.freeze({ id: "BLUE", key: "blue", name: "청색", color: "#4d83ff", damage: 100, rate: 1, range: 5, target: "lock" }),
+  WHITE: Object.freeze({ id: "WHITE", key: "white", name: "백색", color: "#ffffff", damage: 75, rate: 2, range: 3.5, target: "burst" }),
+  YELLOW: Object.freeze({ id: "YELLOW", key: "yellow", name: "황색", color: "#ffd84d", damage: 150, rate: .8, range: 5, target: "random" }),
   ORANGE: Object.freeze({ id: "ORANGE", key: "orange", name: "주황색", color: "#ffad45", damage: 125, rate: 1.5, range: 4, target: "nearest" }),
-  RED: Object.freeze({ id: "RED", key: "red", name: "적색", color: "#ff5064", damage: 200, rate: 1, range: 5, target: "highest" }),
+  RED: Object.freeze({ id: "RED", key: "red", name: "적색", color: "#ff5064", damage: 200, rate: .5, range: 3, target: "highest" }),
   PURPLE: Object.freeze({ id: "PURPLE", key: "purple", name: "자색", color: "#b16cff", damage: 100, rate: 1, range: 4.5, target: "lowest" }),
   GREEN: Object.freeze({ id: "GREEN", key: "green", name: "녹색", color: "#55db85", damage: 0, rate: 0, range: 0, target: "none", support: "alliedAttackSpeed" }),
 });
@@ -161,6 +161,47 @@ function starLevelCosts(level) {
 }
 function starLevelDamageMultiplier(level) { return 1 + (Math.min(7, Math.max(1, level)) - 1) * .2; }
 function starLevelAttackSpeedBonus(level) { return (Math.min(7, Math.max(1, level)) - 1) * .1; }
+function normalStarSpecial(type, starStage, permanentStarLevel = 1, stageSums = {}) {
+  const stage = Math.min(4, Math.max(1, Number(starStage) || 1));
+  const level = Math.min(7, Math.max(1, Number(permanentStarLevel) || 1));
+  if (type === "blue") return { slowPercent: level + stage, duration: 1 };
+  if (type === "white") return { burstCount: 3, rest: 2 - stage / 4 };
+  if (type === "yellow") return { lightPercent: level + stage, duration: 1 };
+  if (type === "orange") return { burnInterval: Math.max(.05, .5 - stage / 8), rawBurnInterval: .5 - stage / 8, duration: 1, damageRatio: .5 };
+  if (type === "red") return { areaRange: .15 + stage / 8 };
+  if (type === "purple") return { attackSpeedBonus: (stageSums.purple || 0) / 10 };
+  if (type === "green") return { attackSpeedBonus: (2 + level + (stageSums.green || 0)) / 100 };
+  return {};
+}
+function normalStarAbilityText(type, stage, level, stageSums = {}) {
+  const value = normalStarSpecial(type, stage, level, stageSums);
+  const texts = {
+    blue: `둔화 ${value.slowPercent}% / 1초`,
+    white: `3연타 후 ${value.rest}초 휴식`,
+    yellow: `빛 · 받는 피해 +${value.lightPercent}% / 1초`,
+    orange: `화상 · 공격력 50% / ${value.rawBurnInterval === 0 ? "simulation tick" : `${value.burnInterval}초`} / 1초`,
+    red: `범위 공격 · 반경 ${value.areaRange}`,
+    purple: `보라색 공명 · 공속 +${value.attackSpeedBonus}`,
+    green: `별빛 지원 · 모든 아군 공속 +${Math.round(value.attackSpeedBonus * 100)}%`,
+  };
+  return texts[type] || "";
+}
+function normalStarNextLevelText(type) {
+  if (type === "blue") return "기본 둔화 +1%";
+  if (type === "yellow") return "기본 빛 피해 증가 +1%";
+  if (type === "green") return "기본 지원 공격속도 +1%";
+  return "특수능력 변화 없음 · 공격력 +20% · 공격속도 +0.1";
+}
+function normalStarCollectionAbilityText(type, level) {
+  if (type === "blue") return `적중 시 1초 동안 (${level} + 별 Stage)% 둔화`;
+  if (type === "white") return "3회 빠르게 공격 후 2 - (별 Stage / 4)초 휴식";
+  if (type === "yellow") return `적중 시 1초 동안 받는 피해 +(${level} + 별 Stage)%`;
+  if (type === "orange") return "1초 화상 · 0.5 - (별 Stage / 8)초마다 공격력의 50%";
+  if (type === "red") return "타격 지점 반경 0.15 + (별 Stage / 8) 범위 공격";
+  if (type === "purple") return "모든 보라색 별 공격속도 +보라 Stage 합 / 10";
+  if (type === "green") return `모든 아군 공격속도 +(${2 + level} + 초록 Stage 합)%`;
+  return "";
+}
 function constellationLevelDamageMultiplier(level) { return 1 + (Math.min(4, Math.max(1, level)) - 1) * .5; }
 function constellationLevelAttackSpeedBonus(level) { return (Math.min(4, Math.max(1, level)) - 1) * .5; }
 function normalizeConstellationCollection(saved, owned) {
@@ -665,11 +706,11 @@ const STAR_KEYS = Object.keys(CONFIG.stars),
   TARGET_LABELS = {
     lock: "대상 고정 공격",
     random: "무작위 대상",
-    burst: "3연속 공격 → 2초 대기",
+    burst: "3연속 공격 → Stage별 휴식",
     nearest: "가장 가까운 적",
     highest: "체력이 가장 높은 적",
     lowest: "현재 체력이 가장 낮은 적",
-    none: "공격하지 않음 · 모든 아군 공격속도 +3%",
+    none: "공격하지 않음 · 별빛 지원",
   };
 class PlayerResources {
   constructor(fateDice = null) {
@@ -711,7 +752,7 @@ class Enemy {
     this.bossRewardClaimed = false;
     this.engagedAlly = null;
     // Status effects use simulation time; no per-enemy timers are needed.
-    this.statusEffects = { bindUntil: 0 };
+    this.statusEffects = { bindUntil: 0, slowUntil: 0, slowPercent: 0, lightUntil: 0, lightPercent: 0, burnUntil: 0, burnNextAt: 0, burnInterval: 0, burnDamage: 0, burnFrom: null };
     this.x = activeMap.spawn.x;
     this.y = activeMap.spawn.y;
     this.resolved = false;
@@ -745,6 +786,19 @@ class Enemy {
     } else this.el.style.visibility = "";
   }
   update(dt) {
+    const status = this.statusEffects;
+    if (status.burnUntil > game.gameTime && status.burnInterval > 0) {
+      // At most one tick is resolved per simulation update. This makes the
+      // Stage 4 minimum interval safe even when a frame covers several ticks.
+      if (game.gameTime >= status.burnNextAt) {
+        status.burnNextAt += status.burnInterval;
+        this.hit(status.burnDamage, status.burnFrom, null, true);
+        if (this.dead) return;
+      }
+    }
+    this.el.classList.toggle("slowed", status.slowUntil > game.gameTime);
+    this.el.classList.toggle("lit", status.lightUntil > game.gameTime);
+    this.el.classList.toggle("burning", status.burnUntil > game.gameTime);
     if (this.bossAbility && !this.abilityTriggered && game.gameTime - this.spawnTime >= (this.abilityDelay || 0)) {
       this.abilityTriggered = true;
       if (this.bossAbility === "summonSlimes") {
@@ -770,7 +824,8 @@ class Enemy {
     if (this.engagedAlly && !this.engagedAlly.dead) return;
     this.engagedAlly = null;
     const routeLength = typeof activeRouteCache === "object" && activeRouteCache ? activeRouteCache.length : 100;
-    this.distanceTravelled += this.speed * routeLength / 100 * (this.speedBoostUntil > game.gameTime ? this.speedMultiplier : 1) * dt;
+    const slowMultiplier = status.slowUntil > game.gameTime ? 1 - status.slowPercent / 100 : 1;
+    this.distanceTravelled += this.speed * slowMultiplier * routeLength / 100 * (this.speedBoostUntil > game.gameTime ? this.speedMultiplier : 1) * dt;
     // Legacy percentage equivalent: this.pathProgress = Math.min(1, this.progress / 100);
     this.pathProgress = Math.min(1, this.distanceTravelled / routeLength);
     this.progress = this.pathProgress * 100;
@@ -784,9 +839,10 @@ class Enemy {
       game.leak(this);
     } else this.render();
   }
-  hit(n, from, sourceConstellation = null) {
+  hit(n, from, sourceConstellation = null, isStatusDamage = false) {
     if (this.dead || n <= 0) return false;
-    this.hp -= n;
+    const lightMultiplier = this.statusEffects.lightUntil > game.gameTime ? 1 + this.statusEffects.lightPercent / 100 : 1;
+    this.hp -= n * lightMultiplier;
     UIManager.beam(from, this.position());
     if (this.hp <= 0 && !this.dead) {
       this.dead = true;
@@ -794,6 +850,20 @@ class Enemy {
       game.kill(this, sourceConstellation);
     } else this.updateHealthBar();
     return true;
+  }
+  applySlow(percent, duration = 1) {
+    this.statusEffects.slowPercent = percent;
+    this.statusEffects.slowUntil = game.gameTime + duration;
+    this.el.classList.add("slowed");
+  }
+  applyLight(percent, duration = 1) {
+    this.statusEffects.lightPercent = percent;
+    this.statusEffects.lightUntil = game.gameTime + duration;
+    this.el.classList.add("lit");
+  }
+  applyBurn(damage, interval, duration = 1, from = this.position()) {
+    Object.assign(this.statusEffects, { burnDamage: damage, burnInterval: Math.max(.05, interval), burnNextAt: game.gameTime + Math.max(.05, interval), burnUntil: game.gameTime + duration, burnFrom: from });
+    this.el.classList.add("burning");
   }
   applyBind(duration) {
     // Reapplication refreshes the deadline rather than stacking timers.
@@ -1508,9 +1578,12 @@ class StarManager {
     return this.stars.filter((star) => star?.type === "green" && !star.support && !star.constellation).length;
   }
   alliedAttackSpeedModifier() {
-    const count = Number.isFinite(game?.greenStarCount) ? game.greenStarCount
-      : game?.players?.reduce((total, player) => total + player.manager.greenStarCount(), 0) || 0;
-    return 1 + count * 0.03;
+    if (Number.isFinite(game?.greenSupportBonus)) return 1 + game.greenSupportBonus;
+    const sum = game?.players?.reduce((total, player) => total + player.manager.stars
+      .reduce((stages, star) => stages + (star?.type === "green" && !star.support && !star.constellation ? star.tier : 0), 0), 0) || 0;
+    if (!sum) return 1;
+    const level = playerProgress.starCollection.GREEN?.level || 1;
+    return 1 + normalStarSpecial("green", 1, level, { green: sum }).attackSpeedBonus;
   }
   clearOthers() {
     game.players.forEach((p) => {
@@ -1622,7 +1695,8 @@ class StarManager {
       }
       if (s.data().target === "none") return;
       const permanentLevel = playerProgress.starCollection[s.type.toUpperCase()]?.level || 1;
-      const levelSpeedMultiplier = (s.data().rate + starLevelAttackSpeedBonus(permanentLevel)) / s.data().rate;
+      const purpleBonus = s.type === "purple" ? (game?.purpleStageSum || 0) / 10 : 0;
+      const levelSpeedMultiplier = (s.data().rate + starLevelAttackSpeedBonus(permanentLevel) + purpleBonus) / s.data().rate;
       const attackSpeedModifier = this.alliedAttackSpeedModifier() * relicMultiplier("SONG_OF_STARS") * levelSpeedMultiplier;
       const previousModifier = s.attackSpeedModifier || 1;
       if (previousModifier !== attackSpeedModifier && s.cooldown > 0)
@@ -1640,12 +1714,23 @@ class StarManager {
         let damage = s.data().damage * CONFIG.tierDamage[s.tier - 1] * starLevelDamageMultiplier(permanentLevel) *
           (game.attackBuffUntil > game.gameTime ? 11 : 1) * relicMultiplier("BLESSING_OF_PLANETS");
         t.hit(damage, position);
+        const special = normalStarSpecial(s.type, s.tier, permanentLevel, game?.normalStarStageSums);
+        if (s.type === "blue" && !t.dead) t.applySlow(special.slowPercent, special.duration);
+        else if (s.type === "yellow" && !t.dead) t.applyLight(special.lightPercent, special.duration);
+        else if (s.type === "orange" && !t.dead) t.applyBurn(damage * special.damageRatio, special.burnInterval, special.duration, position);
+        else if (s.type === "red") {
+          const nearby = game.spatial?.near(t.position(), special.areaRange) || game.enemies;
+          nearby.forEach((enemy) => {
+            if (enemy !== t && !enemy.dead && RangeSystem.contains(t.position(), enemy.position(), special.areaRange)) enemy.hit(damage, position);
+          });
+          UIManager.areaImpact?.(t.position(), special.areaRange);
+        }
         if (s.data().target === "burst") {
           s.burstLeft--;
           if (s.burstLeft > 0) s.cooldown = CONFIG.whiteBurstInterval / attackSpeedModifier;
           else {
             s.burstLeft = 3;
-            s.cooldown = CONFIG.whiteBurstRest / attackSpeedModifier;
+            s.cooldown = special.rest;
           }
         } else s.cooldown = 1 / (s.data().rate * attackSpeedModifier);
         if (t.dead || s.data().target === "random") s.lock = null;
@@ -1671,6 +1756,7 @@ class StarManager {
         (picked && this.zodiacMode ? " zodiac-picked" : "") +
         (s && s.support ? " support" : "") +
         (s && s.constellation ? " constellation" : "") +
+        (s && !s.constellation ? ` normal-${s.type}` : "") +
         (s?.constellation ? ` constellation-${s.constellation.definitionId.toLowerCase()}` : "") +
         (s?.constellation?.center === i ? " constellation-center" : "") +
         (selectedConstellation?.members.includes(i)
@@ -2018,6 +2104,17 @@ class UIManager {
     );
     this.addTransient(line, effects, 230);
   }
+  static areaImpact(position, range) {
+    const pulse = document.createElement("i");
+    pulse.className = "normal-star-area-impact";
+    pulse.style.left = `${position.x}%`;
+    pulse.style.top = `${position.y}%`;
+    const diameter = RangeSystem.radius(range) * 2;
+    pulse.style.width = `${diameter}px`;
+    pulse.style.height = `${diameter}px`;
+    pulse.setAttribute("aria-hidden", "true");
+    this.addTransient(pulse, (typeof battleWorld !== "undefined" && battleWorld ? battleWorld : arena), 260);
+  }
   static strikeBurst(from, to, stacks) {
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line"); line.setAttribute("class", "strike-beam");
     [["x1", from.x], ["y1", from.y], ["x2", to.x], ["y2", to.y]].forEach(([key, value]) => line.setAttribute(key, value));
@@ -2229,8 +2326,9 @@ class UIManager {
     }
     let s = pick.m.stars[pick.index],
       d = s.data(),
-      damage = Math.round(d.damage * CONFIG.tierDamage[s.tier - 1]),
-      rate = d.target === "burst" ? "3연속 후 2초" : `${d.rate}회/초`,
+      permanentLevel = playerProgress.starCollection[s.type.toUpperCase()]?.level || 1,
+      damage = Math.round(d.damage * CONFIG.tierDamage[s.tier - 1] * starLevelDamageMultiplier(permanentLevel)),
+      rate = d.target === "burst" ? `3연속 후 ${normalStarSpecial("white", s.tier, permanentLevel).rest}초` : `${d.rate + starLevelAttackSpeedBonus(permanentLevel) + (s.type === "purple" ? (g.purpleStageSum || 0) / 10 : 0)}회/초`,
       p = pick.m.pos(pick.index);
     starInfo.hidden = false;
     starInfo.style.setProperty("--star-color", d.color);
@@ -2252,7 +2350,7 @@ class UIManager {
     const horizonInfo = constellation?.definitionId === CONSTELLATION_IDS.HORIZON ? `<span>계승 대상: ${constellation.runtime.inheritedDefinitionId ? CONSTELLATION_DEFINITIONS[constellation.runtime.inheritedDefinitionId].name : "없음"}</span>` : "";
     starInfo.innerHTML = constellation
       ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합: ${constellation.componentStageSum}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span>${linkInfo}${strikeInfo}${horizonInfo}<span>현재 공격력: ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellation.definitionId === CONSTELLATION_IDS.TWILIGHT && constellation.target?.hp <= constellation.target?.maxHp * .5 ? constellationStats.attackSpeed * 2 : constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellation.effectiveRange()}</span>${bondInfo}${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/5</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : ""}${twilightInfo}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
-      : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · Stage ${s.tier}</span><span>Lv.${playerProgress.starCollection[s.type.toUpperCase()]?.level || 1}</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사거리 ${d.range}</span><span>타겟 방식 ${TARGET_LABELS[d.target]}</span></div>`;
+      : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · Stage ${s.tier}</span><span>Lv.${playerProgress.starCollection[s.type.toUpperCase()]?.level || 1}</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사거리 ${d.range}</span><span>타겟 방식 ${TARGET_LABELS[d.target]}</span><span class="normal-star-special">특수능력 · ${normalStarAbilityText(s.type, s.tier, permanentLevel, g.normalStarStageSums)}</span></div>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? constellation.effectiveRange() : d.range,
       diameter = RangeSystem.radius(shownRange) * 2;
@@ -2487,6 +2585,10 @@ class GameManager {
     this.alliedUnits = [];
     this.spatial = new SpatialGrid();
     this.greenStarCount = 0;
+    this.greenStageSum = 0;
+    this.purpleStageSum = 0;
+    this.greenSupportBonus = 0;
+    this.normalStarStageSums = Object.freeze({ green: 0, purple: 0 });
     this.activeConstellationStageSum = 0;
     this.activeConstellationCount = 0;
     this.gameTime = 0;
@@ -2531,13 +2633,18 @@ class GameManager {
   }
   recomputeCombatCaches() {
     const constellations = new Set();
-    let greenStars = 0;
+    let greenStars = 0, greenStageSum = 0, purpleStageSum = 0;
     this.players.forEach((player) => player.manager.stars.forEach((star) => {
       if (!star) return;
-      if (star.type === "green" && !star.support && !star.constellation) greenStars++;
+      if (star.type === "green" && !star.support && !star.constellation) { greenStars++; greenStageSum += star.tier; }
+      if (star.type === "purple" && !star.support && !star.constellation) purpleStageSum += star.tier;
       if (star.constellation) constellations.add(star.constellation);
     }));
     this.greenStarCount = greenStars;
+    this.greenStageSum = greenStageSum;
+    this.purpleStageSum = purpleStageSum;
+    this.normalStarStageSums = Object.freeze({ green: greenStageSum, purple: purpleStageSum });
+    this.greenSupportBonus = greenStageSum ? normalStarSpecial("green", 1, playerProgress.starCollection.GREEN?.level || 1, this.normalStarStageSums).attackSpeedBonus : 0;
     this.activeConstellationStageSum = [...constellations].reduce((sum, item) => sum + item.componentStageSum, 0);
     this.activeConstellationCount = constellations.size;
   }
@@ -2962,7 +3069,7 @@ function bootstrapGame() {
       const cost = starLevelCosts(entry.level);
       const canUpgrade = cost && entry.count >= cost.copies && playerProgress.starShards >= cost.shards;
       const visualStage = Math.min(4, Math.ceil(entry.level / 2));
-      return `<article class="collection-card star-collection-card ${entry.count ? "owned" : "locked"}" style="--star-color:${star.color}"><div class="collection-star stage-${visualStage}">${normalStarGlyph(visualStage, star.key)}</div><h3>${star.name} 별</h3><b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.7 · MAX"}</b><div class="star-upgrade-details"><span>보유 별: <b>${entry.count}${cost ? ` / ${cost.copies}` : ""}</b></span><span>별조각: <b>${playerProgress.starShards}${cost ? ` / ${cost.shards}` : ""}</b></span>${cost ? `<small>다음 비용 · ${star.name} 별 ×${cost.copies} + 별조각 ×${cost.shards}</small>` : `<small>최대 레벨 · 복사본은 계속 보관됩니다.</small>`}</div><button type="button" data-upgrade-star="${star.id}"${canUpgrade ? "" : " disabled"}>${cost ? "레벨업" : "MAX"}</button></article>`;
+      return `<article class="collection-card star-collection-card ${entry.count ? "owned" : "locked"}" style="--star-color:${star.color}"><div class="collection-star stage-${visualStage}">${normalStarGlyph(visualStage, star.key)}</div><h3>${star.name} 별</h3><b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.7 · MAX"}</b><div class="collection-ability"><strong>기본 스탯</strong><p>공격력 ${star.damage} · 공격속도 ${star.rate} · 사거리 ${star.range}</p><strong>특수능력 · 현재 Lv.</strong><p>${normalStarCollectionAbilityText(star.key, entry.level)}</p><strong>다음 Lv.</strong><p>${cost ? normalStarNextLevelText(star.key) : "최대 레벨"}</p></div><div class="star-upgrade-details"><span>보유 별: <b>${entry.count}${cost ? ` / ${cost.copies}` : ""}</b></span><span>별조각: <b>${playerProgress.starShards}${cost ? ` / ${cost.shards}` : ""}</b></span>${cost ? `<small>다음 비용 · ${star.name} 별 ×${cost.copies} + 별조각 ×${cost.shards}</small>` : `<small>최대 레벨 · 복사본은 계속 보관됩니다.</small>`}</div><button type="button" data-upgrade-star="${star.id}"${canUpgrade ? "" : " disabled"}>${cost ? "레벨업" : "MAX"}</button></article>`;
     }).join("");
     getRequiredElement("constellation-collection").innerHTML = Object.values(CONSTELLATION_DEFINITIONS).map((definition) => {
       const owned = playerProgress.ownedConstellations.includes(definition.id);
@@ -3205,7 +3312,7 @@ function bootstrapGame() {
   showMainMenu();
   if (specialGrantApplied) showToast("특별 지급\n별가루 +5,000\n운석조각 +20");
   const diagnostics = {
-    CONFIG, MODE_CONFIG, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, MapVoteController, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
+    CONFIG, MODE_CONFIG, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, MapVoteController, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, normalStarSpecial, normalStarAbilityText, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
     showMainMenu, showBattleMenu, showGacha, beginMapVote, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint, worldToScreen, screenToWorld, clampCameraY, getViewportWorldBounds,

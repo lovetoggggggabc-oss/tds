@@ -5,11 +5,11 @@ const js = fs.readFileSync(new URL("../game.js", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 
 const expectedTypes = [
-  ["BLUE", "blue", "청색", "#4d83ff", "50", "4", "5", "lock"],
-  ["WHITE", "white", "백색", "#ffffff", "100", "3.5", "6", "burst"],
-  ["YELLOW", "yellow", "황색", "#ffd84d", "75", "2", "7", "random"],
+  ["BLUE", "blue", "청색", "#4d83ff", "100", "1", "5", "lock"],
+  ["WHITE", "white", "백색", "#ffffff", "75", "2", "3.5", "burst"],
+  ["YELLOW", "yellow", "황색", "#ffd84d", "150", ".8", "5", "random"],
   ["ORANGE", "orange", "주황색", "#ffad45", "125", "1.5", "4", "nearest"],
-  ["RED", "red", "적색", "#ff5064", "200", "1", "5", "highest"],
+  ["RED", "red", "적색", "#ff5064", "200", ".5", "3", "highest"],
   ["PURPLE", "purple", "자색", "#b16cff", "100", "1", "4.5", "lowest"],
   ["GREEN", "green", "녹색", "#55db85", "0", "0", "0", "none"],
 ];
