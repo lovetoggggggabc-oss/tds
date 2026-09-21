@@ -470,15 +470,18 @@ divineManager.stars[0].constellation = { center: 0, definitionId: "ASTROLOGER", 
 divineManager.selected = [0];
 context.Math.random = () => 0.49;
 DivinationSystem.execute(divineManager, 0);
-assert.equal(divineManager.player.resources.starlight, 130);
+assert.equal(divineManager.player.resources.starlight, 160);
 divineManager.player.resources.starlight = 100;
+context.game.gameTime = 6;
 context.Math.random = () => 0.51;
 DivinationSystem.execute(divineManager, 0);
 assert.equal(divineManager.player.resources.starlight, 85);
 divineManager.player.resources.starlight = 31;
+context.game.gameTime = 12;
 DivinationSystem.execute(divineManager, 0);
 assert.equal(divineManager.player.resources.starlight, 16);
 assert.deepEqual(divinationResults.map((result) => result.success), [true, false, false]);
+context.game.gameTime = 0;
 
 // Visual paths preserve selection, deselection, and reselection order for
 // every recipe size; matching continues to depend only on type counts.
@@ -536,10 +539,10 @@ enemy.dead = false;
 enemy.hp = 100000;
 astrologer.cooldown = 0;
 astrologer.attack(0);
-assert.equal(astrologerManager.player.resources.starlight, starlightBeforeAttack + 2);
-assert.equal(astrologer.definition.attackDamage, 10);
+assert.equal(astrologerManager.player.resources.starlight, starlightBeforeAttack + 4);
+assert.equal(astrologer.definition.attackDamage, 100);
 assert.equal(astrologer.definition.attackSpeed, 1);
-assert.equal(astrologer.definition.range, 3);
+assert.equal(astrologer.definition.range, 4);
 
 // Sagittarius uses simulation time for its attack buff and freezes focus
 // accumulation during transcendence without introducing range-buff state.

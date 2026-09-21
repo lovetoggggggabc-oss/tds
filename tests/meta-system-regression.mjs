@@ -10,7 +10,7 @@ const saved = {
   ownedStars: { SKY: 2, blue: 3 },
   ownedConstellations: ["DAWN", "GUARDIAN"],
   equippedConstellations: ["DAWN", "GUARDIAN"],
-  constellationPity: 19,
+  constellationPity: 39,
 };
 const storage = new Map([["zodiacDefenseProgress", JSON.stringify(saved)]]);
 const context = {
@@ -31,17 +31,17 @@ assert.equal(CONFIG.stars.sky, undefined);
 assert.deepEqual(JSON.parse(JSON.stringify(CONFIG.stars.purple)), { name: "보라색", color: "#b16cff", damage: 100, rate: 1, range: 4.5, target: "lowest" });
 assert.equal(CONFIG.stars.green.target, "none");
 assert.equal(CONFIG.stars.green.support, "alliedAttackSpeed");
-assert.equal(CONFIG.startStarlight, 500);
+assert.equal(CONFIG.startStarlight, 300);
 assert.equal(playerProgress.ownedStars.YELLOW, 2, "legacy SKY inventory migrates to YELLOW");
 assert.equal(playerProgress.ownedStars.BLUE, 3);
 assert.equal(playerProgress.meteorFragments, 97, "migration preserves unrelated currency");
 assert.equal(playerProgress.starDust, 7500, "all existing players receive the one-time 5,000 star-dust grant");
-assert.equal(playerProgress.schemaVersion, 4, "the grant is versioned so it cannot repeat on reload");
+assert.equal(playerProgress.schemaVersion, 5, "the grant is versioned so it cannot repeat on reload");
 assert.deepEqual(JSON.parse(JSON.stringify(CONSTELLATION_DEFINITIONS.SAGITTARIUS.recipe)), { yellow: 2, blue: 2 });
 assert.deepEqual(JSON.parse(JSON.stringify(CONSTELLATION_DEFINITIONS.TWILIGHT.recipe)), { red: 2, white: 1, blue: 1 });
 
 const pityResult = performConstellationDraws(1, () => .99);
-assert.equal(pityResult[0].kind, "constellation", "draw 20 is guaranteed even when RNG misses");
+assert.equal(pityResult[0].kind, "constellation", "draw 40 is guaranteed even when RNG misses");
 assert.equal(pityResult[0].guaranteed, true);
 assert.equal(playerProgress.constellationPity, 0);
 assert.equal(playerProgress.starDust, 7400);

@@ -34,7 +34,7 @@ assert.match(css, /@keyframes igniteSummonStar/, "summon stars ignite in sequenc
 assert.match(js, /ownedConstellations: Object\.freeze\(\["ASTROLOGER"\]\)/, "astrologer is the starter constellation");
 for (const cost of ["100", "1000"])
   assert.match(html, new RegExp(`data-draw="constellation" data-cost="${cost}"`));
-for (const cost of ["10", "100"])
+for (const cost of ["3", "30"])
   assert.match(html, new RegExp(`data-draw="relic" data-cost="${cost}"`));
 assert.doesNotMatch(html, /battle-countdown|preparation-count|preparation-label/,
   "preparation must not render a field-covering countdown");
@@ -72,8 +72,8 @@ assert.match(
   "the control bar must live in a fixed top-level input layer",
 );
 assert.match(js, /this\.stars = Array\(MAX_STARS_PER_PLAYER\)\.fill\(null\)/);
-assert.match(js, /startStarlight:\s*500/);
-assert.match(js, /startDivinity:\s*50/);
+assert.match(js, /startStarlight:\s*300/);
+assert.match(js, /startDivinity:\s*1/);
 assert.match(js, /waveSeconds:\s*10/);
 assert.match(js, /bossWaveSeconds:\s*20/);
 assert.match(js, /beginCombat\(\)[\s\S]*?this\.wave\.update\(0\)/, "wave 1 must start only after preparation");
@@ -183,7 +183,7 @@ assert.match(js, /summonAt\(x, y\)[\s\S]*?this\.clearNormalSelection\(\)/, "succ
 assert.match(js, /event\.target\.closest\("\.star-node, \.context-actions/, "star and UI input must not trigger map summoning");
 assert.match(html, /id="field-1"/, "the 2P field must remain in the game");
 assert.match(js, /this\.pathProgress = Math\.min\(1, this\.progress \/ 100\)/);
-assert.match(js, /const roadClearance = MAP_DEFINITION\.roadWidth \/ 2 \+ starRadius \+ MAP_DEFINITION\.placementPadding/);
+assert.match(js, /const roadClearance = activeMap\.roadWidth \/ 2 \+ starRadius \+ activeMap\.placementPadding/);
 assert.match(js, /this\.connectionOrder = \[\.\.\.connectionOrder\]/);
 assert.match(js, /c\.connectionOrder\.slice\(0, -1\)/);
 assert.doesNotMatch(js, /selected\.sort\(/);
@@ -197,7 +197,7 @@ assert.match(js, /p\.resources\.starlight \+= e\.reward/);
 assert.match(js, /if \(e\.boss\) p\.resources\.divinity\+\+/);
 assert.match(js, /const BASE_MAX_HP = 400/);
 assert.match(js, /this\.base = \{ hp: initialBaseHp, maxHp: initialBaseHp \}/);
-assert.match(js, /this\.base\.hp = Math\.max\(0, this\.base\.hp - e\.baseDamage\)/);
+assert.match(js, /this\.base\.hp = Math\.max\(0, this\.base\.hp - damageToBase\)/);
 for (const [type, damage] of [["slime", 100], ["bug", 150]])
   assert.match(js, new RegExp(`${type}: \\{[^}]*baseDamage: ${damage}`));
 for (const [name, damage] of [["코어 드론", 500], ["운석 괴물", 1000]])

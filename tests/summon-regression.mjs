@@ -31,12 +31,12 @@ context.game = { players, render() {} };
 const manager = players[0].manager;
 
 assert.equal(manager.summonAt(50, 50), false, "invalid coordinates do not summon");
-assert.equal(players[0].resources.starlight, 500, "invalid placement does not spend resources");
+assert.equal(players[0].resources.starlight, 300, "invalid placement does not spend resources");
 assert.equal(manager.summonAt(20, 30), true, "valid coordinates summon");
 const star = manager.stars[0];
 assert.ok(star);
 assert.deepEqual([star.x, star.y, star.tier], [20, 30, 1]);
-assert.equal(players[0].resources.starlight, 500 - CONFIG.summonCost);
+assert.equal(players[0].resources.starlight, 300 - CONFIG.summonCost);
 manager.zodiacMode = true;
 assert.equal(manager.summonAt(20, 30), false, "zodiac selection blocks direct summoning");
 manager.zodiacMode = false;
