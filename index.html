@@ -92,12 +92,12 @@
         <article class="stage-card mode-card normal-mode">
           <div class="stage-map" aria-hidden="true"><span></span><i>✦</i><b>∞</b></div>
           <div class="stage-copy"><small>NORMAL · ENDLESS</small><h2>일반 모드</h2><p>기존 3개 맵 중 투표하여 플레이합니다.</p><strong>3개 전장 · 무한 웨이브</strong></div>
-          <button type="button" id="play-battle"><span>일반 모드</span><small>MAP VOTE</small></button>
+          <button type="button" class="mode-play-button" id="play-battle"><span>일반 모드 플레이</span></button>
         </article>
         <article class="stage-card mode-card experimental-mode">
           <div class="stage-map vertical-map" aria-hidden="true"><span></span><i>↕</i><b>β</b></div>
           <div class="stage-copy"><small>VERTICAL · BETA</small><h2>세로 대전장 BETA</h2><p>스크롤 가능한 거대한 세로형 전장에서 플레이합니다.</p><strong>거대 성운 항로 · BETA</strong></div>
-          <button type="button" id="play-experimental"><span>세로 대전장 플레이</span><small>VERTICAL BETA</small></button>
+          <button type="button" class="mode-play-button" id="play-experimental"><span>세로 대전장 플레이</span></button>
         </article>
       </div>
     </section>
@@ -122,7 +122,7 @@
           <span class="partner-resource">2P ✦ <b id="starlight2">0</b> · ◆ <b id="divinity2">0</b></span>
         </div>
         <div class="binding-relic-status" id="bindingRelicStatus" hidden>결속성의 악 · <b>사용 가능 1/1</b></div>
-        <div class="hp"><b id="hp">♥ 400 / 400</b><span>ASTRAL CORE</span></div>
+        <div class="hp"><b id="hp">♥ 400 / 400</b><em id="baseShields" hidden>🛡 ×0</em><span>ASTRAL CORE</span></div>
         <aside class="next-wave" aria-label="다음 적 정보">
           <small>NEXT ENEMY</small><b>다음 적 정보</b><div id="nextEnemies"></div>
         </aside>

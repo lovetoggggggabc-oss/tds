@@ -9,7 +9,7 @@ assert.deepEqual([4,5,10,20,40,100].map(w => Math.floor(w / 5)), [0,1,2,4,8,20])
 assert.match(js, /10: "kingSlime", 20: "timeRunner", 30: "meteor", 40: "galaxySlayer"/);
 assert.match(js, /const summonedHp = Math\.max\(1, this\.hp \* \.5\)/);
 assert.match(js, /speedBoostUntil = game\.gameTime \+ this\.abilityDuration/);
-assert.match(js, /this\.base\.hp - 20/);
+assert.match(js, /this\.damageBase\(20\)/);
 assert.match(js, /forceDismantleRandom\(enemy\)/);
 assert.match(js, /e\.type === "galaxySlayer" && !e\.bossRewardClaimed/);
 assert.match(js, /STRIKE: "STRIKE"/); assert.match(js, /HORIZON: "HORIZON"/);
