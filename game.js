@@ -48,12 +48,27 @@ const STAR_DUST_GRANT_ID = "starDust5000_v1";
 const METEOR_GRANT_ID = "meteorFragments20_v2";
 const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
+// Release versions are advanced only when a new patch NEWS_ITEM is added.
+// Never derive or increment this value from launches, saves, or dates.
+const GAME_VERSION = "1.01 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong" });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
+  id: "beta_1_01_mobile_play_fix", version: GAME_VERSION, date: "2026.09.21", title: "모바일 전투 UI 수정",
+  sections: Object.freeze([
+    Object.freeze({ title: "[1.01 BETA]", paragraphs: Object.freeze(["[모바일 UI 수정]"]) }),
+    Object.freeze({ title: "모바일 UI 수정", bullets: Object.freeze([
+      "모바일 전투 모드 선택 화면에서 PLAY 버튼이 표시되지 않던 문제를 수정했습니다.",
+      "일반 모드 PLAY 버튼을 모바일에서도 정상적으로 표시하도록 수정했습니다.",
+      "세로 대전장 PLAY 버튼을 모바일에서도 끝까지 스크롤하여 선택할 수 있도록 수정했습니다.",
+      "전투 모드 카드의 이미지/설명/버튼 배치를 개선했습니다.",
+      "모바일 화면과 하단 브라우저 UI 때문에 일부 콘텐츠가 잘리는 문제를 추가로 개선했습니다.",
+    ]) }),
+  ]), footer: "두 전투 모드의 PLAY 버튼을 모바일에서 끝까지 확인하고 선택할 수 있습니다.",
+}), Object.freeze({
   id: "battle_system_update_random_map_v1", date: "2026.09.21", title: "✦ 전투 시스템 개선 업데이트",
   sections: Object.freeze([
     Object.freeze({ title: "신규 별자리 개선", bullets: Object.freeze(["심판의 자리가 도감에 정상적으로 표시되도록 수정했습니다.", "심판 대상 추가 피해: 현재 체력 10% → 3.5%"]) }),
@@ -3149,6 +3164,7 @@ function bootstrapGame() {
   // This function is the only place where required page elements are bound.
   // Assignments are intentionally explicit so missing IDs identify themselves.
   window.BOOT_STAGE = "dom-ready";
+  document.querySelectorAll?.("[data-game-version]")?.forEach((node) => { node.textContent = `v${GAME_VERSION}`; });
   arena = getRequiredElement("arena");
   battleWorld = getRequiredElement("battleWorld");
   experimentalMinimap = getRequiredElement("experimentalMinimap");
@@ -3496,7 +3512,7 @@ function bootstrapGame() {
   const refreshNews = () => {
     const unread=NEWS_ITEMS.filter((item)=>!playerProgress.readNewsIds[item.id]).length;
     document.querySelectorAll?.("[data-news-badge]").forEach((badge) => { badge.hidden = unread===0; badge.textContent=unread; });
-    getRequiredElement("news-items").innerHTML = NEWS_ITEMS.map((item) => `<article class="news-item"><header><time>${item.date}${playerProgress.readNewsIds[item.id] ? "" : " · NEW"}</time><h3>${item.title}</h3></header>${item.sections.map((section) => `<section><h4>${section.title}</h4>${(section.paragraphs || []).map((paragraph) => `<p>${paragraph}</p>`).join("")}${section.bullets ? `<ul>${section.bullets.map((bullet) => `<li>${bullet}</li>`).join("")}</ul>` : ""}</section>`).join("")}<footer>${item.footer}</footer></article>`).join("");
+    getRequiredElement("news-items").innerHTML = NEWS_ITEMS.map((item) => `<article class="news-item"><header>${item.version ? `<strong class="news-version">VERSION ${item.version}</strong>` : ""}<time>${item.date}${playerProgress.readNewsIds[item.id] ? "" : " · NEW"}</time><h3>${item.title}</h3></header>${item.sections.map((section) => `<section><h4>${section.title}</h4>${(section.paragraphs || []).map((paragraph) => `<p>${paragraph}</p>`).join("")}${section.bullets ? `<ul>${section.bullets.map((bullet) => `<li>${bullet}</li>`).join("")}</ul>` : ""}</section>`).join("")}<footer>${item.footer}</footer></article>`).join("");
   };
   document.querySelectorAll?.("[data-open-news]").forEach((button) => button.onclick = () => {
     NEWS_ITEMS.forEach((item) => { playerProgress.readNewsIds[item.id] = true; });
@@ -3540,7 +3556,7 @@ function bootstrapGame() {
   showMainMenu();
   if (specialGrantApplied) showToast("특별 지급\n별가루 +5,000\n운석조각 +20");
   const diagnostics = {
-    CONFIG, MODE_CONFIG, EARLY_WAVE_COMPOSITIONS, MONSTER_CODEX_IDS, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, getNormalWaveHpMultiplier, getWaveHpMultiplier, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, RandomMapSelector, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, normalStarSpecial, normalStarAbilityText, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
+    CONFIG, MODE_CONFIG, EARLY_WAVE_COMPOSITIONS, MONSTER_CODEX_IDS, GAME_VERSION, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, getNormalWaveHpMultiplier, getWaveHpMultiplier, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, RandomMapSelector, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, normalStarSpecial, normalStarAbilityText, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
     showMainMenu, showBattleMenu, showGacha, showMonsterCodex, beginMapRandom, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint, worldToScreen, screenToWorld, clampCameraY, getViewportWorldBounds,
