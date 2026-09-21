@@ -15,14 +15,14 @@ assert.deepEqual(JSON.parse(JSON.stringify(playerProgress.ownedRelics)), [], "le
 const one = performRelicDraws(1, () => 0);
 assert.equal(one[0].id, "STEADFAST_HEART");
 assert.equal(one[0].isNew, true);
-assert.equal(playerProgress.meteorFragments, 110);
+assert.equal(playerProgress.meteorFragments, 130);
 const duplicate = performRelicDraws(1, () => 0);
 assert.equal(duplicate[0].isNew, false);
 assert.equal(playerProgress.ownedRelics.filter((id) => id === "STEADFAST_HEART").length, 1, "duplicates are not persisted twice");
 const sequence = Array.from({ length: 10 }, (_, index) => (index + .1) / 10);
 const ten = performRelicDraws(10, () => sequence.shift());
 assert.equal(ten.length, 10, "ten-draw performs ten independent selections");
-assert.equal(playerProgress.meteorFragments, 0);
+assert.equal(playerProgress.meteorFragments, 20);
 playerProgress.ownedRelics.push("GOOD_OF_BINDING_STAR");
 assert.equal(effectiveMaxStars(), 22);
 assert.match(file, /dawnKillProgress < 5/);

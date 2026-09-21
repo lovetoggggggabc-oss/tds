@@ -34,9 +34,9 @@ assert.equal(CONFIG.stars.green.support, "alliedAttackSpeed");
 assert.equal(CONFIG.startStarlight, 500);
 assert.equal(playerProgress.ownedStars.YELLOW, 2, "legacy SKY inventory migrates to YELLOW");
 assert.equal(playerProgress.ownedStars.BLUE, 3);
-assert.equal(playerProgress.meteorFragments, 77, "migration preserves unrelated currency");
-assert.equal(playerProgress.starFragments, 4500, "all existing players receive the one-time 2,000 star-fragment grant");
-assert.equal(playerProgress.starFragmentGrantVersion, 2, "the grant is versioned so it cannot repeat on reload");
+assert.equal(playerProgress.meteorFragments, 97, "migration preserves unrelated currency");
+assert.equal(playerProgress.starDust, 7500, "all existing players receive the one-time 5,000 star-dust grant");
+assert.equal(playerProgress.schemaVersion, 3, "the grant is versioned so it cannot repeat on reload");
 assert.deepEqual(JSON.parse(JSON.stringify(CONSTELLATION_DEFINITIONS.SAGITTARIUS.recipe)), { yellow: 2, blue: 2 });
 assert.deepEqual(JSON.parse(JSON.stringify(CONSTELLATION_DEFINITIONS.TWILIGHT.recipe)), { red: 2, white: 1, blue: 1 });
 
@@ -44,7 +44,7 @@ const pityResult = performConstellationDraws(1, () => .99);
 assert.equal(pityResult[0].kind, "constellation", "draw 20 is guaranteed even when RNG misses");
 assert.equal(pityResult[0].guaranteed, true);
 assert.equal(playerProgress.constellationPity, 0);
-assert.equal(playerProgress.starFragments, 4400);
+assert.equal(playerProgress.starDust, 7400);
 
 // Ten draws resolve sequentially: three misses, a natural hit, then six misses.
 const sequence = [.9,.1, .9,.2, .9,.3, .01,.4, .9,.4, .9,.5, .9,.6, .9,.7, .9,.8, .9,.9];
@@ -52,7 +52,7 @@ const tenResults = performConstellationDraws(10, () => sequence.shift() ?? .9);
 assert.equal(tenResults.length, 10);
 assert.equal(tenResults[3].kind, "constellation");
 assert.equal(playerProgress.constellationPity, 6);
-assert.equal(playerProgress.starFragments, 3400);
+assert.equal(playerProgress.starDust, 6400);
 assert.equal(GACHA_RULES.starChance + GACHA_RULES.constellationChance, 1);
 assert.equal(JSON.parse(storage.get("zodiacDefenseProgress")).constellationPity, 6, "pity persists");
 
