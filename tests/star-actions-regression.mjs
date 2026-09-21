@@ -288,7 +288,7 @@ radiance.cooldown = 0;
 radiance.attack(0);
 assert.deepEqual(context.game.enemies.map((enemy) => enemy.received), [[radianceDamage], [radianceDamage]]);
 
-// Kill progression is instance-local. Dawn triggers exactly once on the third
+// Kill progression is instance-local. Dawn triggers exactly once on the fifth
 // direct kill and moonfall deals 20% current HP without assigning a damage source.
 const moonfallHits = [];
 context.game.enemies = [1000, 10000, 20000].map((maxHp, index) => ({
@@ -301,6 +301,10 @@ context.game.enemies = [1000, 10000, 20000].map((maxHp, index) => ({
 constellation.registerKill();
 constellation.registerKill();
 assert.equal(moonfalls.length, 0);
+constellation.registerKill();
+assert.equal(moonfalls.length, 0);
+constellation.registerKill();
+assert.equal(moonfalls.length, 0, "four direct kills do not trigger moonfall");
 constellation.registerKill();
 assert.equal(moonfalls.length, 1);
 assert.equal(constellation.runtime.dawnKillProgress, 0);

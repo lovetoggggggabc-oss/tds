@@ -1673,3 +1673,39 @@ body.summon-input-locked>section:not(.draw-result-dialog),body.summon-input-lock
   .resources .primary-resource { min-width: 65px; padding-inline: 4px; }
   .next-wave { width: 86px; }
 }
+
+/* Relic collection: every registry entry remains visible before it is unlocked. */
+.relic-screen{padding-bottom:max(24px,env(safe-area-inset-bottom));background:radial-gradient(circle at 75% 18%,#512b7844,transparent 30%),linear-gradient(#080a25,#120a2c)}
+.relic-intro{margin:8px 20px 14px;color:#aeb8dc;text-align:center;font-size:11px;letter-spacing:.08em}
+.relic-collection{display:grid;gap:10px;width:min(calc(100% - 28px),430px);max-height:calc(100dvh - 120px);margin:auto;padding:2px 3px 24px;overflow:auto}
+.relic-card{display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:center;min-height:92px;padding:13px;border:1px solid #9d78df66;border-radius:18px;background:radial-gradient(circle at 12% 50%,#8757c744,transparent 28%),linear-gradient(135deg,#232557ee,#100d2dee);box-shadow:inset 0 1px #fff2,0 9px 22px #0005}
+.relic-card>i{display:grid;place-items:center;width:52px;aspect-ratio:1;border:1px solid #bca2ff88;border-radius:50%;color:#dff7ff;font:normal 27px Georgia;text-shadow:0 0 12px #8edfff;box-shadow:inset 0 0 15px #895be755}
+.relic-card small{color:#8ae5ff;font-size:8px;letter-spacing:.1em}.relic-card h2{margin:3px 0;color:#fff;font:700 17px Georgia,"Noto Serif KR",serif}.relic-card p{margin:0;color:#cbd3ee;font-size:10px;line-height:1.45}
+.relic-card.locked{filter:grayscale(1) saturate(.15);opacity:.62}.relic-card.locked>i{color:#a6a9b4;text-shadow:none}.binding-relic-status{position:absolute;z-index:8;right:8px;top:118px;padding:5px 8px;border:1px solid #b777e866;border-radius:10px;background:#160c31cc;color:#d9baff;font-size:8px}.binding-relic-status b{color:#fff}
+
+/* Dawn effects deliberately stay within a small radius of the caster/target. */
+.constellation-dawn .star{filter:drop-shadow(0 0 5px #cbbcff)}
+.constellation-dawn:after{content:"";position:absolute;left:50%;top:50%;width:54px;height:54px;translate:-50% -50%;border:1px solid #d8d2ff55;border-radius:50%;box-shadow:inset 0 0 12px #9478d522;pointer-events:none;animation:dawnLocalAura 2.8s ease-in-out infinite}
+.dawn-moon{left:50%;top:50%;width:76px;filter:drop-shadow(0 0 7px #b6c9ff);opacity:0}
+.dawn-special{width:62px;height:48px;filter:drop-shadow(0 0 5px #a994ff)}
+.dawn-special svg{fill:#eeeaff;filter:drop-shadow(0 0 3px #967cff)}
+.dawn-spark{width:3px;height:3px;margin:-1.5px;box-shadow:0 0 3px 1px #bdb0ff}
+.dawn-origin-pulse,.dawn-moonfall-pulse{position:absolute;z-index:48;width:58px;aspect-ratio:1;translate:-50% -50%;border:2px solid #ddd7ff;border-left-color:transparent;border-radius:50%;box-shadow:0 0 8px #a38fff88;pointer-events:none;animation:dawnLocalPulse .55s ease-out forwards}
+.dawn-origin-pulse:after,.dawn-moonfall-pulse:after{content:"☾ ✦";position:absolute;inset:0;display:grid;place-items:center;color:#eeeaff;font-size:18px;text-shadow:0 0 6px #a88cff}
+.dawn-moonfall-hit{width:20px;background:radial-gradient(circle,#fff 0 10%,#b6aaff 18% 30%,transparent 62%);animation-duration:.32s}
+.dawn-moonfall-flash{display:none!important}
+@keyframes dawnLocalAura{50%{opacity:.55;transform:scale(1.08)}}
+@keyframes dawnLocalPulse{from{opacity:.85;transform:scale(.55) rotate(-24deg)}to{opacity:0;transform:scale(1.35) rotate(12deg)}}
+
+/* Layered celestial instrument: CSS/SVG only, with a bounded element count. */
+.draw-result-dialog{background:radial-gradient(ellipse at 18% 28%,#34205f 0,transparent 31%),radial-gradient(ellipse at 82% 72%,#132f5d 0,transparent 35%),radial-gradient(circle at 50% 48%,color-mix(in srgb,var(--summon-primary) 24%,transparent),transparent 24%),linear-gradient(160deg,#05071f,#13082d 58%,#020513)}
+.summon-rings{position:absolute;z-index:3;left:50%;top:48%;width:150px;aspect-ratio:1;translate:-50% -50%;border:1px solid color-mix(in srgb,var(--summon-secondary) 42%,transparent);border-radius:50%;opacity:.5;animation:summonRingTurn 9s linear infinite}
+.summon-rings:before,.summon-rings:after,.summon-rings i{content:"";position:absolute;inset:12%;border:1px solid color-mix(in srgb,var(--summon-primary) 48%,transparent);border-radius:50%}.summon-rings:before{clip-path:polygon(0 0,44% 0,44% 100%,0 100%)}.summon-rings:after{inset:29%;transform:rotate(45deg);border-radius:18%}.summon-rings i:nth-child(1){inset:-8% 44%;border-radius:50%;transform:rotate(62deg)}.summon-rings i:nth-child(2){inset:44% -8%;border-radius:50%;transform:rotate(-28deg)}.summon-rings b{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:14px;text-shadow:0 0 9px var(--summon-secondary)}
+.draw-result-dialog[data-summon-state="CONSTELLATION_COMPLETE"] .summon-rings{animation:summonRingTurn 9s linear infinite,summonInstrumentPulse .6s ease-out}.featured-constellation[data-summon-state="REVEAL_FLASH"] .summon-core{box-shadow:0 -140px 34px 12px color-mix(in srgb,var(--summon-primary) 45%,transparent),0 140px 34px 12px color-mix(in srgb,var(--summon-primary) 45%,transparent)}
+.featured-relic{background:radial-gradient(circle at 50% 48%,#713ca54a,transparent 25%),radial-gradient(ellipse at 22% 25%,#244f7255,transparent 35%),linear-gradient(155deg,#080b20,#1c0d31 58%,#050712)}
+.featured-relic .summon-rings{border-style:double;border-width:4px;transform:rotate(22deg);color:#b98bff}.featured-relic .summon-meteor{height:3px;background:linear-gradient(90deg,transparent,#b278ff,#7eeaff)}
+.relic-shard{fill:#9168cf;stroke:#8cecff;stroke-width:.35;opacity:0;transform-box:fill-box;transform-origin:center;animation:relicShardGather .85s ease-in forwards;animation-delay:calc(.25s + var(--shard-order) * .11s)}
+.relic-glyph-ring{fill:none;stroke:#a981ff;stroke-width:.7;stroke-dasharray:4 3;transform-origin:50px 50px;animation:relicGlyphWake 1.3s 1s ease-out both}.relic-glyph-ring.inner{stroke:#72dcff;animation-direction:reverse}.relic-rift{fill:none;stroke:#fff;stroke-width:1.2;filter:drop-shadow(0 0 3px #b66cff);stroke-dasharray:40;stroke-dashoffset:40;animation:drawSummonLink .42s 1.75s ease-out forwards}
+.relic-result{border-color:#a977df;background:linear-gradient(145deg,#35205a,#0e1633);box-shadow:inset 0 0 18px #8651ba55}.relic-result i{color:#dcbfff}.relic-result small{color:#c4cae4;font-size:8px;line-height:1.35}.relic-result em{position:absolute;right:7px;top:6px;color:#8eeaff;font-size:9px}
+@keyframes summonRingTurn{to{transform:rotate(360deg)}}@keyframes summonInstrumentPulse{50%{opacity:1;scale:1.08}}@keyframes relicShardGather{0%{opacity:0;transform:translate(0,0) rotate(0)}65%{opacity:1}100%{opacity:0;transform:translate(calc((50px - 100%) * .55),calc((50px - 100%) * .55)) rotate(120deg)}}@keyframes relicGlyphWake{from{opacity:0;transform:scale(.4) rotate(-45deg)}to{opacity:1;transform:scale(1) rotate(35deg)}}
+@media (prefers-reduced-motion:reduce){.summon-rings,.relic-shard,.relic-glyph-ring,.relic-rift,.constellation-dawn:after{animation-duration:.01ms!important;animation-delay:0s!important}}

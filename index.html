@@ -28,7 +28,7 @@
         <button type="button" data-coming-soon><i>▣</i><span>상점</span></button>
         <button type="button" data-open-collection><i>⌁</i><span>별 &amp; 별자리</span></button>
         <button type="button" class="active" data-open-battle><i>⚔</i><span>전투</span></button>
-        <button type="button" data-coming-soon><i>◇</i><span>유물</span></button>
+        <button type="button" data-open-relics><i>◇</i><span>유물</span></button>
         <button type="button" data-open-gacha><i>✦</i><span>뽑기</span></button>
       </nav>
     </section>
@@ -54,8 +54,15 @@
         <div class="draw-actions"><button type="button" data-draw="relic" data-cost="10"><b>1회 뽑기</b><small>☄ 10</small></button><button type="button" data-draw="relic" data-cost="100"><b>10회 뽑기</b><small>☄ 100</small></button></div>
       </article>
       <nav class="bottom-nav" aria-label="메인 메뉴">
-        <button type="button" data-coming-soon><i>▣</i><span>상점</span></button><button type="button" data-open-collection><i>⌁</i><span>별 &amp; 별자리</span></button><button type="button" data-open-battle><i>⚔</i><span>전투</span></button><button type="button" data-coming-soon><i>◇</i><span>유물</span></button><button type="button" class="active" data-open-gacha><i>✦</i><span>뽑기</span></button>
+        <button type="button" data-coming-soon><i>▣</i><span>상점</span></button><button type="button" data-open-collection><i>⌁</i><span>별 &amp; 별자리</span></button><button type="button" data-open-battle><i>⚔</i><span>전투</span></button><button type="button" data-open-relics><i>◇</i><span>유물</span></button><button type="button" class="active" data-open-gacha><i>✦</i><span>뽑기</span></button>
       </nav>
+    </section>
+
+    <section class="lobby-screen relic-screen" id="relic-screen" hidden aria-labelledby="relic-title">
+      <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
+      <header class="subscreen-header"><button type="button" data-main-home aria-label="메인 메뉴로 돌아가기">←</button><div><small>ANCIENT RELICS</small><h1 id="relic-title">유물</h1></div></header>
+      <p class="relic-intro">우주의 기억을 담은 유물 수집</p>
+      <div id="relic-collection" class="relic-collection" aria-live="polite"></div>
     </section>
 
     <section class="lobby-screen collection-screen" id="collection-screen" hidden aria-labelledby="collection-title">
@@ -68,7 +75,7 @@
       </div>
     </section>
 
-    <section class="draw-result-dialog" id="draw-results" role="dialog" aria-modal="true" aria-labelledby="draw-results-title" hidden><button type="button" class="skip-summon" id="skip-summon">SKIP</button><div class="summon-nebula" aria-hidden="true"></div><div class="summon-dust" aria-hidden="true"></div><i class="summon-meteor meteor-one" aria-hidden="true"></i><i class="summon-meteor meteor-two" aria-hidden="true"></i><div class="summon-shockwave" aria-hidden="true"></div><div class="summon-core" aria-hidden="true">✦</div><div class="summon-content"><header><small>CELESTIAL SUMMON</small><h2 id="draw-results-title"><span class="summoning-title">별자리를 잇는 중…</span><span class="result-title">뽑기 결과</span></h2></header><div class="draw-sequence" id="draw-sequence"></div><div id="draw-result-grid" class="draw-result-grid"></div><button type="button" id="close-draw-results">확인</button></div></section>
+    <section class="draw-result-dialog" id="draw-results" role="dialog" aria-modal="true" aria-labelledby="draw-results-title" hidden><button type="button" class="skip-summon" id="skip-summon">SKIP</button><div class="summon-nebula" aria-hidden="true"></div><div class="summon-dust" aria-hidden="true"></div><div class="summon-rings" aria-hidden="true"><i></i><i></i><b>✦</b></div><i class="summon-meteor meteor-one" aria-hidden="true"></i><i class="summon-meteor meteor-two" aria-hidden="true"></i><div class="summon-shockwave" aria-hidden="true"></div><div class="summon-core" aria-hidden="true">✦</div><div class="summon-content"><header><small>CELESTIAL SUMMON</small><h2 id="draw-results-title"><span class="summoning-title">별자리를 잇는 중…</span><span class="result-title">뽑기 결과</span></h2></header><div class="draw-sequence" id="draw-sequence"></div><div id="draw-result-grid" class="draw-result-grid"></div><button type="button" id="close-draw-results">확인</button></div></section>
 
     <section class="lobby-screen battle-menu-screen" id="battle-menu" hidden aria-labelledby="battle-menu-title">
       <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -96,6 +103,7 @@
           <span class="primary-resource divinity"><i>◆</i><b id="divinity1">0</b><em>신성</em></span>
           <span class="partner-resource">2P ✦ <b id="starlight2">0</b> · ◆ <b id="divinity2">0</b></span>
         </div>
+        <div class="binding-relic-status" id="bindingRelicStatus" hidden>결속성의 악 · <b>사용 가능 1/1</b></div>
         <div class="hp"><b id="hp">♥ 400 / 400</b><span>ASTRAL CORE</span></div>
         <aside class="next-wave" aria-label="다음 적 정보">
           <small>NEXT ENEMY</small><b>다음 적 정보</b><div id="nextEnemies"></div>
