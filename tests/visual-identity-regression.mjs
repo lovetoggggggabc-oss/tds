@@ -12,8 +12,11 @@ assert.match(js, /width: arena\.clientWidth \|\| rect\.width/);
 assert.doesNotMatch(js, /this\.el\.style\.transform = `translate3d/);
 for (const id of ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER", "GUARDIAN", "TWILIGHT", "BOND", "LINK", "STRIKE", "HORIZON"])
   assert.match(js, new RegExp(`${id}: '<`), `${id} needs a battle signature`);
-for (const stage of [1, 2, 3, 4])
-  assert.match(js, new RegExp(`${stage}: '<path class="star-shape"`));
+assert.match(js, /function symmetricRays\(angles, length, halfWidth/);
+assert.match(js, /const cardinals = \[0, 90, 180, 270\]/);
+assert.match(js, /const diagonals = \[45, 135, 225, 315\]/);
+for (const stage of [1, 2, 3, 4]) assert.ok(js.includes(stage + ": `"));
+assert.match(js, /symmetricSparkles\(44, 2\.5\)/);
 assert.match(css, /--stage-scale:1\.06/);
 assert.match(css, /--stage-scale:1\.12/);
 assert.match(css, /--stage-scale:1\.18/);

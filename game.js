@@ -1551,12 +1551,25 @@ class StarManager {
 
 // One shared visual grammar keeps all seven colours identifiable while stage
 // controls the core, halo, rays and orbit rather than merely scaling the star.
+function symmetricRays(angles, length, halfWidth, className = "star-ray") {
+  // A single tapered ray is rotated around (50, 50), guaranteeing that every
+  // opposing pair has identical length, width and distance from the centre.
+  const ray = `M50 ${50 - length}L${50 + halfWidth} 46L${50 + halfWidth} 54Z`;
+  return angles.map((angle) => `<path class="${className}" d="${ray}" transform="rotate(${angle} 50 50)"/>`).join("");
+}
+function symmetricSparkles(distance, size) {
+  return [0, 90, 180, 270].map((angle) =>
+    `<path class="star-sparkle" d="M50 ${50 - distance - size}l${size} ${size} ${-size} ${size} ${-size} ${-size}Z" transform="rotate(${angle} 50 50)"/>`
+  ).join("");
+}
 function normalStarGlyph(tier) {
+  const cardinals = [0, 90, 180, 270];
+  const diagonals = [45, 135, 225, 315];
   const shapes = {
-    1: '<path class="star-shape" d="M50 18 57 43 82 50 57 57 50 82 43 57 18 50 43 43Z"/>',
-    2: '<path class="star-shape" d="M50 10 56 39 72 20 61 43 90 50 61 57 72 80 56 61 50 90 44 61 28 80 39 57 10 50 39 43 28 20 44 39Z"/><circle class="star-core-dot" cx="50" cy="50" r="8"/>',
-    3: '<path class="star-shape" d="M50 4 57 39 72 28 61 44 94 50 61 56 72 72 57 61 50 96 43 61 28 72 39 56 6 50 39 44 28 28 43 39Z"/><path class="star-inner" d="M50 37 63 50 50 63 37 50Z"/>',
-    4: '<path class="star-shape" d="M50 2 57 37 78 10 63 41 98 50 63 59 78 90 57 63 50 98 43 63 22 90 37 59 2 50 37 41 22 10 43 37Z"/><path class="star-inner" d="M50 38 54 46 63 50 54 54 50 63 46 54 37 50 46 46Z"/>',
+    1: `${symmetricRays(cardinals, 27, 5)}<circle class="star-core-dot" cx="50" cy="50" r="6"/>`,
+    2: `${symmetricRays([...cardinals, ...diagonals], 32, 4.5)}<circle class="star-core-dot" cx="50" cy="50" r="8"/><path class="stage-two-sparkles" d="M24 28l2 2-2 2-2-2Zm52 44 2 2-2 2-2-2Z"/>`,
+    3: `${symmetricRays(cardinals, 43, 5.5, "star-ray star-ray-major")}${symmetricRays(diagonals, 27, 4, "star-ray star-ray-minor")}<circle class="star-core-ring" cx="50" cy="50" r="11"/><path class="star-inner" d="M50 38 62 50 50 62 38 50Z"/>${symmetricSparkles(39, 2)}`,
+    4: `${symmetricRays(cardinals, 41, 5, "star-ray star-ray-major")}${symmetricRays(diagonals, 31, 4, "star-ray star-ray-minor")}<path class="star-inner" d="M50 36 54 46 64 50 54 54 50 64 46 54 36 50 46 46Z"/><path class="star-inner-highlight" d="M50 43 53 47 57 50 53 53 50 57 47 53 43 50 47 47Z"/>${symmetricSparkles(44, 2.5)}`,
   };
   return `<svg class="star-glyph" viewBox="0 0 100 100" aria-hidden="true">${shapes[tier] || shapes[1]}</svg>`;
 }
