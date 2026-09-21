@@ -25,7 +25,8 @@ window.addEventListener("unhandledrejection", (event) => {
   showBootError(reason, reason.fileName, reason.lineNumber, reason.columnNumber);
 });
 
-let arena, effects, links, ranges, rangeIndicator, contextActions, hint;
+let arena, battleWorld, effects, links, ranges, rangeIndicator, contextActions, hint;
+let experimentalMinimap, experimentalBadge;
 let dawnMoon, starInfo, controls, zodiacCodex, zodiacCodexList;
 let wave, timer, hp, starlight1, divinity1, starlight2, divinity2, nextEnemies;
 let speed, restart, finalWave, gameover;
@@ -33,6 +34,11 @@ let game = null;
 let finishBattle = null;
 let controlsBound = false;
 let toastTimer = 0;
+const GAME_MODES = Object.freeze({ NORMAL: "normal", EXPERIMENTAL_VERTICAL: "experimental_vertical" });
+const EXPERIMENTAL_WORLD_HEIGHT = 2.8;
+const EXPERIMENTAL_INITIAL_CAMERA = "destination";
+let activeGameMode = GAME_MODES.NORMAL;
+
 const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", MAP_VOTE: "MAP_VOTE", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
 const PROGRESS_SCHEMA_VERSION = 5;
@@ -303,6 +309,18 @@ const MAP_DEFINITIONS = Object.freeze({
       Object.freeze([{x:36,y:50},{x:42,y:27},{x:78,y:38},{x:70,y:6}]),
     ]), arrows: Object.freeze([.12,.34,.55,.76,.91]),
   }),
+});
+
+const EXPERIMENTAL_VERTICAL_MAP = Object.freeze({
+  id: "EXPERIMENTAL_NEBULA_ROUTE", name: "거대 성운 항로", roadWidth: 30, placementPadding: 3,
+  spawn: Object.freeze({ x: 50, y: 3 }), destination: Object.freeze({ x: 50, y: 97 }),
+  route: Object.freeze([
+    Object.freeze([{x:50,y:3},{x:50,y:9},{x:82,y:10},{x:77,y:20}]),
+    Object.freeze([{x:77,y:20},{x:70,y:29},{x:20,y:25},{x:25,y:39}]),
+    Object.freeze([{x:25,y:39},{x:28,y:50},{x:82,y:47},{x:76,y:60}]),
+    Object.freeze([{x:76,y:60},{x:72,y:71},{x:18,y:68},{x:25,y:81}]),
+    Object.freeze([{x:25,y:81},{x:30,y:90},{x:55,y:87},{x:50,y:97}]),
+  ]), arrows: Object.freeze([.08,.26,.46,.66,.86,.95]),
 });
 let activeMap = MAP_DEFINITIONS.ORIGINAL_S;
 let activeRouteCache = null;
@@ -612,7 +630,7 @@ class Enemy {
     this.hpFill = this.el.querySelector(".bar i");
     this.hpText = this.el.querySelector(".enemy-hp");
     this.hpText.hidden = !playerProgress.settings.showMonsterHpNumbers;
-    arena.append(this.el);
+    (typeof battleWorld !== "undefined" && battleWorld ? battleWorld : arena).append(this.el);
     this.updateHealthBar();
     this.render();
   }
@@ -628,6 +646,10 @@ class Enemy {
     // with a border-box pixel measurement (which drifted on resized tablets).
     this.el.style.left = `${this.x}%`;
     this.el.style.top = `${this.y}%`;
+    if (game?.mode === "experimental_vertical") {
+      const y = worldToScreen(this.position()).y;
+      this.el.style.visibility = y < -100 || y > arena.clientHeight + 100 ? "hidden" : "";
+    } else this.el.style.visibility = "";
   }
   update(dt) {
     if (this.bossAbility && !this.abilityTriggered && game.gameTime - this.spawnTime >= (this.abilityDelay || 0)) {
@@ -719,7 +741,7 @@ class GuardianUnit {
     this.el.innerHTML = '<div class="guardian-health"><span class="guardian-hp"></span><div class="bar" aria-hidden="true"><i></i></div></div><span class="guardian-body"><i></i></span>';
     this.hpFill = this.el.querySelector(".bar i");
     this.hpText = this.el.querySelector(".guardian-hp");
-    arena.append(this.el);
+    (typeof battleWorld !== "undefined" && battleWorld ? battleWorld : arena).append(this.el);
     this.updateHealthBar();
     this.render();
   }
@@ -862,8 +884,8 @@ function buildRouteCache(map) {
   }});
   return Object.freeze({ samples: Object.freeze(samples), length: total });
 }
-const ROUTE_CACHES = Object.freeze(Object.fromEntries(Object.values(MAP_DEFINITIONS).map((map) => [map.id, buildRouteCache(map)])));
-function setActiveMap(mapId) { activeMap = MAP_DEFINITIONS[mapId] || MAP_DEFINITIONS.ORIGINAL_S; activeRouteCache = ROUTE_CACHES[activeMap.id]; return activeMap; }
+const ROUTE_CACHES = Object.freeze(Object.fromEntries([...Object.values(MAP_DEFINITIONS), EXPERIMENTAL_VERTICAL_MAP].map((map) => [map.id, buildRouteCache(map)])));
+function setActiveMap(mapId) { activeMap = mapId === EXPERIMENTAL_VERTICAL_MAP.id ? EXPERIMENTAL_VERTICAL_MAP : MAP_DEFINITIONS[mapId] || MAP_DEFINITIONS.ORIGINAL_S; activeRouteCache = ROUTE_CACHES[activeMap.id]; return activeMap; }
 setActiveMap(activeMap.id);
 function routePoint(progressOrLane, legacyProgress) {
   const progress = Math.max(0, Math.min(1, legacyProgress === undefined ? progressOrLane : legacyProgress));
@@ -913,10 +935,11 @@ class RangeSystem {
     // clientWidth/clientHeight describe the inner box used by the absolutely
     // positioned SVG layers. getBoundingClientRect() includes the arena border
     // and therefore was not the coordinate space used by viewBox 0 0 100 100.
-    const rect = arena.getBoundingClientRect?.() || {};
+    const world = typeof battleWorld !== "undefined" && battleWorld ? battleWorld : arena;
+    const rect = world.getBoundingClientRect?.() || arena.getBoundingClientRect?.() || {};
     this.cachedMetrics = {
-      width: arena.clientWidth || rect.width || 100,
-      height: arena.clientHeight || rect.height || 100,
+      width: world.clientWidth || arena.clientWidth || rect.width || 100,
+      height: world.clientHeight || arena.clientHeight || rect.height || 100,
     };
   }
   static metrics() {
@@ -1275,7 +1298,7 @@ class Constellation {
     const area = document.createElement("div");
     area.className = "twilight-area";
     area.setAttribute("aria-hidden", "true");
-    arena.append(area);
+    (typeof battleWorld !== "undefined" && battleWorld ? battleWorld : arena).append(area);
     this.runtime.areaElement = area;
     this.centerElement()?.classList.add("twilight-transcending");
     this.updateTwilightArea();
@@ -1592,15 +1615,17 @@ function starStageThreeOrnaments(type) {
   return "";
 }
 function normalStarGlyph(tier, type = "white") {
-  const roundedStar = '<path class="star-body rounded-star" d="M50 15C54 15 58 31 62 34c4 3 21 1 22 6 2 5-13 13-15 18-1 5 6 20 2 23-4 4-16-8-21-8s-17 12-21 8c-4-3 3-18 2-23-2-5-17-13-15-18 1-5 18-3 22-6 4-3 8-19 12-19Z"/>';
-  const facetedStar = '<path class="star-body faceted-star" d="M50 9 61 35 89 38 67 57 74 85 50 70 26 85 33 57 11 38 39 35Z"/><path class="facet facet-light" d="M50 9 50 50 39 35Z"/><path class="facet" d="M50 9 61 35 50 50Z"/><path class="facet facet-light" d="M11 38 50 50 33 57Z"/><path class="facet" d="M89 38 67 57 50 50Z"/><path class="facet facet-light" d="M26 85 50 50 50 70Z"/>';
+  const fourRay = '<path class="star-body" d="M50 18 56 44 82 50 56 56 50 82 44 56 18 50 44 44Z"/>';
+  const eightRay = '<path class="star-body" d="M50 15 56 39 75 25 61 44 85 50 61 56 75 75 56 61 50 85 44 61 25 75 39 56 15 50 39 44 25 25 44 39Z"/>';
+  const crossRay = '<path class="star-body" d="M50 8 57 39 72 24 61 44 92 50 61 56 72 76 57 61 50 92 43 61 28 76 39 56 8 50 39 44 28 24 43 39Z"/>';
+  const divineRay = '<path class="star-body" d="M50 4 57 38 75 22 62 43 96 50 62 57 75 78 57 62 50 96 43 62 25 78 38 57 4 50 38 43 25 22 43 38Z"/>';
   const shapes = {
-    1: `${roundedStar}<path class="body-highlight" d="M50 21c4 7 6 13 9 16-8-3-16-2-23 1 5-4 10-6 14-17Z"/>`,
-    2: `<ellipse class="orbit orbit-back" cx="50" cy="51" rx="42" ry="18" transform="rotate(-12 50 51)"/>${roundedStar}<ellipse class="orbit orbit-front" cx="50" cy="51" rx="42" ry="18" transform="rotate(-12 50 51)"/><circle class="orbit-moon" cx="12" cy="58" r="5"/><circle class="orbit-moon small" cx="86" cy="35" r="3"/>${symmetricSparkles(42, 2)}`,
-    3: `<ellipse class="orbit orbit-back major-orbit" cx="50" cy="51" rx="45" ry="19" transform="rotate(-12 50 51)"/>${starStageThreeOrnaments(type)}${facetedStar}<ellipse class="orbit orbit-front major-orbit" cx="50" cy="51" rx="45" ry="19" transform="rotate(-12 50 51)"/>${symmetricSparkles(43, 2.5)}<path class="crystal-shard" d="M18 24l4-7 4 7-4 8Zm56 52 4-8 4 8-4 8Z"/>`,
-    4: `<ellipse class="orbit orbit-back final-orbit" cx="50" cy="51" rx="47" ry="20" transform="rotate(-12 50 51)"/>${starFinalOrnaments(type)}${facetedStar}<ellipse class="orbit orbit-front final-orbit" cx="50" cy="51" rx="47" ry="20" transform="rotate(-12 50 51)"/><path class="final-core" d="M50 32 57 43 68 50 57 57 50 68 43 57 32 50 43 43Z"/><path class="core-highlight" d="M50 39 54 46 61 50 54 54 50 61 46 54 39 50 46 46Z"/>${symmetricSparkles(45, 2.4)}`,
+    1: `${fourRay}<circle class="star-core-disc" cx="50" cy="50" r="7"/>`,
+    2: `${eightRay}<circle class="star-core-disc" cx="50" cy="50" r="8"/>`,
+    3: `${crossRay}<circle class="star-core-disc" cx="50" cy="50" r="9"/>`,
+    4: `${divineRay}<circle class="star-core-disc outer" cx="50" cy="50" r="11"/><path class="final-core" d="M50 38 54 46 62 50 54 54 50 62 46 54 38 50 46 46Z"/>${symmetricSparkles(42, 2.2)}`,
   };
-  return `<svg class="star-glyph star-type-${type}" viewBox="0 0 100 100" aria-hidden="true">${shapes[tier] || shapes[1]}</svg>`;
+  return `<svg class="star-glyph star-type-${type}" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${shapes[tier] || shapes[1]}</svg>`;
 }
 function constellationSignature(definitionId) {
   const art = {
@@ -1871,7 +1896,7 @@ class UIManager {
     let d = document.createElement("div");
     d.className = "boss-alert";
     d.textContent = t;
-    arena.append(d);
+    (typeof battleWorld !== "undefined" && battleWorld ? battleWorld : arena).append(d);
     setTimeout(() => d.remove(), 1700);
   }
   static beam(a, b) {
@@ -2039,9 +2064,10 @@ class UIManager {
     dot.className = "merge-particle";
     dot.style.left = from.x + "%";
     dot.style.top = from.y + "%";
-    arena.append(dot);
+    (typeof battleWorld !== "undefined" && battleWorld ? battleWorld : arena).append(dot);
     requestAnimationFrame(() => {
-      dot.style.transform = `translate(${((to.x - from.x) * arena.clientWidth) / 100}px, ${((to.y - from.y) * arena.clientHeight) / 100}px) scale(.45)`;
+      const metrics = RangeSystem.metrics();
+      dot.style.transform = `translate(${((to.x - from.x) * metrics.width) / 100}px, ${((to.y - from.y) * metrics.height) / 100}px) scale(.45)`;
       dot.style.opacity = "0";
     });
     game.simulationTimeout(() => dot.remove(), 420);
@@ -2052,7 +2078,7 @@ class UIManager {
     flash.className = "summon-effect";
     flash.style.left = p.x + "%";
     flash.style.top = p.y + "%";
-    arena.append(flash);
+    (typeof battleWorld !== "undefined" && battleWorld ? battleWorld : arena).append(flash);
     // Purely decorative: no gameplay state or input is held until this ends.
     setTimeout(() => flash.remove(), 420);
   }
@@ -2077,7 +2103,7 @@ class UIManager {
       particle.style.setProperty("--angle", `${n * (360 / 7)}deg`);
       effect.append(particle);
     }
-    arena.append(effect);
+    (typeof battleWorld !== "undefined" && battleWorld ? battleWorld : arena).append(effect);
     setTimeout(() => effect.remove(), 560);
   }
   static selected(g) {
@@ -2134,13 +2160,14 @@ class UIManager {
     rangeIndicator.style.height = diameter + "px";
     contextActions.hidden = false;
     const arenaRect = arena.getBoundingClientRect();
+    const selectedScreen = worldToScreen(p);
     // Context actions are absolutely positioned in the same arena containing
     // block as the selected star.  Reserve one 44px touch target plus the
     // 18px visual gap at either vertical edge; this is only an edge clamp and
     // preserves the swap -> star -> merge order everywhere else.
-    const actionX = Math.min(arenaRect.width - 54, Math.max(54, arenaRect.width * p.x / 100));
+    const actionX = Math.min(arenaRect.width - 54, Math.max(54, selectedScreen.x));
     const actionEdgeInset = 66;
-    const actionY = Math.min(arenaRect.height - actionEdgeInset, Math.max(actionEdgeInset, arenaRect.height * p.y / 100));
+    const actionY = Math.min(arenaRect.height - actionEdgeInset, Math.max(actionEdgeInset, selectedScreen.y));
     contextActions.style.setProperty("--action-x", `${actionX}px`);
     contextActions.style.setProperty("--action-y", `${actionY}px`);
     if (constellation) {
@@ -2276,9 +2303,68 @@ class UIManager {
     }
   }
 }
+
+function maxCameraY() {
+  return Math.max(0, (battleWorld?.clientHeight || 0) - (arena?.clientHeight || 0));
+}
+function clampCameraY(value = game?.cameraY || 0) {
+  return Math.max(0, Math.min(maxCameraY(), Number.isFinite(value) ? value : 0));
+}
+function worldToScreen(point) {
+  const width = battleWorld?.clientWidth || arena?.clientWidth || 100;
+  const height = battleWorld?.clientHeight || arena?.clientHeight || 100;
+  return { x: point.x / 100 * width, y: point.y / 100 * height - (game?.cameraY || 0) };
+}
+function screenToWorld(point) {
+  const width = battleWorld?.clientWidth || arena?.clientWidth || 100;
+  const height = battleWorld?.clientHeight || arena?.clientHeight || 100;
+  return { x: point.x / width * 100, y: (point.y + (game?.cameraY || 0)) / height * 100 };
+}
+function getViewportWorldBounds() {
+  const top = screenToWorld({ x: 0, y: 0 }).y;
+  const bottom = screenToWorld({ x: 0, y: arena?.clientHeight || 0 }).y;
+  return { top, bottom };
+}
+function renderExperimentalMinimap() {
+  if (!game || game.mode !== GAME_MODES.EXPERIMENTAL_VERTICAL) return;
+  const canvas = experimentalMinimap.querySelector("canvas"), ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "#72ddff"; ctx.lineWidth = 2; ctx.beginPath();
+  const samples = activeRouteCache.samples;
+  samples.forEach((point, index) => { const x = 4 + point.x / 100 * 32, y = point.y / 100 * canvas.height; index ? ctx.lineTo(x,y) : ctx.moveTo(x,y); }); ctx.stroke();
+  ctx.fillStyle = "#ff6176";
+  game.enemies.forEach((enemy) => { if (!enemy.dead) ctx.fillRect(3 + enemy.x / 100 * 34, enemy.y / 100 * canvas.height - 1, 2, 2); });
+  const viewport = experimentalMinimap.querySelector("i");
+  viewport.style.top = `${game.cameraY / battleWorld.clientHeight * 100}%`;
+  viewport.style.height = `${arena.clientHeight / battleWorld.clientHeight * 100}%`;
+}
+function applyCamera() {
+  if (!battleWorld) return;
+  const experimental = game?.mode === "experimental_vertical";
+  battleWorld.style.transform = experimental ? `translate3d(0, ${-clampCameraY(game.cameraY)}px, 0)` : "";
+  if (game) game.cameraY = experimental ? clampCameraY(game.cameraY) : 0;
+  experimentalMinimap.hidden = !experimental;
+  experimentalBadge.hidden = !experimental;
+  arena.classList.toggle("experimental-vertical", experimental);
+  RangeSystem.refresh();
+  game?.markDirty();
+  renderExperimentalMinimap();
+}
+function installExperimentalCamera(manager) {
+  let drag = null;
+  const threshold = 10;
+  const down = (event) => { if (!event.isPrimary || event.button > 0 || event.target.closest("button,.star-node,.context-actions")) return; drag = { id:event.pointerId, y:event.clientY, camera:manager.cameraY, moved:false }; };
+  const move = (event) => { if (!drag || drag.id !== event.pointerId) return; const delta = event.clientY - drag.y; if (Math.abs(delta) > threshold) drag.moved = true; if (!drag.moved) return; event.preventDefault(); manager.cameraY = clampCameraY(drag.camera - delta); applyCamera(); };
+  const up = (event) => { if (!drag || drag.id !== event.pointerId) return; if (drag.moved) { event.preventDefault(); event.stopImmediatePropagation(); } drag = null; };
+  const wheel = (event) => { event.preventDefault(); manager.cameraY = clampCameraY(manager.cameraY + event.deltaY); applyCamera(); };
+  arena.addEventListener("pointerdown", down); arena.addEventListener("pointermove", move, { passive:false }); arena.addEventListener("pointerup", up, true); arena.addEventListener("pointercancel", up, true); arena.addEventListener("wheel", wheel, { passive:false });
+  manager.cameraCleanup = () => { arena.removeEventListener("pointerdown", down); arena.removeEventListener("pointermove", move); arena.removeEventListener("pointerup", up, true); arena.removeEventListener("pointercancel", up, true); arena.removeEventListener("wheel", wheel); };
+}
 class GameManager {
   constructor() {
     this.last = 0;
+    this.mode = activeGameMode;
+    this.cameraY = 0;
     this.running = true;
     this.speed = 1;
     this.phase = "PREPARING";
@@ -2321,6 +2407,13 @@ class GameManager {
     }
     RangeSystem.refresh();
   }
+  setupCamera() {
+    applyCamera();
+    if (this.mode !== GAME_MODES.EXPERIMENTAL_VERTICAL) return;
+    this.cameraY = EXPERIMENTAL_INITIAL_CAMERA === "destination" ? maxCameraY() : 0;
+    applyCamera();
+    installExperimentalCamera(this);
+  }
   recomputeCombatCaches() {
     const constellations = new Set();
     let greenStars = 0;
@@ -2353,7 +2446,7 @@ class GameManager {
       if (event.target.closest(".star-node, .context-actions, .star-info, .overlay, button, [role=button]")) return;
       const manager = game.players[0].manager;
       if (!game.running || !zodiacCodex.hidden || game.players.some((player) => player.manager.zodiacMode)) return;
-      const rect = arena.getBoundingClientRect();
+      const rect = battleWorld.getBoundingClientRect();
       manager.summonAt(
         ((event.clientX - rect.left) / rect.width) * 100,
         ((event.clientY - rect.top) / rect.height) * 100,
@@ -2417,10 +2510,10 @@ class GameManager {
   }
   fireBossMeteor(enemy) {
     const projectile = document.createElement("i"); projectile.className = "boss-meteor-projectile";
-    projectile.style.left = `${enemy.x}%`; projectile.style.top = `${enemy.y}%`; arena.append(projectile);
+    projectile.style.left = `${enemy.x}%`; projectile.style.top = `${enemy.y}%`; (typeof battleWorld !== "undefined" && battleWorld ? battleWorld : arena).append(projectile);
     requestAnimationFrame(() => { projectile.style.left = `${activeMap.destination.x}%`; projectile.style.top = `${activeMap.destination.y}%`; });
     this.simulationTimeout(() => {
-      projectile.remove(); const impact = document.createElement("i"); impact.className = "base-meteor-impact"; impact.style.left = `${activeMap.destination.x}%`; impact.style.top = `${activeMap.destination.y}%`; UIManager.addTransient(impact, arena, 500);
+      projectile.remove(); const impact = document.createElement("i"); impact.className = "base-meteor-impact"; impact.style.left = `${activeMap.destination.x}%`; impact.style.top = `${activeMap.destination.y}%`; UIManager.addTransient(impact, (typeof battleWorld !== "undefined" && battleWorld ? battleWorld : arena), 500);
       this.base.hp = Math.max(0, this.base.hp - 20); this.markDirty(); if (this.base.hp <= 0) { this.running = false; finishBattle?.(this); }
     }, 650);
   }
@@ -2508,6 +2601,7 @@ class GameManager {
     this.phase = "COMBAT";
     this.preparationRemaining = 0;
     this.wave.update(0);
+    renderActiveMap();
     this.markDirty();
   }
   destroy() {
@@ -2515,6 +2609,8 @@ class GameManager {
     this.rafRunning = false;
     if (typeof cancelAnimationFrame === "function" && this.rafId) cancelAnimationFrame(this.rafId);
     this.tasks.length = 0;
+    this.cameraCleanup?.();
+    this.cameraCleanup = null;
     this.enemies.forEach((enemy) => enemy.el?.remove());
     this.alliedUnits.forEach((unit) => unit.el?.remove());
     this.players.forEach((player) => { player.manager.field.innerHTML = ""; });
@@ -2530,6 +2626,7 @@ class GameManager {
   }
   render() {
     UIManager.render(this);
+    renderExperimentalMinimap();
     this.dirty = false;
   }
 }
@@ -2624,6 +2721,9 @@ function bootstrapGame() {
   // Assignments are intentionally explicit so missing IDs identify themselves.
   window.BOOT_STAGE = "dom-ready";
   arena = getRequiredElement("arena");
+  battleWorld = getRequiredElement("battleWorld");
+  experimentalMinimap = getRequiredElement("experimentalMinimap");
+  experimentalBadge = getRequiredElement("experimentalBadge");
   renderActiveMap();
   effects = getRequiredElement("effects");
   links = getRequiredElement("links");
@@ -2763,8 +2863,10 @@ function bootstrapGame() {
   const showGacha = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.GACHA); };
   const showCollection = () => { renderCollection(); showScreen(SCREEN_STATES.COLLECTION); };
   const showRelics = () => { renderRelics(); showScreen(SCREEN_STATES.RELICS); };
-  const startBattle = () => {
+  const startBattle = (mode = GAME_MODES.NORMAL) => {
     if (![SCREEN_STATES.MAP_VOTE, SCREEN_STATES.BATTLE_MENU].includes(currentScreen)) return false;
+    activeGameMode = mode;
+    if (mode === GAME_MODES.EXPERIMENTAL_VERTICAL) setActiveMap(EXPERIMENTAL_VERTICAL_MAP.id);
     if (game) game.destroy();
     gameover.hidden = true;
     speed.textContent = "×1";
@@ -2773,10 +2875,11 @@ function bootstrapGame() {
     arena.classList.remove("battle-arrival");
     void arena.offsetWidth;
     arena.classList.add("battle-arrival");
-    renderActiveMap();
     showScreen(SCREEN_STATES.BATTLE_GAME);
     window.BOOT_STAGE = "creating-game";
     game = new GameManager();
+    game.setupCamera();
+    renderActiveMap();
     game.start();
     return true;
   };
@@ -2789,12 +2892,13 @@ function bootstrapGame() {
     const refreshVotes = () => { cards.querySelectorAll("[data-map-vote]").forEach((card) => { const id=card.dataset.mapVote; card.classList.toggle("selected",mapVote.mapVotes.local===id); card.querySelector("[data-votes]").textContent=Object.values(mapVote.mapVotes).filter((v)=>v===id).length; }); };
     cards.querySelectorAll("[data-map-vote]").forEach((card) => card.onclick = () => { mapVote.vote("local", card.dataset.mapVote); refreshVotes(); });
     let previous = performance.now(); const frame = (now) => { const selected = mapVote.tick((now-previous)/1000); previous=now; getRequiredElement("map-vote-time").textContent=mapVote.remainingVoteTime.toFixed(1); if (!selected) return void(mapVoteRaf=requestAnimationFrame(frame));
-      setActiveMap(selected); cards.querySelectorAll("[data-map-vote]").forEach((card)=>{card.classList.toggle("winner",card.dataset.mapVote===selected);card.classList.toggle("faded",card.dataset.mapVote!==selected);}); result.querySelector("strong").textContent=activeMap.name; result.hidden=false; setTimeout(startBattle,2000);
+      setActiveMap(selected); cards.querySelectorAll("[data-map-vote]").forEach((card)=>{card.classList.toggle("winner",card.dataset.mapVote===selected);card.classList.toggle("faded",card.dataset.mapVote!==selected);}); result.querySelector("strong").textContent=activeMap.name; result.hidden=false; setTimeout(() => startBattle(GAME_MODES.NORMAL),2000);
     }; mapVoteRaf=requestAnimationFrame(frame); return true;
   };
   finishBattle = (battle = game) => {
     if (!battle) return 0;
     const reachedWave = Math.max(0, Math.floor(battle.wave.wave));
+    battle.resultMode = battle.mode || GAME_MODES.NORMAL;
     const rewardMultiplier = relicEffect("SUPERNOVA_TEAR");
     const reward = Math.floor(reachedWave * 4 * rewardMultiplier);
     const shardReward = reachedWave * 2;
@@ -2847,6 +2951,10 @@ function bootstrapGame() {
     playIntentArmed = false;
     if (intentionalActivation) beginMapVote();
   };
+  const experimentalButton = getRequiredElement("play-experimental");
+  bindPointerTap(experimentalButton, () => {
+    if (currentScreen === SCREEN_STATES.BATTLE_MENU) startBattle(GAME_MODES.EXPERIMENTAL_VERTICAL);
+  });
   getRequiredElement("battle-exit").onclick = () => { exitDialog.hidden = false; };
   getRequiredElement("exit-cancel").onclick = () => { exitDialog.hidden = true; };
   getRequiredElement("exit-confirm").onclick = leaveBattle;
@@ -2952,10 +3060,10 @@ function bootstrapGame() {
   showMainMenu();
   if (specialGrantApplied) showToast("특별 지급\n별가루 +5,000\n운석조각 +20");
   const diagnostics = {
-    CONFIG, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, MapVoteController, playerProgress, performConstellationDraws, performRelicDraws, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
+    CONFIG, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, MapVoteController, playerProgress, performConstellationDraws, performRelicDraws, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
-    showMainMenu, showBattleMenu, showGacha, beginMapVote, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint,
+    showMainMenu, showBattleMenu, showGacha, beginMapVote, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint, worldToScreen, screenToWorld, clampCameraY, getViewportWorldBounds,
     classes: { Enemy, GuardianUnit, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
     performance: () => ({
       activeEnemies: game?.enemies.length || 0,

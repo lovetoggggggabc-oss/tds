@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=48" />
+    <link rel="stylesheet" href="styles.css?v=49" />
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
@@ -88,11 +88,18 @@
         <button type="button" id="battle-back" aria-label="메인 메뉴로 돌아가기">←</button>
         <div><small>BATTLE</small><h1 id="battle-menu-title">전투</h1></div>
       </header>
-      <article class="stage-card">
-        <div class="stage-map" aria-hidden="true"><span></span><i>✦</i><b>∞</b></div>
-        <div class="stage-copy"><small>STAGE 01 · ENDLESS</small><h2>별의 길</h2><p>끝없이 몰려오는<br />우주 몬스터를 막아내세요.</p><strong>∞ 무한 웨이브</strong></div>
-        <button type="button" id="play-battle"><span>게임 플레이</span><small>GAME PLAY</small></button>
-      </article>
+      <div class="battle-mode-grid" aria-label="게임 모드 선택">
+        <article class="stage-card mode-card normal-mode">
+          <div class="stage-map" aria-hidden="true"><span></span><i>✦</i><b>∞</b></div>
+          <div class="stage-copy"><small>NORMAL · ENDLESS</small><h2>일반 모드</h2><p>기존 3개 맵 중 투표하여 플레이합니다.</p><strong>3개 전장 · 무한 웨이브</strong></div>
+          <button type="button" id="play-battle"><span>일반 모드</span><small>MAP VOTE</small></button>
+        </article>
+        <article class="stage-card mode-card experimental-mode">
+          <div class="stage-map vertical-map" aria-hidden="true"><span></span><i>↕</i><b>β</b></div>
+          <div class="stage-copy"><small>EXPERIMENTAL · BETA</small><h2>세로 대전장</h2><p>스크롤 가능한 거대한 세로형 전장에서 플레이합니다.</p><strong>성운 항로 · 실험 모드</strong></div>
+          <button type="button" id="play-experimental"><span>세로 대전장</span><small>EXPERIMENTAL</small></button>
+        </article>
+      </div>
     </section>
 
     <section class="lobby-screen map-vote-screen" id="map-vote" hidden aria-labelledby="map-vote-title"><div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div><header><small>CHOOSE THE BATTLEFIELD</small><h1 id="map-vote-title">전장 선택</h1><p class="map-vote-countdown">남은 시간 <strong id="map-vote-time" aria-live="off">10.0</strong>초</p></header><div id="map-vote-cards" class="map-vote-cards"></div><div id="map-vote-result" class="map-vote-result" hidden><small>전장 결정</small><strong></strong></div></section>
@@ -118,7 +125,7 @@
           <small>NEXT ENEMY</small><b>다음 적 정보</b><div id="nextEnemies"></div>
         </aside>
       </header>
-      <div class="battle-map-area"><section class="arena" id="arena" aria-label="게임 필드">
+      <div class="battle-map-area"><section class="arena" id="arena" aria-label="게임 필드"><div class="battle-world" id="battleWorld">
         <div class="planet a"><i></i><i></i><i></i></div>
         <div class="planet b"></div>
         <div class="space-dust" aria-hidden="true"></div>
@@ -149,7 +156,6 @@
           preserveAspectRatio="none"
         ></svg>
         <div id="rangeIndicator" class="range-indicator" hidden></div>
-        <div id="contextActions" class="context-actions" hidden></div>
         <div class="free-field" id="field-1" aria-label="2P 자유 배치 영역"></div>
         <div class="free-field" id="field-0" aria-label="1P 자유 배치 영역"></div>
         <div class="hint" id="hint" aria-live="polite">별을 소환해 공동 도착지를 지키세요!</div>
@@ -181,6 +187,7 @@
             />
           </svg>
         </div>
+        </div><div id="contextActions" class="context-actions" hidden></div><aside id="experimentalMinimap" class="experimental-minimap" hidden aria-label="세로 대전장 미니맵"><canvas width="40" height="180"></canvas><i></i><b aria-hidden="true">◆</b></aside><div class="experimental-badge" id="experimentalBadge" hidden>EXPERIMENTAL · 세로 대전장</div>
         <div class="overlay battle-result-overlay" id="gameover" hidden>
           <div class="result-sigil" aria-hidden="true">✦</div>
           <div class="card">
@@ -226,6 +233,6 @@
     <section class="confirm-dialog" id="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" hidden>
       <div><small>LEAVE BATTLE</small><h2 id="exit-dialog-title">전투 종료</h2><p>전투를 종료하고 메인 메뉴로 돌아가시겠습니까?</p><footer><button type="button" id="exit-cancel">취소</button><button type="button" class="danger" id="exit-confirm">나가기</button></footer></div>
     </section>
-    <script src="game.js?v=48" defer></script>
+    <script src="game.js?v=49" defer></script>
   </body>
 </html>
