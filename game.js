@@ -607,8 +607,11 @@ class Enemy {
     return routePoint(Math.min(1, this.pathProgress));
   }
   render() {
-    const metrics = RangeSystem.metrics();
-    this.el.style.transform = `translate3d(${(this.x * metrics.width) / 100}px, ${(this.y * metrics.height) / 100}px, 0)`;
+    // The road SVG and every moving unit now use the same normalized arena
+    // coordinate space. Percent positioning avoids mixing the SVG viewport
+    // with a border-box pixel measurement (which drifted on resized tablets).
+    this.el.style.left = `${this.x}%`;
+    this.el.style.top = `${this.y}%`;
   }
   update(dt) {
     if (this.bossAbility && !this.abilityTriggered && game.gameTime - this.spawnTime >= (this.abilityDelay || 0)) {
@@ -706,8 +709,8 @@ class GuardianUnit {
   }
   position() { return { x: this.x, y: this.y }; }
   render() {
-    const metrics = RangeSystem.metrics();
-    this.el.style.transform = `translate3d(${(this.x * metrics.width) / 100}px, ${(this.y * metrics.height) / 100}px, 0)`;
+    this.el.style.left = `${this.x}%`;
+    this.el.style.top = `${this.y}%`;
   }
   acquireTarget() {
     let best = null, distance = Infinity;
@@ -891,8 +894,14 @@ class Targeting {
 }
 class RangeSystem {
   static refresh() {
-    const rect = arena.getBoundingClientRect();
-    this.cachedMetrics = { width: rect.width, height: rect.height };
+    // clientWidth/clientHeight describe the inner box used by the absolutely
+    // positioned SVG layers. getBoundingClientRect() includes the arena border
+    // and therefore was not the coordinate space used by viewBox 0 0 100 100.
+    const rect = arena.getBoundingClientRect?.() || {};
+    this.cachedMetrics = {
+      width: arena.clientWidth || rect.width || 100,
+      height: arena.clientHeight || rect.height || 100,
+    };
   }
   static metrics() {
     if (!this.cachedMetrics) this.refresh();
@@ -1521,11 +1530,13 @@ class StarManager {
         (s && s.support ? " support" : "") +
         (s && s.constellation ? " constellation" : "") +
         (s?.constellation ? ` constellation-${s.constellation.definitionId.toLowerCase()}` : "") +
+        (s?.constellation?.center === i ? " constellation-center" : "") +
         (selectedConstellation?.members.includes(i)
           ? " constellation-linked"
           : "");
       el.innerHTML = s
-        ? renderNormalStarVisual(s, picked && this.zodiacMode ? this.selected.indexOf(i) + 1 : 0)
+        ? renderNormalStarVisual(s, picked && this.zodiacMode ? this.selected.indexOf(i) + 1 : 0,
+          s.constellation?.center === i ? s.constellation.definitionId : "")
         : "";
       el.setAttribute(
         "aria-label",
@@ -1540,8 +1551,32 @@ class StarManager {
 
 // One shared visual grammar keeps all seven colours identifiable while stage
 // controls the core, halo, rays and orbit rather than merely scaling the star.
-function renderNormalStarVisual(star, pickOrder = 0) {
-  return `<span class="star stage-${star.tier}" style="--star-color:${star.data().color};color:${star.data().color}"><i class="star-halo"></i><i class="star-orbit"></i><span class="star-core">✦</span><i class="star-sparks"></i><b class="star-level">${star.tier}</b>${pickOrder ? `<em class="pick-order">${pickOrder}</em>` : ""}</span>`;
+function normalStarGlyph(tier) {
+  const shapes = {
+    1: '<path class="star-shape" d="M50 18 57 43 82 50 57 57 50 82 43 57 18 50 43 43Z"/>',
+    2: '<path class="star-shape" d="M50 10 56 39 72 20 61 43 90 50 61 57 72 80 56 61 50 90 44 61 28 80 39 57 10 50 39 43 28 20 44 39Z"/><circle class="star-core-dot" cx="50" cy="50" r="8"/>',
+    3: '<path class="star-shape" d="M50 4 57 39 72 28 61 44 94 50 61 56 72 72 57 61 50 96 43 61 28 72 39 56 6 50 39 44 28 28 43 39Z"/><path class="star-inner" d="M50 37 63 50 50 63 37 50Z"/>',
+    4: '<path class="star-shape" d="M50 2 57 37 78 10 63 41 98 50 63 59 78 90 57 63 50 98 43 63 22 90 37 59 2 50 37 41 22 10 43 37Z"/><path class="star-inner" d="M50 38 54 46 63 50 54 54 50 63 46 54 37 50 46 46Z"/>',
+  };
+  return `<svg class="star-glyph" viewBox="0 0 100 100" aria-hidden="true">${shapes[tier] || shapes[1]}</svg>`;
+}
+function constellationSignature(definitionId) {
+  const art = {
+    DAWN: '<path d="M61 20a31 31 0 1 0 13 54A25 25 0 1 1 61 20Z"/><circle cx="76" cy="27" r="2"/><circle cx="79" cy="69" r="2"/>',
+    RADIANCE: '<circle cx="50" cy="50" r="12"/><path d="M50 8v24M50 68v24M8 50h24M68 50h24M20 20l17 17M63 63l17 17M80 20 63 37M37 63 20 80"/>',
+    SAGITTARIUS: '<path d="M24 18Q67 50 24 82M22 50h58M68 37l14 13-14 13"/>',
+    ASTROLOGER: '<path d="M15 50Q50 18 85 50Q50 82 15 50ZM50 32a18 18 0 1 0 0 36 18 18 0 0 0 0-36Z"/><path d="m50 40 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/>',
+    GUARDIAN: '<path d="M50 12 79 24v25c0 20-13 31-29 40-16-9-29-20-29-40V24Z"/><path d="m50 35 4 10 10 4-10 4-4 10-4-10-10-4 10-4Z"/>',
+    TWILIGHT: '<path class="bright" d="M50 16a34 34 0 0 0 0 68Z"/><path class="dark" d="M50 16a34 34 0 0 1 0 68l9-13-9-10 9-11-9-10 8-12Z"/>',
+    BOND: '<ellipse cx="38" cy="50" rx="24" ry="14"/><ellipse cx="62" cy="50" rx="24" ry="14"/>',
+    LINK: '<path d="M50 50 50 14M50 50 86 50M50 50 50 86M50 50 14 50"/><path d="m50 38 12 12-12 12-12-12Z"/><circle cx="50" cy="14" r="4"/><circle cx="86" cy="50" r="4"/><circle cx="50" cy="86" r="4"/><circle cx="14" cy="50" r="4"/>',
+    STRIKE: '<path d="M8 55h62M18 45h52M66 34l25 16-25 16"/><circle cx="25" cy="50" r="7"/>',
+    HORIZON: '<path d="M7 57h86M20 63h60"/><path d="M36 56a14 14 0 0 1 28 0"/><path d="m50 25 4 10 10 4-10 4-4 10-4-10-10-4 10-4Z"/>',
+  };
+  return art[definitionId] ? `<span class="constellation-signature signature-${definitionId.toLowerCase()}"><svg viewBox="0 0 100 100" aria-hidden="true">${art[definitionId]}</svg></span>` : "";
+}
+function renderNormalStarVisual(star, pickOrder = 0, signatureId = "") {
+  return `<span class="star stage-${star.tier}" style="--star-color:${star.data().color};color:${star.data().color}"><i class="star-halo"></i><i class="star-orbit"></i><span class="star-core">${normalStarGlyph(star.tier)}</span><i class="star-sparks"></i><b class="star-level">${star.tier}</b>${signatureId ? constellationSignature(signatureId) : ""}${pickOrder ? `<em class="pick-order">${pickOrder}</em>` : ""}</span>`;
 }
 class MergeSystem {
   static partner(m) {
@@ -2668,7 +2703,7 @@ function bootstrapGame() {
       const cost = starLevelCosts(entry.level);
       const canUpgrade = cost && entry.count >= cost.copies && playerProgress.starShards >= cost.shards;
       const visualStage = Math.min(4, Math.ceil(entry.level / 2));
-      return `<article class="collection-card star-collection-card ${entry.count ? "owned" : "locked"}" style="--star-color:${star.color}"><div class="collection-star stage-${visualStage}"><i>✦</i><b></b><em></em></div><h3>${star.name} 별</h3><b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.7 · MAX"}</b><div class="star-upgrade-details"><span>보유 별: <b>${entry.count}${cost ? ` / ${cost.copies}` : ""}</b></span><span>별조각: <b>${playerProgress.starShards}${cost ? ` / ${cost.shards}` : ""}</b></span>${cost ? `<small>다음 비용 · ${star.name} 별 ×${cost.copies} + 별조각 ×${cost.shards}</small>` : `<small>최대 레벨 · 복사본은 계속 보관됩니다.</small>`}</div><button type="button" data-upgrade-star="${star.id}"${canUpgrade ? "" : " disabled"}>${cost ? "레벨업" : "MAX"}</button></article>`;
+      return `<article class="collection-card star-collection-card ${entry.count ? "owned" : "locked"}" style="--star-color:${star.color}"><div class="collection-star stage-${visualStage}">${normalStarGlyph(visualStage)}</div><h3>${star.name} 별</h3><b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.7 · MAX"}</b><div class="star-upgrade-details"><span>보유 별: <b>${entry.count}${cost ? ` / ${cost.copies}` : ""}</b></span><span>별조각: <b>${playerProgress.starShards}${cost ? ` / ${cost.shards}` : ""}</b></span>${cost ? `<small>다음 비용 · ${star.name} 별 ×${cost.copies} + 별조각 ×${cost.shards}</small>` : `<small>최대 레벨 · 복사본은 계속 보관됩니다.</small>`}</div><button type="button" data-upgrade-star="${star.id}"${canUpgrade ? "" : " disabled"}>${cost ? "레벨업" : "MAX"}</button></article>`;
     }).join("");
     getRequiredElement("constellation-collection").innerHTML = Object.values(CONSTELLATION_DEFINITIONS).map((definition) => {
       const owned = playerProgress.ownedConstellations.includes(definition.id);
