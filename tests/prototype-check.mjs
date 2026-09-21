@@ -7,8 +7,8 @@ const [html, css, js] = await Promise.all([
   readFile("game.js", "utf8"),
 ]);
 
-assert.match(html, /href="styles\.css\?v=38"/);
-assert.match(html, /<script src="game\.js\?v=38" defer><\/script>/);
+assert.match(html, /href="styles\.css\?v=39"/);
+assert.match(html, /<script src="game\.js\?v=39" defer><\/script>/);
 assert.equal((html.match(/data-act="summon"/g) || []).length, 0);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/, "2P's direct controls must not be rendered");
@@ -32,7 +32,12 @@ for (const cost of ["100", "1000"])
   assert.match(html, new RegExp(`data-draw="constellation" data-cost="${cost}"`));
 for (const cost of ["10", "100"])
   assert.match(html, new RegExp(`data-draw="relic" data-cost="${cost}"`));
-assert.match(html, /id="battle-countdown"/);
+assert.doesNotMatch(html, /battle-countdown|preparation-count|preparation-label/,
+  "preparation must not render a field-covering countdown");
+assert.doesNotMatch(css, /\.battle-countdown|\.battle-transition/,
+  "preparation must not add a visual overlay or darkening layer");
+assert.match(css, /\.wave\s*\{[\s\S]*?pointer-events:\s*none/,
+  "the HUD preparation timer must never intercept field input");
 assert.match(js, /const PREPARATION_SECONDS = 15/);
 assert.match(js, /Math\.floor\(reachedWave \/ 20\)/);
 assert.match(js, /meteorFragments: Math\.max\(0,/);
@@ -197,8 +202,8 @@ assert.match(css, /\.star-node\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?aspect-r
 assert.match(js, /function bindPointerTap/);
 assert.match(html, /<main class="app" id="game-shell" hidden>/);
 assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*600px\);[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
-assert.match(html, /styles\.css\?v=38/, "the deployed stylesheet URL must change when its layout changes");
-assert.match(html, /game\.js\?v=38/, "the deployed script URL must not reuse the pre-layout cache entry");
+assert.match(html, /styles\.css\?v=39/, "the deployed stylesheet URL must change when its layout changes");
+assert.match(html, /game\.js\?v=39/, "the deployed script URL must not reuse the pre-layout cache entry");
 assert.match(css, /\.star-info\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?z-index:\s*160/);
 
 const isBoss = (n) =>

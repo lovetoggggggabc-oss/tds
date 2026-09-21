@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=38" />
+    <link rel="stylesheet" href="styles.css?v=39" />
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
@@ -90,8 +90,6 @@
       </header>
       <aside class="star-info" id="starInfo" hidden aria-live="polite"></aside>
       <section class="arena" id="arena" aria-label="게임 필드">
-        <div class="battle-transition" id="battle-transition" aria-hidden="true"></div>
-        <div class="battle-countdown" id="battle-countdown" role="status" aria-live="polite" hidden><small id="preparation-label">전투 준비</small><strong id="preparation-count">15</strong></div>
         <div class="planet a"><i></i><i></i><i></i></div>
         <div class="planet b"></div>
         <div class="space-dust" aria-hidden="true"></div>
@@ -217,6 +215,6 @@
     <section class="confirm-dialog" id="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" hidden>
       <div><small>LEAVE BATTLE</small><h2 id="exit-dialog-title">전투 종료</h2><p>전투를 종료하고 메인 메뉴로 돌아가시겠습니까?</p><footer><button type="button" id="exit-cancel">취소</button><button type="button" class="danger" id="exit-confirm">나가기</button></footer></div>
     </section>
-    <script src="game.js?v=38" defer></script>
+    <script src="game.js?v=39" defer></script>
   </body>
 </html>

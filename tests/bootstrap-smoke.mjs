@@ -109,11 +109,15 @@ assert.equal(game.wave.wave, 0, "waves must remain stopped during preparation");
 assert.equal(game.phase, "PREPARING");
 assert.equal(game.rafRunning, true);
 assert.equal(game.spawner.queue.length, 0, "preparation must not queue enemies");
+assert.equal(elements.get("timer").textContent, "00:15", "only the HUD timer shows the preparation countdown");
+elements.get("speed").onclick();
+assert.equal(game.speed, 1, "speed controls must not alter the real-time preparation period");
 
 const preparationFrame = animationFrames.shift();
 preparationFrame(16);
 assert.equal(game.wave.wave, 0);
 assert.equal(game.enemies.length, 0);
+assert.equal(elements.get("timer").textContent, "00:15");
 const combatStartFrame = animationFrames.shift();
 combatStartFrame(15016);
 assert.equal(game.phase, "COMBAT");
@@ -146,6 +150,6 @@ window.__TDS__.startBattle();
 assert.notEqual(window.__TDS__.game, game, "re-entry must create a fresh combat state");
 assert.equal(window.__TDS__.game.wave.wave, 0, "re-entry must begin with preparation before wave 1");
 assert.equal(elements.has("bootError"), false, "successful boot must not display diagnostics");
-assert.equal((html.match(/<script src="game\.js\?v=38" defer><\/script>/g) || []).length, 1);
+assert.equal((html.match(/<script src="game\.js\?v=39" defer><\/script>/g) || []).length, 1);
 
 console.log("Runtime bootstrap smoke passed: DOM ready, 2 players, 30 star positions, resources, wave 1, enemy spawn, and RAF verified.");

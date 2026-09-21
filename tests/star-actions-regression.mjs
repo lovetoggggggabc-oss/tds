@@ -325,6 +325,73 @@ assert.equal(ZodiacSystem.exactMatch({ white: 1, blue: 3 }), "DAWN");
 assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 2 })], ["RADIANCE", "TWILIGHT"]);
 assert.deepEqual([...ZodiacSystem.possibleMatches({ red: 3 })], []);
 
+// Every live recipe uses the same count matcher. Exact material counts are
+// order- and tier-independent, while missing, extra, and wrong colors fail.
+for (const [definitionId, definition] of Object.entries(CONSTELLATION_DEFINITIONS)) {
+  const types = Object.entries(definition.recipe)
+    .flatMap(([type, amount]) => Array(amount).fill(type));
+  const exactCounts = Object.fromEntries(Object.entries(definition.recipe));
+  assert.equal(ZodiacSystem.exactMatch(exactCounts), definitionId, `${definitionId}: exact recipe`);
+
+  const missingCounts = { ...exactCounts };
+  const firstType = types[0];
+  if (--missingCounts[firstType] === 0) delete missingCounts[firstType];
+  assert.notEqual(ZodiacSystem.exactMatch(missingCounts), definitionId, `${definitionId}: one missing`);
+  assert.notEqual(
+    ZodiacSystem.exactMatch({ ...exactCounts, [firstType]: exactCounts[firstType] + 1 }),
+    definitionId,
+    `${definitionId}: one extra`,
+  );
+  assert.equal(
+    ZodiacSystem.exactMatch({ ...missingCounts, violet: 1 }),
+    undefined,
+    `${definitionId}: wrong color`,
+  );
+
+  const manager = makeManager();
+  const reversedTypes = [...types].reverse();
+  const picks = reversedTypes.map((type, index) => {
+    const slot = index * 2;
+    manager.stars[slot] = new Star(type, index % 4 + 1);
+    return slot;
+  });
+  manager.selected = picks;
+  manager.zodiacMode = true;
+  assert.equal(ZodiacSystem.exactMatch(ZodiacSystem.counts(manager)), definitionId,
+    `${definitionId}: reordered, mixed-tier recipe`);
+  ZodiacSystem.create(manager);
+  const constellation = manager.stars[picks[0]].constellation;
+  assert.equal(constellation.definitionId, definitionId);
+  assert.deepEqual([...constellation.connectionOrder], picks,
+    `${definitionId}: creation must preserve selection order`);
+}
+
+// The reported Twilight case uses tiers 4 + 2 + 3 + 1, for a stage sum of
+// ten and therefore 800 * (10 / 4) = 2,000 base stage damage.
+const twilightManager = makeManager();
+[[6, "blue", 1], [2, "red", 4], [8, "white", 3], [4, "red", 2]]
+  .forEach(([slot, type, tier]) => { twilightManager.stars[slot] = new Star(type, tier); });
+twilightManager.selected = [6, 2, 8, 4];
+twilightManager.zodiacMode = true;
+ZodiacSystem.create(twilightManager);
+const twilight = twilightManager.stars[6].constellation;
+assert.equal(twilight.definitionId, "TWILIGHT");
+assert.equal(twilight.componentStageSum, 10);
+assert.equal(twilight.currentDamage(), 2000);
+assert.deepEqual([...twilight.connectionOrder], [6, 2, 8, 4]);
+const weakenedTwilightTarget = {
+  dead: false, hp: 50, maxHp: 100,
+  hit(damage) { this.lastDamage = damage; },
+};
+twilight.behavior.attack(twilight, weakenedTwilightTarget, { x: 0, y: 0 });
+assert.equal(weakenedTwilightTarget.lastDamage, 4000, "Twilight retains double damage at 50% HP");
+assert.equal(twilight.effectiveAttackSpeed(weakenedTwilightTarget), 4,
+  "Twilight retains double attack speed at 50% HP");
+context.game.gameTime = 10;
+twilight.runtime.transcendenceUntil = 25;
+assert.equal(twilight.effectiveRange(), 5, "Twilight retains range 5 during transcendence");
+context.game.gameTime = 0;
+
 // Divination replaces exchange for a constellation: 30 is paid first, then
 // success grants 60 while failure removes at most another 15.
 const divineManager = makeManager();

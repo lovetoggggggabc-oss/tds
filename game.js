@@ -29,7 +29,6 @@ let arena, effects, links, ranges, rangeIndicator, contextActions, hint;
 let dawnMoon, starInfo, controls, zodiacCodex, zodiacCodexList;
 let wave, timer, hp, starlight1, divinity1, starlight2, divinity2, nextEnemies;
 let speed, restart, finalWave, gameover;
-let battleCountdown, preparationLabel, preparationCount;
 let game = null;
 let finishBattle = null;
 let controlsBound = false;
@@ -302,6 +301,15 @@ function bindPointerTap(element, callback, shouldStart = () => true) {
 // and the codex. Adding a constellation does not require another matching
 // branch or a new hard-coded selection limit.
 const ZODIAC_RECIPES = CONSTELLATION_DEFINITIONS;
+const RECIPE_COUNTS = Object.freeze(Object.fromEntries(
+  Object.entries(ZODIAC_RECIPES).map(([id, definition]) => [id, definition.recipe]),
+));
+function recipeCountsMatch(selectedCounts, recipeCounts) {
+  const selectedTypes = Object.keys(selectedCounts);
+  const recipeTypes = Object.keys(recipeCounts);
+  return selectedTypes.length === recipeTypes.length &&
+    selectedTypes.every((type) => recipeCounts[type] === selectedCounts[type]);
+}
 const STAR_KEYS = Object.keys(CONFIG.stars),
   TARGET_LABELS = {
     lock: "대상 고정 공격",
@@ -1204,20 +1212,14 @@ class ZodiacSystem {
     }, {});
   }
   static exactMatch(counts) {
-    return Object.keys(ZODIAC_RECIPES).find((kind) => {
-      const requirements = ZODIAC_RECIPES[kind].recipe;
-      return (
-        Object.keys(counts).length === Object.keys(requirements).length &&
-        Object.entries(requirements).every(
-          ([type, amount]) => counts[type] === amount,
-        )
-      );
-    });
+    return Object.keys(RECIPE_COUNTS).find((kind) =>
+      recipeCountsMatch(counts, RECIPE_COUNTS[kind]),
+    );
   }
   static possibleMatches(counts) {
     return Object.keys(ZODIAC_RECIPES).filter((kind) =>
       Object.entries(counts).every(
-        ([type, amount]) => (ZODIAC_RECIPES[kind].recipe[type] || 0) >= amount,
+        ([type, amount]) => (RECIPE_COUNTS[kind][type] || 0) >= amount,
       ),
     );
   }
@@ -1686,12 +1688,9 @@ class UIManager {
         elements[key].textContent = value;
       this.hudValues[key] = value;
     }
-    if (preparing) {
-      battleCountdown.hidden = false;
-      preparationLabel.textContent = "전투 준비";
-      preparationCount.textContent = String(seconds);
+    if (preparing)
       timer.parentElement?.querySelector("small") && (timer.parentElement.querySelector("small").textContent = "전투 준비");
-    } else if (timer.parentElement?.querySelector("small")) {
+    else if (timer.parentElement?.querySelector("small")) {
       timer.parentElement.querySelector("small").textContent = "다음 웨이브까지";
     }
     const nextWave = g.wave.wave + 1;
@@ -1894,15 +1893,6 @@ class GameManager {
     this.phase = "COMBAT";
     this.preparationRemaining = 0;
     this.wave.update(0);
-    battleCountdown.hidden = false;
-    battleCountdown.classList.add("battle-start");
-    preparationLabel.textContent = "전투 시작!";
-    preparationCount.textContent = "";
-    setTimeout(() => {
-      if (game !== this) return;
-      battleCountdown.hidden = true;
-      battleCountdown.classList.remove("battle-start");
-    }, 1000);
     this.markDirty();
   }
   destroy() {
@@ -1981,9 +1971,6 @@ function bootstrapGame() {
   restart = getRequiredElement("restart");
   finalWave = getRequiredElement("finalWave");
   gameover = getRequiredElement("gameover");
-  battleCountdown = getRequiredElement("battle-countdown");
-  preparationLabel = getRequiredElement("preparation-label");
-  preparationCount = getRequiredElement("preparation-count");
 
   const mainMenu = getRequiredElement("main-menu");
   const battleMenu = getRequiredElement("battle-menu");
@@ -2023,11 +2010,6 @@ function bootstrapGame() {
     speed.textContent = "×1";
     speed.classList.remove("active");
     arena.classList.remove("speed-2");
-    battleCountdown.hidden = false;
-    battleCountdown.classList.remove("battle-start");
-    getRequiredElement("battle-transition").classList.remove("play");
-    void getRequiredElement("battle-transition").offsetWidth;
-    getRequiredElement("battle-transition").classList.add("play");
     arena.classList.remove("battle-arrival");
     void arena.offsetWidth;
     arena.classList.add("battle-arrival");
@@ -2115,7 +2097,7 @@ function bootstrapGame() {
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   showMainMenu();
   const diagnostics = {
-    CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, SCREEN_STATES, PREPARATION_SECONDS, GACHA_COSTS, playerProgress,
+    CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, PREPARATION_SECONDS, GACHA_COSTS, playerProgress,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
     showMainMenu, showBattleMenu, showGacha, startBattle, leaveBattle, finishBattle,

@@ -147,6 +147,7 @@ header {
 }
 .wave {
   text-align: center;
+  pointer-events: none;
 }
 .wave b {
   font-size: 20px;
@@ -250,8 +251,8 @@ header {
     inset 0 0 50px #0008,
     0 14px 32px #0005;
 }
-.battle-transition{position:absolute;z-index:300;inset:0;pointer-events:none;background:radial-gradient(circle,#bcecff 0,#6756be 18%,#090b25 60%);opacity:0}.battle-transition.play{animation:battle-transition 1.1s ease-out both}.battle-countdown{position:absolute;z-index:280;left:50%;top:45%;transform:translate(-50%,-50%);min-width:190px;padding:20px;text-align:center;border:1px solid #b9dcff88;border-radius:24px;background:radial-gradient(circle,#394986dd,#111638dd);box-shadow:0 0 45px #77dfff55,inset 0 0 28px #8f7cff33;pointer-events:none}.battle-countdown small,.battle-countdown strong{display:block;text-shadow:0 0 18px #8eeaff}.battle-countdown small{font-size:22px;font-weight:900;letter-spacing:.12em}.battle-countdown strong{margin-top:7px;color:#fff4b4;font-size:50px}.battle-countdown.battle-start{animation:battle-start 1s ease-out both}.battle-countdown.battle-start small{font-size:32px;color:#fff7cf}.arena.battle-arrival #paths{animation:map-arrival 1.15s ease-out both}.arena.battle-arrival .destination-label,.arena.battle-arrival .start-label,.arena.battle-arrival .spawn-portal,.arena.battle-arrival .cosmic-base{animation:marker-flare 1.25s .3s ease-out both}.result-rewards{margin:17px 0;padding:13px;border:1px solid #8699d84d;border-radius:14px;background:#090d2b88}.result-rewards>small{color:#aeb9dd}.result-rewards p{display:flex;justify-content:space-between;margin:8px 0;color:#e7edff}.result-rewards b{color:#fff0a8}.result-rewards .meteor-result{color:#ddbaff}.result-reward{display:none}
-@keyframes battle-transition{0%{opacity:1}35%{opacity:.92}100%{opacity:0;visibility:hidden}}@keyframes map-arrival{0%{transform:scale(.9);opacity:.25}100%{transform:scale(1);opacity:1}}@keyframes marker-flare{0%,100%{filter:none}45%{filter:drop-shadow(0 0 9px #fff) drop-shadow(0 0 18px #6de7ff)}}@keyframes battle-start{0%{opacity:0;transform:translate(-50%,-50%) scale(.7);box-shadow:0 0 0 #fff}35%{opacity:1;transform:translate(-50%,-50%) scale(1.08);box-shadow:0 0 70px #fff9,0 0 110px #ffe78a66}100%{opacity:0;transform:translate(-50%,-50%) scale(1.2)}}
+.arena.battle-arrival #paths{animation:map-arrival 1.15s ease-out both}.arena.battle-arrival .destination-label,.arena.battle-arrival .start-label,.arena.battle-arrival .spawn-portal,.arena.battle-arrival .cosmic-base{animation:marker-flare 1.25s .3s ease-out both}.result-rewards{margin:17px 0;padding:13px;border:1px solid #8699d84d;border-radius:14px;background:#090d2b88}.result-rewards>small{color:#aeb9dd}.result-rewards p{display:flex;justify-content:space-between;margin:8px 0;color:#e7edff}.result-rewards b{color:#fff0a8}.result-rewards .meteor-result{color:#ddbaff}.result-reward{display:none}
+@keyframes map-arrival{0%{transform:scale(.9);opacity:.25}100%{transform:scale(1);opacity:1}}@keyframes marker-flare{0%,100%{filter:none}45%{filter:drop-shadow(0 0 9px #fff) drop-shadow(0 0 18px #6de7ff)}}
 .planet { position: absolute; border-radius: 50%; opacity: .35; pointer-events: none; }
 .planet.a { width: 55px; height: 55px; right: -18px; top: 8%; background: radial-gradient(circle at 35% 35%, #93dfff, #624eb9 55%, #1d225e); }
 .planet.b { width: 32px; height: 32px; left: 12%; bottom: 4%; background: #b55e76; box-shadow: inset -9px -7px #54264b; }
