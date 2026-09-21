@@ -104,7 +104,7 @@ assert.deepEqual(JSON.parse(JSON.stringify(game.players.map((player) => [
   player.resources.divinity,
   player.manager.stars.length,
   player.manager.field.children.length,
-]))), [[500, 50, 15, 15], [500, 50, 15, 15]]);
+]))), [[500, 50, 21, 21], [500, 50, 21, 21]]);
 assert.equal(game.wave.wave, 0, "waves must remain stopped during preparation");
 assert.equal(game.phase, "PREPARING");
 assert.equal(game.rafRunning, true);
@@ -165,4 +165,4 @@ assert.equal(window.__TDS__.playerProgress.meteorFragments, 7, "repeat finish ca
 assert.equal(elements.has("bootError"), false, "successful boot must not display diagnostics");
 assert.equal((html.match(/<script src="game\.js\?v=41" defer><\/script>/g) || []).length, 1);
 
-console.log("Runtime bootstrap smoke passed: DOM ready, 2 players, 30 star positions, resources, wave 1, enemy spawn, and RAF verified.");
+console.log("Runtime bootstrap smoke passed: DOM ready, 2 players, 42 star positions, resources, wave 1, enemy spawn, and RAF verified.");
