@@ -1805,7 +1805,7 @@ body.summon-input-locked>section:not(.draw-result-dialog),body.summon-input-lock
 .start-label,.destination-label { font-size:clamp(2.3px,.65cqw,3px); text-anchor:middle; letter-spacing:.08em; }
 
 /* One modal stack owns settings, mail and nested probability information. */
-.utility-dialog { position:absolute; z-index:var(--layer-modal-backdrop); inset:0; width:100%; height:100%; padding:20px; background:#02051de8; backdrop-filter:blur(7px); pointer-events:auto; }
+.utility-dialog { position:fixed; z-index:var(--layer-modal-backdrop); inset:0 auto 0 50%; transform:translateX(-50%); width:min(100vw,calc(100dvh * 9 / 16)); height:min(100dvh,calc(100vw * 16 / 9)); aspect-ratio:9 / 16; padding:20px; background:#02051de8; backdrop-filter:blur(7px); pointer-events:auto; }
 .utility-dialog>.modal-panel,.utility-dialog>div { position:relative; z-index:var(--layer-modal-panel); width:min(90%,430px); max-height:85%; overflow:hidden; padding:0; display:flex; flex-direction:column; }
 .modal-title { flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; min-height:62px; padding:12px 16px; border:0; background:#192050; }
 .modal-title h2 { margin:0; }
@@ -1874,3 +1874,47 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 .guardian-cost-note{max-width:190px;color:#d8e8ff;font-size:12px;line-height:1.35;text-align:center}
 .collection-ability{display:grid;gap:5px;margin:10px 0;padding:10px;border-radius:12px;background:#080c2f99;text-align:left}.collection-ability strong{color:#85eaff;font-size:14px}.collection-ability p{margin:0 0 5px;color:#dce8ff;font-size:14px;line-height:1.5;white-space:normal}
 @media(max-width:520px){.utility-dialog{padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom))}.utility-dialog>.modal-panel,.utility-dialog>div{width:90%;max-height:85%}.map-vote-cards button{grid-template-columns:96px minmax(0,1fr) auto}.map-vote-cards svg{width:88px}}
+
+/* Shell-local layout: every battle coordinate layer now shares .arena's
+   containing block; HUD, status and controls consume their own flow space. */
+#game-shell.battle-screen{container-type:size;display:flex;flex-direction:column;height:100dvh;max-height:100dvh;padding:0;gap:0;overflow:hidden}
+.battle-top-hud{position:relative;flex:0 0 auto;width:100%;min-height:0!important;padding:max(8px,env(safe-area-inset-top)) 10px 8px!important;grid-template-columns:minmax(0,1fr) minmax(0,.8fr) minmax(0,1fr)!important;grid-template-rows:auto auto!important}
+.battle-top-hud>*{min-width:0}.battle-top-hud .brand b,.battle-top-hud .hp b,.battle-top-hud .next-wave b{white-space:normal;overflow-wrap:anywhere}
+.battle-status-area{position:relative;z-index:var(--layer-hud);flex:0 0 auto;max-height:22cqh;overflow:auto;background:#080c2fe8}
+.battle-status-area:empty{display:none}
+.battle-status-area .star-info{position:relative;inset:auto;display:grid;width:100%;border-radius:0;margin:0;font-size:clamp(12px,3cqw,15px)}
+.battle-status-area .star-info[hidden]{display:none}
+.battle-map-area{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 52px;gap:6px;flex:1 1 auto;min-height:0;padding:0 8px}
+.battle-map-area .arena{position:relative;width:100%;height:100%;min-height:0;grid-column:1;align-self:stretch}
+.battle-map-area .side-controls{position:relative;inset:auto;grid-column:2;align-self:start;display:grid;gap:8px;padding-top:8px;pointer-events:auto}
+.battle-map-area .side-controls button{width:48px;height:44px;min-width:44px;min-height:44px;border-radius:14px}
+.battle-bottom-area{position:relative;z-index:var(--layer-navigation);flex:0 0 auto;min-height:78px;padding:6px 8px max(8px,env(safe-area-inset-bottom));background:linear-gradient(180deg,#090d2bea,#05071d)}
+.battle-bottom-area .control-deck{position:relative;inset:auto;transform:none;width:100%;margin:0}
+.binding-relic-status{position:static;grid-column:1/-1;max-width:none;white-space:normal}
+/* Context buttons use the selected star's arena-local pixel point.  Clamps in
+   renderInfo only protect edges; buttons never fall into document flow. */
+.context-actions{position:absolute!important;left:var(--action-x,50%)!important;top:var(--action-y,50%)!important;bottom:auto!important;width:0!important;height:0!important;display:block!important;transform:none!important}
+.context-actions[hidden]{display:none!important}.context-actions button{position:absolute;min-width:88px;min-height:44px;white-space:nowrap}
+.context-actions .action-above{transform:translate(-50%,calc(-100% - 18px))!important}.context-actions .action-below{transform:translate(-50%,18px)!important}
+.context-actions small{position:absolute;left:50%;top:54px;transform:translateX(-50%);width:180px}
+.start-label,.destination-label{font-size:clamp(2.7px,.8cqw,3.4px);letter-spacing:.05em}
+
+/* Main HUD utilities participate in layout instead of overlaying currencies. */
+.main-top-bar{position:relative;z-index:15;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:8px;width:100%;padding:max(12px,env(safe-area-inset-top)) 14px 0}
+.main-top-bar .permanent-wallet,.main-top-bar .menu-tools{position:relative;inset:auto;min-width:0}
+.main-top-bar .permanent-wallet{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:7px 9px}
+.main-top-bar .permanent-wallet>span{min-width:0}.main-top-bar .permanent-wallet b{overflow:hidden;text-overflow:ellipsis}
+.main-top-bar .menu-tools button{width:44px;height:44px}
+.mail-list{display:grid;gap:10px}.mail-list article{display:grid;gap:8px;margin:0;padding:13px;border:1px solid #7186c855;border-radius:13px;background:#0b1034}.mail-list article>*{margin:0}.mail-list button{justify-self:end}
+
+/* Shared stage grammar. No per-star timers: all movement is compositor CSS. */
+.star{--stage-glow:.35;--stage-scale:.94;isolation:isolate;transform:scale(var(--stage-scale))}
+.star-core{position:relative;z-index:3;color:var(--star-color);text-shadow:0 0 5px #fff,0 0 10px var(--star-color)}
+.star-halo,.star-orbit,.star-sparks{position:absolute;inset:4%;border-radius:50%;pointer-events:none}
+.star-halo{border:1px solid color-mix(in srgb,var(--star-color),transparent 55%);opacity:var(--stage-glow)}
+.star-orbit,.star-sparks{opacity:0}.star.stage-2{--stage-glow:.6;--stage-scale:.97}.star.stage-2 .star-orbit{inset:0;opacity:.55;border:1px solid var(--star-color)}
+.star.stage-2 .star-sparks{opacity:.7;box-shadow:17px 4px 0 -6px #fff,-14px 18px 0 -6px var(--star-color)}
+.star.stage-3{--stage-glow:.8;--stage-scale:1}.star.stage-3 .star-halo{inset:-5%;box-shadow:0 0 9px var(--star-color)}.star.stage-3 .star-orbit{inset:-12%;opacity:.75;border:1px solid var(--star-color);border-left-color:transparent;animation:starOrbit 4s linear infinite}.star.stage-3 .star-sparks{opacity:1;box-shadow:20px 0 0 -5px #fff,-19px -8px 0 -6px var(--star-color)}
+.star.stage-4{--stage-glow:1;--stage-scale:1.04;animation:stageFourPulse 1.8s ease-in-out infinite}.star.stage-4 .star-core{filter:brightness(1.3)}.star.stage-4 .star-halo{inset:-8%;border:2px double var(--star-color);box-shadow:0 0 12px var(--star-color),inset 0 0 8px var(--star-color)}.star.stage-4 .star-orbit{inset:-18%;opacity:.9;border:1px dashed var(--star-color);animation:starOrbit 5s linear infinite}.star.stage-4 .star-sparks{opacity:1;box-shadow:22px 2px 0 -5px #fff,-20px 10px 0 -5px var(--star-color),3px -21px 0 -6px #fff}
+@keyframes starOrbit{to{transform:rotate(360deg)}}@keyframes stageFourPulse{50%{filter:drop-shadow(0 0 9px var(--star-color));transform:scale(1.08)}}
+@media(prefers-reduced-motion:reduce){.star.stage-3 .star-orbit,.star.stage-4,.star.stage-4 .star-orbit{animation:none}}
