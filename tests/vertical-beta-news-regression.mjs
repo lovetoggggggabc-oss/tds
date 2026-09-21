@@ -11,7 +11,7 @@ assert.match(js, /distanceTravelled.*activeRouteCache\.length/s);
 assert.match(js, /const NEWS_ITEMS/);
 assert.match(js, /lastReadNewsVersion/);
 assert.match(html, /data-open-news/);
-assert.match(html, /세로 대전장 플레이/);
+assert.match(html, /data-battle-mode="vertical"[\s\S]*세로 대전장 BETA[\s\S]*터치하여 플레이/);
 assert.match(html, /class="news-scroll-body"/);
 assert.match(css, /\.news-scroll-body\{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden/);
 assert.match(js, /const VERTICAL_BETA_WAYPOINTS/);

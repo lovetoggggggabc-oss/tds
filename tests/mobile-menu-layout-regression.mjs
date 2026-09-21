@@ -23,8 +23,8 @@ assert.match(css, /env\(safe-area-inset-bottom\)/);
 
 assert.match(html, /class="screen-scroll-content summon-content-scroll"[\s\S]*class="draw-actions"/);
 assert.doesNotMatch(html, />\ucc9c\uc7a5 \[<b data-constellation-pity/);
-assert.match(html, /class="stage-map mode-visual"[\s\S]*class="mode-body"[\s\S]*id="play-battle"/);
-assert.match(html, /class="stage-map mode-visual vertical-map"[\s\S]*class="mode-body"[\s\S]*id="play-experimental"/);
+assert.match(html, /data-battle-mode="normal"[\s\S]*class="stage-map mode-visual"[\s\S]*class="mode-body"/);
+assert.match(html, /data-battle-mode="vertical"[\s\S]*class="stage-map mode-visual vertical-map"[\s\S]*class="mode-body"/);
 assert.match(mobile, /\.screen-scroll-content\s*\{[^}]*flex:1 1 auto[^}]*min-height:0[^}]*overflow-y:auto[^}]*touch-action:pan-y/s);
 assert.match(mobile, /\.summon-content-scroll\s*\{[^}]*padding:[^}]*var\(--bottom-nav-height\)[^}]*var\(--mobile-safe-bottom\)/s);
 assert.match(mobile, /\.battle-mode-grid \.stage-card\s*\{[^}]*height:auto[^}]*min-height:0/s);

@@ -50,14 +50,26 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.01 BETA";
+const GAME_VERSION = "1.02 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong" });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
-  id: "beta_1_01_mobile_play_fix", version: GAME_VERSION, date: "2026.09.21", title: "모바일 전투 UI 수정",
+  id: "beta_1_02_mode_selection_fix", version: GAME_VERSION, date: "2026.09.21", title: "모바일 모드 선택 수정",
+  sections: Object.freeze([
+    Object.freeze({ title: "[1.02 BETA]", paragraphs: Object.freeze(["[전투 모드 선택 개선]"]) }),
+    Object.freeze({ title: "전투 모드 선택 개선", bullets: Object.freeze([
+      "모바일에서 일반 모드와 세로 대전장을 선택할 수 없던 문제를 수정했습니다.",
+      "별도의 PLAY 버튼 대신 모드 카드 전체를 터치하여 게임을 시작할 수 있도록 개선했습니다.",
+      "모드 선택 시 터치 피드백을 추가했습니다.",
+      "모바일 스크롤과 모드 선택 입력이 충돌하던 문제를 개선했습니다.",
+      "일부 투명 UI가 터치 입력을 가로챌 수 있던 문제를 점검하고 수정했습니다.",
+    ]) }),
+  ]), footer: "전투 홈에서 원하는 모드 카드 전체를 터치하여 플레이할 수 있습니다.",
+}), Object.freeze({
+  id: "beta_1_01_mobile_play_fix", version: "1.01 BETA", date: "2026.09.21", title: "모바일 전투 UI 수정",
   sections: Object.freeze([
     Object.freeze({ title: "[1.01 BETA]", paragraphs: Object.freeze(["[모바일 UI 수정]"]) }),
     Object.freeze({ title: "모바일 UI 수정", bullets: Object.freeze([
@@ -3316,7 +3328,14 @@ function bootstrapGame() {
     collection.querySelectorAll("[data-upgrade-relic]").forEach((button)=>button.onclick=()=>{ if(upgradeRelic(button.dataset.upgradeRelic)){ updateMetaCurrency(); renderRelics(); } });
   };
   const showMainMenu = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.MAIN_MENU); };
-  const showBattleMenu = () => showScreen(SCREEN_STATES.BATTLE_MENU);
+  let modeSelectionLocked = false;
+  let battleMenuOpenedAt = 0;
+  const showBattleMenu = () => {
+    modeSelectionLocked = false;
+    battleMenuOpenedAt = typeof performance === "undefined" ? Date.now() : performance.now();
+    document.querySelectorAll?.("[data-battle-mode]").forEach((card) => card.classList.remove("mode-selected"));
+    showScreen(SCREEN_STATES.BATTLE_MENU);
+  };
   const showGacha = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.GACHA); };
   const showCollection = () => { renderCollection(); showScreen(SCREEN_STATES.COLLECTION); };
   const showRelics = () => { renderRelics(); showScreen(SCREEN_STATES.RELICS); };
@@ -3422,22 +3441,25 @@ function bootstrapGame() {
   document.querySelectorAll?.("[data-open-monster-codex]").forEach((button) => { button.onclick = navigateOnce(showMonsterCodex); });
   document.querySelectorAll?.("[data-main-home]").forEach((button) => { button.onclick = navigateOnce(showMainMenu); });
   getRequiredElement("battle-back").onclick = navigateOnce(showMainMenu);
-  // A delayed mobile synthetic click can be retargeted after the bottom-nav
-  // screen swap. Arm PLAY only when this control received its own pointerdown;
-  // keyboard/assistive clicks (detail === 0) remain supported.
-  const playBattleButton = getRequiredElement("play-battle");
-  let playIntentArmed = false;
-  playBattleButton.onpointerdown = (event) => { playIntentArmed = event.isPrimary !== false; };
-  playBattleButton.onpointercancel = () => { playIntentArmed = false; };
-  playBattleButton.onclick = (event) => {
-    event.preventDefault(); event.stopPropagation();
-    const intentionalActivation = event.detail === 0 || playIntentArmed;
-    playIntentArmed = false;
-    if (intentionalActivation) beginMapRandom();
+  // Each card owns its complete pointer gesture. A pointer that opened this
+  // screen has no card-local pointerdown record, so its stale pointerup/click
+  // cannot start a battle. Ten pixels distinguishes a tap from a scroll drag.
+  const activateModeCard = (card, mode) => {
+    if (modeSelectionLocked || currentScreen !== SCREEN_STATES.BATTLE_MENU) return;
+    modeSelectionLocked = true;
+    card.classList.add("mode-selected");
+    document.querySelectorAll?.("[data-battle-mode]").forEach((other) => { other.disabled = true; });
+    setTimeout(() => {
+      const started = mode === GAME_MODES.NORMAL ? beginMapRandom() : startBattle(GAME_MODES.EXPERIMENTAL_VERTICAL);
+      if (started === false) modeSelectionLocked = false;
+      document.querySelectorAll?.("[data-battle-mode]").forEach((other) => { other.disabled = false; });
+    }, 120);
   };
-  const experimentalButton = getRequiredElement("play-experimental");
-  bindPointerTap(experimentalButton, () => {
-    if (currentScreen === SCREEN_STATES.BATTLE_MENU) startBattle(GAME_MODES.EXPERIMENTAL_VERTICAL);
+  document.querySelectorAll?.("[data-battle-mode]").forEach((card) => {
+    bindPointerTap(card, () => activateModeCard(card, card.dataset.battleMode === "normal" ? GAME_MODES.NORMAL : GAME_MODES.EXPERIMENTAL_VERTICAL), () => {
+      const now = typeof performance === "undefined" ? Date.now() : performance.now();
+      return currentScreen === SCREEN_STATES.BATTLE_MENU && !modeSelectionLocked && now - battleMenuOpenedAt > 80;
+    });
   });
   getRequiredElement("battle-exit").onclick = () => { exitDialog.hidden = false; };
   getRequiredElement("exit-cancel").onclick = () => { exitDialog.hidden = true; };
