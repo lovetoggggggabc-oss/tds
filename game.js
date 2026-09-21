@@ -161,13 +161,14 @@ function loadPlayerProgress() {
       ownedRelics: [...new Set((saved?.ownedRelics || []).filter((id) => RELIC_DEFINITIONS[id]))],
       settings: { ...DEFAULT_SETTINGS, ...(saved?.settings || {}) },
       claimedMail: { ...(saved?.claimedMail || {}) },
+      redeemedSpecialCodes: { ...(saved?.redeemedSpecialCodes || {}) },
       oneTimeGrants: grants,
     };
     syncOwnedStars(progress);
     return progress;
   } catch (_error) {
     specialGrantApplied = true;
-    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, galaxyFragments: 0, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], constellationCollection: normalizeConstellationCollection(null, STARTER_COLLECTION.ownedConstellations), equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, ownedRelics: [], settings: { ...DEFAULT_SETTINGS }, claimedMail: {}, oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true } };
+    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, galaxyFragments: 0, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], constellationCollection: normalizeConstellationCollection(null, STARTER_COLLECTION.ownedConstellations), equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, ownedRelics: [], settings: { ...DEFAULT_SETTINGS }, claimedMail: {}, redeemedSpecialCodes: {}, oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true } };
     syncOwnedStars(progress);
     return progress;
   }
@@ -181,6 +182,19 @@ function savePlayerProgress() {
   }
 }
 savePlayerProgress();
+function redeemSpecialCode(rawCode) {
+  const code = String(rawCode ?? "").trim();
+  if (code !== "hamburger123") return { ok: false, message: "유효하지 않은 코드입니다." };
+  playerProgress.redeemedSpecialCodes ||= {};
+  if (playerProgress.redeemedSpecialCodes[code]) return { ok: false, message: "이미 사용한 코드입니다." };
+  // Eligibility and every reward are committed synchronously as one state change.
+  playerProgress.redeemedSpecialCodes[code] = true;
+  playerProgress.starDust += 50000;
+  playerProgress.starShards += 50000;
+  playerProgress.meteorFragments += 1000;
+  savePlayerProgress();
+  return { ok: true, message: "코드 사용 완료!\n별가루 +50,000\n별조각 +50,000\n운석파편 +1,000" };
+}
 function performConstellationDraws(count, random = Math.random) {
   const cost = count === 10 ? GACHA_COSTS.constellation[1] : GACHA_COSTS.constellation[0];
   if (![1, 10].includes(count) || playerProgress.starDust < cost) return null;
@@ -369,8 +383,8 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     }),
     contextualAction: "guardianLight",
     specialDescriptions: Object.freeze([
-      "수호의 빛 75: 손상 시 50 + 최대 체력 1% 회복, 풀피면 최대 체력을 10% + 재료 단계 합% 증가시킵니다.",
-      "12초마다 최대 체력의 (50% + 재료 단계 합%) 체력과 최대 체력 200% 공격력을 지닌 수호자를 소환합니다.",
+      "수호의 빛 50: 별빛이 1111 이상일 때 현재 별빛의 80%를 사용합니다. 기지가 다쳤다면 50 + 최대 체력의 1%를 회복하고, 풀피라면 현재 최대 체력을 (10 + 재료 단계 합)% 늘려 풀피를 유지합니다.",
+      "15초마다 기지에서 수호자를 소환합니다. 수호자는 길을 거꾸로 이동하며 적과 만나면 현재 체력 + 공격력만큼 그 적 하나에게 피해를 준 뒤 사라집니다.",
     ]),
   }),
   [CONSTELLATION_IDS.TWILIGHT]: Object.freeze({
@@ -441,7 +455,7 @@ const CONFIG = {
   summonCost: 30,
   swapCost: 10,
   divinationCost: 30,
-  guardianLightCost: 75,
+  guardianLightMinimum: 1111,
   bondOfferingCost: 200,
   startStarlight: 300,
   startDivinity: 1,
@@ -449,8 +463,8 @@ const CONFIG = {
   guardianUnit: {
     hpRatio: 0.50,
     attacksPerSecond: 3,
-    summonCooldown: 12,
-    speed: 4,
+    summonCooldown: 15,
+    speed: 3,
     contactDistance: 24,
   },
   // One range unit is this percentage of the arena width. RangeSystem is the
@@ -671,17 +685,14 @@ class Enemy {
 }
 class GuardianUnit {
   constructor(base, componentStageSum = 0) {
-    const stats = CONFIG.guardianUnit;
     this.team = "ALLY";
     this.maxHp = base.maxHp * ((50 + componentStageSum) / 100);
-    this.damage = base.maxHp * 2;
+    this.damage = base.maxHp * 0.50;
     this.hp = this.maxHp;
     this.pathProgress = 1;
     this.progress = 100;
     this.dead = false;
-    this.target = null;
-    this.attackCooldown = 0;
-    this.enemyAttackCooldown = 0;
+    this.resolved = false;
     Object.assign(this, activeMap.destination);
     this.el = document.createElement("div");
     this.el.className = "guardian-unit";
@@ -698,59 +709,35 @@ class GuardianUnit {
     this.el.style.transform = `translate3d(${(this.x * metrics.width) / 100}px, ${(this.y * metrics.height) / 100}px, 0)`;
   }
   acquireTarget() {
-    let best = null;
-    let distance = Infinity;
+    let best = null, distance = Infinity;
     for (const enemy of game.enemies) {
-      if (enemy.dead || (enemy.engagedAlly && enemy.engagedAlly !== this)) continue;
+      if (enemy.dead) continue;
       const nextDistance = RangeSystem.distance(this.position(), enemy.position());
       if (nextDistance <= CONFIG.guardianUnit.contactDistance && nextDistance < distance) {
-        best = enemy;
-        distance = nextDistance;
+        best = enemy; distance = nextDistance;
       }
     }
-    if (best) {
-      this.target = best;
-      best.engagedAlly = this;
-    }
+    return best;
   }
   update(dt) {
     if (this.dead) return;
-    if (this.target?.dead) this.releaseTarget();
-    if (!this.target) this.acquireTarget();
-    if (this.target) {
-      this.attackCooldown -= dt;
-      this.enemyAttackCooldown -= dt;
-      if (this.attackCooldown <= 0) {
-        this.target.hit(this.damage, this.position());
-        this.attackCooldown = 1 / CONFIG.guardianUnit.attacksPerSecond;
-        if (this.target.dead) this.releaseTarget();
-      }
-      if (this.target && this.enemyAttackCooldown <= 0) {
-        this.hit(this.target.allyCombatDamage);
-        this.enemyAttackCooldown = 1;
-      }
+    const target = this.acquireTarget();
+    if (target && !this.resolved) {
+      this.resolved = true;
+      target.hit(this.hp + this.damage, this.position());
+      this.remove();
       return;
     }
     this.progress -= CONFIG.guardianUnit.speed * dt;
     this.pathProgress = Math.max(0, this.progress / 100);
     Object.assign(this, routePoint(this.pathProgress));
-    if (this.progress <= 0) this.remove();
-    else this.render();
+    if (this.progress <= 0) this.remove(); else this.render();
   }
   hit(damage) {
     this.hp -= damage;
-    if (this.hp <= 0) this.remove();
-    else this.updateHealthBar();
+    if (this.hp <= 0) this.remove(); else this.updateHealthBar();
   }
-  releaseTarget() {
-    if (this.target?.engagedAlly === this) this.target.engagedAlly = null;
-    this.target = null;
-  }
-  remove() {
-    this.releaseTarget();
-    this.dead = true;
-    this.el.remove();
-  }
+  remove() { this.dead = true; this.el.remove(); }
   updateHealthBar() {
     this.hpFill.style.width = `${Math.max(0, this.hp / this.maxHp * 100)}%`;
     this.hpText.textContent = `${Math.round(Math.max(0, this.hp)).toLocaleString()} / ${Math.round(this.maxHp).toLocaleString()}`;
@@ -1733,8 +1720,11 @@ class GuardianLightSystem {
       star.constellation.definitionId !== CONSTELLATION_IDS.GUARDIAN
     )
       return UIManager.hint("수호자의 자리를 선택하세요.");
-    if (!manager.player.resources.spend(CONFIG.guardianLightCost))
-      return UIManager.hint("별빛이 부족합니다.");
+    const resources = manager.player.resources;
+    if (resources.starlight < CONFIG.guardianLightMinimum)
+      return UIManager.hint("별빛 1111 이상일 때 사용할 수 있습니다.");
+    const cost = Math.floor(resources.starlight * 0.8);
+    resources.starlight -= cost;
 
     const base = game.base;
     if (base.hp < base.maxHp)
@@ -2072,13 +2062,13 @@ class UIManager {
       const isStrike = constellation.definitionId === CONSTELLATION_IDS.STRIKE;
       const isHorizon = constellation.definitionId === CONSTELLATION_IDS.HORIZON;
       const canDivine = isAstrologer && pick.m.player.resources.can(CONFIG.divinationCost);
-      const canUseGuardianLight = isGuardian && pick.m.player.resources.can(CONFIG.guardianLightCost);
+      const canUseGuardianLight = isGuardian && pick.m.player.resources.starlight >= CONFIG.guardianLightMinimum;
       const canOfferBond = isBond && constellation.runtime.bindChance < 1 && pick.m.player.resources.can(CONFIG.bondOfferingCost);
       // definitionId is deliberately part of the cache key: actions from a
       // previous tower type must never survive a selection/type change.
       let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}:${canUseGuardianLight}:${canOfferBond}:${constellation.runtime.bindChance}:${constellation.runtime.strikeStacks || 0}:${constellation.runtime.inheritedDefinitionId || "none"}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 75</button>` : ""}${isBond ? `<button class="bond-offering action-above" data-context="bond-offering"${canOfferBond ? "" : " disabled"}>별빛 헌납 200</button>` : ""}${isStrike ? `<button class="strike-action action-above" data-context="strike"${constellation.runtime.strikeStacks ? "" : " disabled"}>일격 가하기</button>` : ""}${isHorizon ? `<button class="horizon-action action-above" data-context="horizon">지평선의 초점</button>` : ""}<button class="${isAstrologer || isGuardian || isBond || isStrike || isHorizon ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
+        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 50</button><small class="guardian-cost-note">별빛 1111 이상 · 현재 별빛의 80% 사용</small>` : ""}${isBond ? `<button class="bond-offering action-above" data-context="bond-offering"${canOfferBond ? "" : " disabled"}>별빛 헌납 200</button>` : ""}${isStrike ? `<button class="strike-action action-above" data-context="strike"${constellation.runtime.strikeStacks ? "" : " disabled"}>일격 가하기</button>` : ""}${isHorizon ? `<button class="horizon-action action-above" data-context="horizon">지평선의 초점</button>` : ""}<button class="${isAstrologer || isGuardian || isBond || isStrike || isHorizon ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
         if (isAstrologer)
           contextActions.querySelector('[data-context="divination"]').onclick = () =>
             DivinationSystem.execute(pick.m, pick.index);
@@ -2150,6 +2140,7 @@ class UIManager {
   }
   static renderHud(g, force = false) {
     const preparing = g.phase === "PREPARING";
+    document.querySelector?.(".route-arrows")?.classList.toggle("visible", preparing);
     const seconds = Math.max(0, Math.ceil(preparing ? g.preparationRemaining : g.wave.left));
     const values = {
       wave: String(preparing ? 1 : g.wave.wave),
@@ -2534,6 +2525,7 @@ function renderActiveMap() {
   if (destinationLabel) { destinationLabel.setAttribute("x", activeMap.destination.x); destinationLabel.setAttribute("y", Math.min(98, activeMap.destination.y + 6)); }
   const arrowLayer = pathSvg.querySelector(".route-arrows");
   if (arrowLayer) arrowLayer.innerHTML = activeMap.arrows.map((progress) => { const point = routePoint(progress), before = routePoint(progress-.004), after = routePoint(progress+.004); const angle = Math.atan2(after.y-before.y,after.x-before.x)*180/Math.PI+90; return `<path d="M0 -2.2L2 1.8L0 .8L-2 1.8Z" transform="translate(${point.x} ${point.y}) rotate(${angle})"/>`; }).join("");
+  arrowLayer?.classList.toggle("visible", game?.phase === "PREPARING");
 }
 
 function bootstrapGame() {
@@ -2661,7 +2653,8 @@ function bootstrapGame() {
       const entry = playerProgress.constellationCollection[definition.id];
       const cost = entry && CONSTELLATION_LEVEL_COSTS[entry.level];
       const canUpgrade = cost && entry.copies >= cost.copies && playerProgress.galaxyFragments >= cost.galaxyFragments;
-      return `<article class="collection-card constellation-collection-card ${owned ? "owned" : "locked"} ${order >= 0 ? "equipped" : ""}">${order >= 0 ? `<b class="equip-order">${order + 1}</b>` : ""}${constellationPreview(definition)}<h3>${definition.name}</h3>${owned ? `<b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.4 · MAX"}</b><div class="constellation-upgrade-details"><span>복사본 <b>${entry.copies}${cost ? ` / ${cost.copies}` : ""}</b></span><span>은하파편 <b>${playerProgress.galaxyFragments}${cost ? ` / ${cost.galaxyFragments}` : ""}</b></span></div><div class="collection-actions"><button type="button" data-equip-constellation="${definition.id}">${order >= 0 ? "장착 해제" : "전투 장착"}</button><button type="button" data-upgrade-constellation="${definition.id}"${canUpgrade ? "" : " disabled"}>${cost ? `Lv.${entry.level + 1} 강화` : "MAX"}</button></div>` : "<small>🔒 미획득</small>"}</article>`;
+      const recipe = Object.entries(definition.recipe).map(([type, amount]) => `${CONFIG.stars[type].name} 별 ×${amount}`).join(" + ");
+      return `<article class="collection-card constellation-collection-card ${owned ? "owned" : "locked"} ${order >= 0 ? "equipped" : ""}">${order >= 0 ? `<b class="equip-order">${order + 1}</b>` : ""}${constellationPreview(definition)}<h3>${definition.name}</h3><div class="collection-ability"><strong>조합</strong><p>${recipe}</p><strong>기본 능력</strong><p>공격력 ${definition.attackDamage} · 공격속도 ${definition.attackSpeed}회/초 · 사거리 ${definition.range}</p><strong>특수 능력 · 쉽게 설명</strong>${definition.specialDescriptions.map((text) => `<p>${text}</p>`).join("")}</div>${owned ? `<b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.4 · MAX"}</b><div class="constellation-upgrade-details"><span>복사본 <b>${entry.copies}${cost ? ` / ${cost.copies}` : ""}</b></span><span>은하파편 <b>${playerProgress.galaxyFragments}${cost ? ` / ${cost.galaxyFragments}` : ""}</b></span></div><div class="collection-actions"><button type="button" data-equip-constellation="${definition.id}">${order >= 0 ? "장착 해제" : "전투 장착"}</button><button type="button" data-upgrade-constellation="${definition.id}"${canUpgrade ? "" : " disabled"}>${cost ? `Lv.${entry.level + 1} 강화` : "MAX"}</button></div>` : "<small>🔒 미획득</small>"}</article>`;
     }).join("");
     document.querySelectorAll("[data-deck-count]").forEach((node) => { node.textContent = playerProgress.equippedConstellations.length; });
     document.querySelectorAll("[data-equip-constellation]").forEach((button) => { button.onclick = () => { const result = toggleEquippedConstellation(button.dataset.equipConstellation); if (!result.ok) showToast(result.message); renderCollection(); }; });
@@ -2821,6 +2814,7 @@ function bootstrapGame() {
   getRequiredElement("close-draw-results").onclick = () => summonController.close();
   const settingsDialog = getRequiredElement("settings-dialog"), mailDialog = getRequiredElement("mail-dialog");
   const setModalOpen = (dialog, open) => {
+    if (open) document.querySelectorAll(".utility-dialog:not([hidden])").forEach((other) => { if (other !== dialog) other.hidden = true; });
     dialog.hidden = !open;
     document.body.classList.toggle("modal-open", open || Boolean(document.querySelector(".utility-dialog:not([hidden])")));
   };
@@ -2840,8 +2834,11 @@ function bootstrapGame() {
   document.querySelectorAll?.("[data-open-mail]").forEach((button)=>button.onclick=()=>{refreshMail();setModalOpen(mailDialog,true);});
   const claimUpdateReward = getRequiredElement("claim-update-reward"); claimUpdateReward.onclick=()=>{ if(playerProgress.claimedMail[UPDATE_REWARD_ID]) return; playerProgress.claimedMail[UPDATE_REWARD_ID]=true; playerProgress.starDust+=3000; savePlayerProgress(); refreshMail(); updateMetaCurrency(); };
   document.querySelectorAll?.("[data-open-rates]").forEach((button)=>button.onclick=()=>{ const stars=Object.values(STAR_TYPES), zodiacs=Object.values(CONSTELLATION_DEFINITIONS); getRequiredElement("rate-details").innerHTML=`<h3>일반 별 개별 확률</h3>${stars.map((x)=>`<div><span>${x.name}</span><b>${(GACHA_RULES.starChance/stars.length*100).toFixed(2)}%</b></div>`).join("")}<h3>별자리 개별 확률</h3>${zodiacs.map((x)=>`<div><span>${x.name}</span><b>${(GACHA_RULES.constellationChance/zodiacs.length*100).toFixed(2)}%</b></div>`).join("")}`; settingsDialog.querySelector("[data-star-rate-total]").textContent=`${GACHA_RULES.starChance*100}%`; settingsDialog.querySelector("[data-zodiac-rate-total]").textContent=`${GACHA_RULES.constellationChance*100}%`; showSettingsView("rates"); });
-  const ratesBackButton = settingsDialog.querySelector("[data-rates-back]");
-  if (ratesBackButton) ratesBackButton.onclick=()=>showSettingsView("main");
+  settingsDialog.querySelectorAll("[data-settings-back]").forEach((button) => button.onclick=()=>showSettingsView("main"));
+  const specialCodeButton = settingsDialog.querySelector("[data-open-special-code]");
+  if (specialCodeButton) specialCodeButton.onclick=()=>{ settingsDialog.querySelector("[data-special-code-result]").textContent=""; showSettingsView("code"); };
+  const specialCodeForm = settingsDialog.querySelector("[data-special-code-form]");
+  if (specialCodeForm) specialCodeForm.onsubmit=(event)=>{ event.preventDefault(); const input=settingsDialog.querySelector("[data-special-code-input]"); const result=redeemSpecialCode(input.value); settingsDialog.querySelector("[data-special-code-result]").textContent=result.message; if(result.ok) input.value=""; updateMetaCurrency(); };
   document.querySelectorAll?.("[data-close-utility]").forEach((button)=>button.onclick=()=>setModalOpen(button.closest(".utility-dialog"),false));
   refreshSettings(); refreshMail();
   window.addEventListener("resize", () => {
@@ -2852,7 +2849,7 @@ function bootstrapGame() {
   showMainMenu();
   if (specialGrantApplied) showToast("특별 지급\n별가루 +5,000\n운석조각 +20");
   const diagnostics = {
-    CONFIG, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, MapVoteController, playerProgress, performConstellationDraws, performRelicDraws, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
+    CONFIG, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, MapVoteController, playerProgress, performConstellationDraws, performRelicDraws, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
     showMainMenu, showBattleMenu, showGacha, beginMapVote, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint,

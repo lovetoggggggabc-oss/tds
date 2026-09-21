@@ -1860,3 +1860,17 @@ body.modal-open .utility-dialog:not([hidden]) { pointer-events:auto; }
 .skip-summon{right:max(18px,env(safe-area-inset-right));top:auto;bottom:max(22px,env(safe-area-inset-bottom));padding:15px 22px;font-size:14px}
 body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-preview{filter:none!important;opacity:.55}body[data-zodiac-vfx="weak"] .zodiac-particle{display:none!important}
 .battle-result-overlay:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 18%,#9a7aff22,transparent 25%),linear-gradient(#01031688,#070319dd);animation:resultDarken 1.2s both}.battle-result-overlay.reveal-results .result-sigil{filter:drop-shadow(0 0 20px #8d6cff);animation:resultSigil 1.1s .35s both}@keyframes resultDarken{from{opacity:0}to{opacity:1}}@keyframes resultSigil{from{opacity:0;transform:scale(.3) rotate(-40deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+
+/* Authoritative preparation, vote, readable collection and code-entry states. */
+.route-arrows.arrow{opacity:0;visibility:hidden;transition:opacity .2s}
+.route-arrows.arrow.visible{opacity:.88;visibility:visible}
+.map-vote-cards button.selected{border:2px solid #74f3ff;box-shadow:0 0 20px #55dfff77,inset 0 0 18px #557cff33;transform:scale(1.018);animation:voteStarlight 1.25s ease-in-out infinite alternate}
+.map-vote-cards button.winner{border-color:#fff2a1;box-shadow:0 0 28px #ffe77e88;animation:winnerBurst .7s ease-out}
+.map-vote-cards button.faded{opacity:.3;filter:brightness(.65)}
+.map-vote-result{animation:winnerBurst .7s ease-out}
+@keyframes voteStarlight{to{box-shadow:0 0 28px #55dfffaa,inset 0 0 22px #9d7cff44}}
+@keyframes winnerBurst{0%{transform:scale(.96);filter:brightness(1.8)}65%{transform:scale(1.025)}100%{transform:scale(1)}}
+.special-code-form{display:grid;gap:12px}.special-code-form>label{display:block;min-height:0;margin:0;padding:0;background:none}.special-code-form>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.special-code-form input{min-width:0;min-height:46px;padding:10px 12px;border:1px solid #7edfff88;border-radius:11px;color:#fff;background:#070b2d;font-size:16px}.special-code-form p{min-height:4.5em;margin:4px 0;color:#aef3ff;white-space:pre-line;line-height:1.5}
+.guardian-cost-note{max-width:190px;color:#d8e8ff;font-size:12px;line-height:1.35;text-align:center}
+.collection-ability{display:grid;gap:5px;margin:10px 0;padding:10px;border-radius:12px;background:#080c2f99;text-align:left}.collection-ability strong{color:#85eaff;font-size:14px}.collection-ability p{margin:0 0 5px;color:#dce8ff;font-size:14px;line-height:1.5;white-space:normal}
+@media(max-width:520px){.utility-dialog{padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom))}.utility-dialog>.modal-panel,.utility-dialog>div{width:90%;max-height:85%}.map-vote-cards button{grid-template-columns:96px minmax(0,1fr) auto}.map-vote-cards svg{width:88px}}
