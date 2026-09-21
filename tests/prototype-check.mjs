@@ -7,7 +7,7 @@ const [html, css, js] = await Promise.all([
   readFile("game.js", "utf8"),
 ]);
 
-assert.match(html, /href="styles\.css\?v=55"/);
+assert.match(html, /href="styles\.css\?v=56"/);
 assert.match(html, /<script src="game\.js\?v=54" defer><\/script>/);
 assert.equal((html.match(/data-act="summon"/g) || []).length, 0);
 assert.match(html, /data-player="0"/);
@@ -206,7 +206,7 @@ assert.match(css, /\.star-node\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?aspect-r
 assert.match(js, /function bindPointerTap/);
 assert.match(html, /<main class="app battle-screen" id="game-shell" hidden>/);
 assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*var\(--game-shell-width\);[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
-assert.match(html, /styles\.css\?v=55/, "the deployed stylesheet URL must change when its layout changes");
+assert.match(html, /styles\.css\?v=56/, "the deployed stylesheet URL must change when its layout changes");
 assert.match(html, /game\.js\?v=54/, "the deployed script URL must not reuse the pre-layout cache entry");
 assert.match(js, /const actionEdgeInset = 66;[\s\S]*?arenaRect\.height - actionEdgeInset/,
   "context actions reserve a complete touch target above and below edge stars");
