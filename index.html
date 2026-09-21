@@ -26,7 +26,7 @@
       <button type="button" class="hero-play" id="open-battle-menu"><i>✦</i><b>플레이</b><small>별이 지키는 전장을 향해</small></button>
       <nav class="bottom-nav" aria-label="메인 메뉴">
         <button type="button" data-coming-soon><i>▣</i><span>상점</span></button>
-        <button type="button" data-coming-soon><i>⌁</i><span>별 &amp; 별자리</span></button>
+        <button type="button" data-open-collection><i>⌁</i><span>별 &amp; 별자리</span></button>
         <button type="button" class="active" data-open-battle><i>⚔</i><span>전투</span></button>
         <button type="button" data-coming-soon><i>◇</i><span>유물</span></button>
         <button type="button" data-open-gacha><i>✦</i><span>뽑기</span></button>
@@ -43,6 +43,7 @@
       <article class="summon-card constellation-board" data-gacha-board="constellation">
         <div class="summon-orbit" aria-hidden="true"><i>✦</i></div>
         <h2>별자리 뽑기</h2><p>별조각으로 새로운 별과<br />별자리를 만날 준비를 하세요.</p>
+        <div class="gacha-rates"><span>별자리 등장 확률 <b>10%</b></span><span>별자리 확정 <b data-constellation-pity>0 / 20</b></span></div>
         <div class="summon-balance"><small>현재 별조각</small><strong><span class="fragment-gem">✦</span> <span data-star-fragments>0</span></strong></div>
         <div class="draw-actions"><button type="button" data-draw="constellation" data-cost="100"><b>1회 뽑기</b><small>✦ 100</small></button><button type="button" data-draw="constellation" data-cost="1000"><b>10회 뽑기</b><small>✦ 1000</small></button></div>
       </article>
@@ -53,9 +54,21 @@
         <div class="draw-actions"><button type="button" data-draw="relic" data-cost="10"><b>1회 뽑기</b><small>☄ 10</small></button><button type="button" data-draw="relic" data-cost="100"><b>10회 뽑기</b><small>☄ 100</small></button></div>
       </article>
       <nav class="bottom-nav" aria-label="메인 메뉴">
-        <button type="button" data-coming-soon><i>▣</i><span>상점</span></button><button type="button" data-coming-soon><i>⌁</i><span>별 &amp; 별자리</span></button><button type="button" data-open-battle><i>⚔</i><span>전투</span></button><button type="button" data-coming-soon><i>◇</i><span>유물</span></button><button type="button" class="active" data-open-gacha><i>✦</i><span>뽑기</span></button>
+        <button type="button" data-coming-soon><i>▣</i><span>상점</span></button><button type="button" data-open-collection><i>⌁</i><span>별 &amp; 별자리</span></button><button type="button" data-open-battle><i>⚔</i><span>전투</span></button><button type="button" data-coming-soon><i>◇</i><span>유물</span></button><button type="button" class="active" data-open-gacha><i>✦</i><span>뽑기</span></button>
       </nav>
     </section>
+
+    <section class="lobby-screen collection-screen" id="collection-screen" hidden aria-labelledby="collection-title">
+      <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
+      <header class="subscreen-header"><button type="button" data-main-home aria-label="메인 메뉴로 돌아가기">←</button><div><small>CELESTIAL COLLECTION</small><h1 id="collection-title">별 &amp; 별자리</h1></div></header>
+      <div class="collection-tabs" role="tablist" aria-label="수집 종류"><button type="button" role="tab" aria-selected="true" data-collection-tab="stars">별</button><button type="button" role="tab" aria-selected="false" data-collection-tab="constellations">별자리</button></div>
+      <div class="collection-scroll">
+        <div id="star-collection" class="collection-grid" data-collection-panel="stars"></div>
+        <section data-collection-panel="constellations" hidden><div class="deck-status"><span>전투 별자리</span><b><span data-deck-count>0</span> / 6</b></div><div id="constellation-collection" class="collection-grid constellation-collection"></div></section>
+      </div>
+    </section>
+
+    <section class="draw-result-dialog" id="draw-results" role="dialog" aria-modal="true" aria-labelledby="draw-results-title" hidden><div><header><small>SUMMON RESULTS</small><h2 id="draw-results-title">뽑기 결과</h2></header><div id="draw-result-grid" class="draw-result-grid"></div><button type="button" id="close-draw-results">확인</button></div></section>
 
     <section class="lobby-screen battle-menu-screen" id="battle-menu" hidden aria-labelledby="battle-menu-title">
       <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>

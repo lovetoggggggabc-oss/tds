@@ -166,8 +166,8 @@ assert.doesNotMatch(js, /rangeBuffUntil|rangeBuffCooldownUntil|totalHits/);
 assert.doesNotMatch(js, /사거리 \+1/);
 assert.match(
   js.slice(js.indexOf("static renderCodex()"), js.indexOf("static zodiacComplete")),
-  /Object\.entries\(ZODIAC_RECIPES\)/,
-  "the codex must render the complete shared registry",
+  /playerProgress\.equippedConstellations\.slice\(0, MAX_EQUIPPED_CONSTELLATIONS\)/,
+  "the battle codex must render only the saved six-slot deck",
 );
 assert.match(js, /flatMap\(\(\[type, amount\]\)/, "the recipe must render one icon per required star");
 assert.match(css, /\.codex-preview-wrap\s*\{[^}]*height:\s*180px/, "constellation previews must be prominent");

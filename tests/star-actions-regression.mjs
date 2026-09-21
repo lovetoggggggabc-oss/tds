@@ -3,7 +3,7 @@ import vm from "node:vm";
 import { readFile } from "node:fs/promises";
 
 const file = await readFile("game.js", "utf8");
-const source = file.slice(file.indexOf("const CONSTELLATION_IDS"));
+const source = file.slice(file.indexOf("const SCREEN_STATES"));
 const definitions = source.slice(0, source.indexOf("class UIManager"));
 const hints = [];
 let moonPlays = 0;
@@ -33,12 +33,14 @@ context.arena = {
 };
 vm.createContext(context);
 vm.runInContext(
-  `${definitions}\nthis.testApi = { CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem };`,
+  `${definitions}\nthis.testApi = { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem };`,
   context,
 );
 
-const { CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem } =
+const { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem } =
   context.testApi;
+playerProgress.ownedConstellations = Object.keys(CONSTELLATION_DEFINITIONS);
+playerProgress.equippedConstellations = Object.keys(CONSTELLATION_DEFINITIONS);
 assert.deepEqual(Object.keys(CONSTELLATION_DEFINITIONS), ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER", "GUARDIAN", "TWILIGHT"]);
 for (const [id, definition] of Object.entries(CONSTELLATION_DEFINITIONS))
   assert.equal(definition.id, id, `${id} must carry its stable definition id`);
@@ -415,7 +417,7 @@ const connectionCases = [
   { types: ["orange", "orange"], picks: [8, 2], kind: "ASTROLOGER" },
   { types: ["red", "white", "red"], picks: [9, 1, 5], kind: "RADIANCE" },
   { types: ["blue", "blue", "white", "blue"], picks: [11, 3, 7, 0], kind: "DAWN" },
-  { types: ["blue", "sky", "blue", "sky"], picks: [6, 12, 2, 10], kind: "SAGITTARIUS" },
+  { types: ["blue", "yellow", "blue", "yellow"], picks: [6, 12, 2, 10], kind: "SAGITTARIUS" },
 ];
 for (const { types, picks, kind } of connectionCases) {
   const manager = makeManager();
@@ -473,7 +475,7 @@ assert.equal(astrologer.definition.range, 3);
 // Sagittarius uses simulation time for its attack buff and freezes focus
 // accumulation during transcendence without introducing range-buff state.
 const sagittariusManager = makeManager();
-[[1, "sky"], [5, "blue"], [7, "sky"], [12, "blue"]]
+[[1, "yellow"], [5, "blue"], [7, "yellow"], [12, "blue"]]
   .forEach(([slot, type]) => { sagittariusManager.stars[slot] = new Star(type); });
 sagittariusManager.selected = [12, 1, 5, 7];
 sagittariusManager.zodiacMode = true;

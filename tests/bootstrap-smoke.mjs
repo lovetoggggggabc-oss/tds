@@ -139,7 +139,10 @@ window.__TDS__.leaveBattle();
 assert.equal(game.rafRunning, false, "leaving combat must stop its animation loop");
 assert.equal(window.__TDS__.currentScreen, "BATTLE_GAME", "leaving combat must show results before returning home");
 assert.equal(window.__TDS__.playerProgress.starFragments, 80, "wave 40 must award exactly 80 star fragments");
-assert.deepEqual(JSON.parse(storage.get("zodiacDefenseProgress")), { starFragments: 80, meteorFragments: 2 });
+assert.deepEqual(
+  (({ starFragments, meteorFragments }) => ({ starFragments, meteorFragments }))(JSON.parse(storage.get("zodiacDefenseProgress"))),
+  { starFragments: 80, meteorFragments: 2 },
+);
 window.__TDS__.leaveBattle();
 assert.equal(window.__TDS__.playerProgress.starFragments, 80, "a battle reward must only be granted once");
 assert.equal(window.__TDS__.playerProgress.meteorFragments, 2, "wave 40 must award two meteor fragments once");

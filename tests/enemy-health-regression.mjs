@@ -3,7 +3,7 @@ import vm from "node:vm";
 import { readFile } from "node:fs/promises";
 
 const file = await readFile("game.js", "utf8");
-const source = file.slice(file.indexOf("const CONSTELLATION_IDS"));
+const source = file.slice(file.indexOf("const SCREEN_STATES"));
 const definitions = source.slice(0, source.indexOf("class EnemySpawner"));
 const created = [];
 const context = {

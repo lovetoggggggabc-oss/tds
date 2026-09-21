@@ -3,7 +3,7 @@ import vm from "node:vm";
 import { readFile } from "node:fs/promises";
 
 const file = await readFile("game.js", "utf8");
-const source = file.slice(file.indexOf("const CONSTELLATION_IDS"), file.indexOf("class UIManager"));
+const source = file.slice(file.indexOf("const SCREEN_STATES"), file.indexOf("class UIManager"));
 
 class Element {
   constructor() { this.style = {}; this.children = []; }
@@ -25,9 +25,11 @@ const context = {
   UIManager: { beam() {}, hint() {}, zodiacComplete() {}, showDawnMoon() {} },
 };
 vm.createContext(context);
-vm.runInContext(`${source}\nthis.api = { CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, CONSTELLATION_BEHAVIORS, Constellation, GuardianLightSystem, GuardianUnit, ZodiacSystem, Star, RangeSystem };`, context);
+vm.runInContext(`${source}\nthis.api = { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, CONSTELLATION_BEHAVIORS, Constellation, GuardianLightSystem, GuardianUnit, ZodiacSystem, Star, RangeSystem };`, context);
 
-const { CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, CONSTELLATION_BEHAVIORS, Constellation, GuardianLightSystem, GuardianUnit, ZodiacSystem, Star, RangeSystem } = context.api;
+const { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, CONSTELLATION_BEHAVIORS, Constellation, GuardianLightSystem, GuardianUnit, ZodiacSystem, Star, RangeSystem } = context.api;
+playerProgress.ownedConstellations.push("GUARDIAN");
+playerProgress.equippedConstellations.push("GUARDIAN");
 const definition = CONSTELLATION_DEFINITIONS[CONSTELLATION_IDS.GUARDIAN];
 assert.deepEqual(JSON.parse(JSON.stringify(definition.recipe)), { orange: 1, white: 1, red: 1 });
 assert.equal(definition.attackDamage, 300);
