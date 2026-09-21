@@ -2010,8 +2010,8 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 .star-glyph .type-ornament{fill:var(--star-color);stroke:#fff;stroke-width:1.4;stroke-linejoin:round;filter:drop-shadow(0 0 3px var(--star-color))}
 .star-glyph .planet-ornament ellipse{fill:none;stroke:var(--star-color);stroke-width:2}.star-glyph .planet-ornament circle{fill:#fff;stroke:var(--star-color);stroke-width:2}
 .star-glyph .flame-ornament{fill:#ff6a54}.star-glyph .flame-ornament .ornament-highlight{fill:#ffd066;stroke:#ff7658}
+.star-glyph .nova-ornament{fill:#ff5064;stroke:#fff0f2;stroke-width:1.2}.star-glyph .nova-ornament circle{fill:#fff;stroke:#ff5064;stroke-width:3}
 .star-glyph .moon-ornament{fill:#f3dbff;stroke:#b16cff}.star-glyph .leaf-ornament{fill:#8dffab;stroke:#55db85}
-.star-type-white{--star-color:#fff0df}.star-type-yellow{--star-color:#ffc94f}.star-type-orange{--star-color:#ff6859}
 .star-core:before,.star-core:after{display:none!important}
 .star-halo,.star-orbit{display:none!important}
 .star.stage-1{--stage-scale:1}.star.stage-1 .star-glyph{width:66%;height:66%;opacity:.96}

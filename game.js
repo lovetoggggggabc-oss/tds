@@ -67,10 +67,7 @@ const STAR_TYPES = Object.freeze({
   WHITE: Object.freeze({ id: "WHITE", key: "white", name: "백색", color: "#ffffff", damage: 100, rate: 3.5, range: 6, target: "burst" }),
   YELLOW: Object.freeze({ id: "YELLOW", key: "yellow", name: "황색", color: "#ffd84d", damage: 75, rate: 2, range: 7, target: "random" }),
   ORANGE: Object.freeze({ id: "ORANGE", key: "orange", name: "주황색", color: "#ffad45", damage: 125, rate: 1.5, range: 4, target: "nearest" }),
-  // RED remains a compatibility key because existing saves and constellation
-  // recipes depend on its combat profile. It belongs to the orange visual
-  // family, so the player-facing palette still uses the requested six names.
-  RED: Object.freeze({ id: "RED", key: "red", name: "주황색", color: "#ff665b", damage: 200, rate: 1, range: 5, target: "highest" }),
+  RED: Object.freeze({ id: "RED", key: "red", name: "적색", color: "#ff5064", damage: 200, rate: 1, range: 5, target: "highest" }),
   PURPLE: Object.freeze({ id: "PURPLE", key: "purple", name: "자색", color: "#b16cff", damage: 100, rate: 1, range: 4.5, target: "lowest" }),
   GREEN: Object.freeze({ id: "GREEN", key: "green", name: "녹색", color: "#55db85", damage: 0, rate: 0, range: 0, target: "none", support: "alliedAttackSpeed" }),
 });
@@ -1577,21 +1574,21 @@ function symmetricSparkles(distance, size) {
   ).join("");
 }
 function starFinalOrnaments(type) {
-  const family = type === "red" ? "orange" : type;
   const ornaments = {
     blue: '<g class="type-ornament crystal-ornament"><path d="M18 23l5-9 5 9-5 10Zm54 0 5-9 5 9-5 10Z"/><path d="M14 67l4-7 4 7-4 8Zm64 0 4-7 4 7-4 8Z"/></g>',
     white: '<g class="type-ornament prism-ornament"><path d="M20 25l4-8 4 8-4 8Zm52 0 4-8 4 8-4 8Z"/><path d="M17 69l3-6 3 6-3 7Zm60 0 3-6 3 6-3 7Z"/></g>',
     yellow: '<g class="type-ornament planet-ornament"><circle cx="18" cy="62" r="6"/><ellipse cx="18" cy="62" rx="10" ry="3"/><circle cx="82" cy="38" r="6"/><ellipse cx="82" cy="38" rx="10" ry="3"/></g>',
     orange: '<g class="type-ornament flame-ornament"><path d="M24 67c-11-7-10-18-3-26-1 8 4 10 7 15 3 5 1 9-4 11Zm52 0c11-7 10-18 3-26 1 8-4 10-7 15-3 5-1 9 4 11Z"/><path class="ornament-highlight" d="M19 58c-7-6-6-13-2-18 0 6 3 8 5 11Zm62 0c7-6 6-13 2-18 0 6-3 8-5 11Z"/></g>',
+    red: '<g class="type-ornament nova-ornament"><path d="M50 2l5 18 12-12-3 20 19-7-13 16 21 1-19 10 18 9-21 2 13 16-19-7 3 20-12-12-5 18-5-18-12 12 3-20-19 7 13-16-21-2 18-9-19-10 21-1-13-16 19 7-3-20 12 12Z"/><circle cx="50" cy="48" r="9"/></g>',
     purple: '<g class="type-ornament moon-ornament"><path d="M22 19a9 9 0 1 0 8 14 7 7 0 1 1-8-14Zm56 0a9 9 0 1 1-8 14 7 7 0 1 0 8-14Z"/></g>',
     green: '<g class="type-ornament leaf-ornament"><path d="M17 35c1-8 6-12 13-11-1 7-5 12-13 11Zm66 0c-1-8-6-12-13-11 1 7 5 12 13 11ZM20 70c2-7 7-10 13-8-2 7-7 10-13 8Zm60 0c-2-7-7-10-13-8 2 7 7 10 13 8Z"/></g>',
   };
-  return ornaments[family] || "";
+  return ornaments[type] || "";
 }
 function starStageThreeOrnaments(type) {
-  const family = type === "red" ? "orange" : type;
-  if (family === "orange") return '<g class="type-ornament flame-ornament stage-three-ornament"><path d="M20 69c-7-5-6-12-2-17 0 5 3 7 5 10 1 3 0 5-3 7Zm60 0c7-5 6-12 2-17 0 5-3 7-5 10-1 3 0 5 3 7Z"/></g>';
-  if (family === "green") return '<g class="type-ornament leaf-ornament stage-three-ornament"><path d="M17 31c2-7 7-9 12-7-2 6-6 9-12 7Zm66 0c-2-7-7-9-12-7 2 6 6 9 12 7Z"/></g>';
+  if (type === "orange") return '<g class="type-ornament flame-ornament stage-three-ornament"><path d="M20 69c-7-5-6-12-2-17 0 5 3 7 5 10 1 3 0 5-3 7Zm60 0c7-5 6-12 2-17 0 5-3 7-5 10-1 3 0 5 3 7Z"/></g>';
+  if (type === "red") return '<g class="type-ornament nova-ornament stage-three-ornament"><path d="M50 2l4 16 10-10-2 17 16-6-11 13 18 1-16 8 15 8-18 1 11 13-16-6 2 17-10-10-4 16-4-16-10 10 2-17-16 6 11-13-18-1 15-8-16-8 18-1-11-13 16 6-2-17 10 10Z"/></g>';
+  if (type === "green") return '<g class="type-ornament leaf-ornament stage-three-ornament"><path d="M17 31c2-7 7-9 12-7-2 6-6 9-12 7Zm66 0c-2-7-7-9-12-7 2 6 6 9 12 7Z"/></g>';
   return "";
 }
 function normalStarGlyph(tier, type = "white") {
@@ -1603,7 +1600,7 @@ function normalStarGlyph(tier, type = "white") {
     3: `<ellipse class="orbit orbit-back major-orbit" cx="50" cy="51" rx="45" ry="19" transform="rotate(-12 50 51)"/>${starStageThreeOrnaments(type)}${facetedStar}<ellipse class="orbit orbit-front major-orbit" cx="50" cy="51" rx="45" ry="19" transform="rotate(-12 50 51)"/>${symmetricSparkles(43, 2.5)}<path class="crystal-shard" d="M18 24l4-7 4 7-4 8Zm56 52 4-8 4 8-4 8Z"/>`,
     4: `<ellipse class="orbit orbit-back final-orbit" cx="50" cy="51" rx="47" ry="20" transform="rotate(-12 50 51)"/>${starFinalOrnaments(type)}${facetedStar}<ellipse class="orbit orbit-front final-orbit" cx="50" cy="51" rx="47" ry="20" transform="rotate(-12 50 51)"/><path class="final-core" d="M50 32 57 43 68 50 57 57 50 68 43 57 32 50 43 43Z"/><path class="core-highlight" d="M50 39 54 46 61 50 54 54 50 61 46 54 39 50 46 46Z"/>${symmetricSparkles(45, 2.4)}`,
   };
-  return `<svg class="star-glyph star-type-${type === "red" ? "orange" : type}" viewBox="0 0 100 100" aria-hidden="true">${shapes[tier] || shapes[1]}</svg>`;
+  return `<svg class="star-glyph star-type-${type}" viewBox="0 0 100 100" aria-hidden="true">${shapes[tier] || shapes[1]}</svg>`;
 }
 function constellationSignature(definitionId) {
   const art = {
