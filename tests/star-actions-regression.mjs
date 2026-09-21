@@ -117,9 +117,9 @@ const supportBoard = { stars: [new Star("green"), new Star("green"), new Star("b
 supportBoard.greenStarCount = StarManager.prototype.greenStarCount;
 const attackBoard = { stars: [], greenStarCount: StarManager.prototype.greenStarCount };
 context.game.players = [{ manager: supportBoard }, { manager: attackBoard }];
-assert.equal(StarManager.prototype.alliedAttackSpeedModifier.call(attackBoard), 1.06);
+assert.equal(StarManager.prototype.alliedAttackSpeedModifier.call(attackBoard), 1.05);
 supportBoard.stars[0].support = true;
-assert.equal(StarManager.prototype.alliedAttackSpeedModifier.call(attackBoard), 1.03);
+assert.equal(StarManager.prototype.alliedAttackSpeedModifier.call(attackBoard), 1.04);
 supportBoard.stars[1] = null;
 assert.equal(StarManager.prototype.alliedAttackSpeedModifier.call(attackBoard), 1);
 context.game.players = [];
