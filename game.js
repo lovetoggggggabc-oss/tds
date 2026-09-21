@@ -2055,8 +2055,13 @@ class UIManager {
     rangeIndicator.style.height = diameter + "px";
     contextActions.hidden = false;
     const arenaRect = arena.getBoundingClientRect();
+    // Context actions are absolutely positioned in the same arena containing
+    // block as the selected star.  Reserve one 44px touch target plus the
+    // 18px visual gap at either vertical edge; this is only an edge clamp and
+    // preserves the swap -> star -> merge order everywhere else.
     const actionX = Math.min(arenaRect.width - 54, Math.max(54, arenaRect.width * p.x / 100));
-    const actionY = Math.min(arenaRect.height - 42, Math.max(42, arenaRect.height * p.y / 100));
+    const actionEdgeInset = 66;
+    const actionY = Math.min(arenaRect.height - actionEdgeInset, Math.max(actionEdgeInset, arenaRect.height * p.y / 100));
     contextActions.style.setProperty("--action-x", `${actionX}px`);
     contextActions.style.setProperty("--action-y", `${actionY}px`);
     if (constellation) {

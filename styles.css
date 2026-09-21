@@ -13,6 +13,10 @@
   --layer-modal-backdrop: 1000;
   --layer-modal-panel: 1001;
   --layer-toast: 1100;
+  /* One width contract is shared by every screen and utility overlay.  The
+     height is the limiting dimension in landscape, so the playable surface
+     remains a centered 9:16 column instead of expanding toward the viewport. */
+  --game-shell-width: min(100%, 600px, 56.25dvh);
 }
 * {
   box-sizing: border-box;
@@ -54,7 +58,7 @@ body:before {
 .lobby-screen {
   isolation: isolate;
   position: relative;
-  width: min(100%, 600px);
+  width: var(--game-shell-width);
   height: 100vh;
   height: 100dvh;
   margin: 0 auto;
@@ -118,7 +122,7 @@ button {
   touch-action: manipulation;
 }
 #game-shell {
-  width: min(100%, 600px);
+  width: var(--game-shell-width);
   max-width: 600px;
   height: 100vh;
   height: 100dvh;
@@ -1805,7 +1809,7 @@ body.summon-input-locked>section:not(.draw-result-dialog),body.summon-input-lock
 .start-label,.destination-label { font-size:clamp(2.3px,.65cqw,3px); text-anchor:middle; letter-spacing:.08em; }
 
 /* One modal stack owns settings, mail and nested probability information. */
-.utility-dialog { position:fixed; z-index:var(--layer-modal-backdrop); inset:0 auto 0 50%; transform:translateX(-50%); width:min(100vw,calc(100dvh * 9 / 16)); height:min(100dvh,calc(100vw * 16 / 9)); aspect-ratio:9 / 16; padding:20px; background:#02051de8; backdrop-filter:blur(7px); pointer-events:auto; }
+.utility-dialog { position:fixed; z-index:var(--layer-modal-backdrop); inset:0 auto 0 50%; transform:translateX(-50%); width:var(--game-shell-width); height:100dvh; container-type:size; container-name:game-shell; padding:20px; background:#02051de8; backdrop-filter:blur(7px); pointer-events:auto; }
 .utility-dialog>.modal-panel,.utility-dialog>div { position:relative; z-index:var(--layer-modal-panel); width:min(90%,430px); max-height:85%; overflow:hidden; padding:0; display:flex; flex-direction:column; }
 .modal-title { flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; min-height:62px; padding:12px 16px; border:0; background:#192050; }
 .modal-title h2 { margin:0; }
