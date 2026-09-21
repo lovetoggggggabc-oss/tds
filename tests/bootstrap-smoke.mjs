@@ -138,13 +138,13 @@ game.wave.wave = 40;
 window.__TDS__.leaveBattle();
 assert.equal(game.rafRunning, false, "leaving combat must stop its animation loop");
 assert.equal(window.__TDS__.currentScreen, "BATTLE_GAME", "leaving combat must show results before returning home");
-assert.equal(window.__TDS__.playerProgress.starFragments, 6080, "new players receive the 1,000 fragment grant before the wave reward");
+assert.equal(window.__TDS__.playerProgress.starFragments, 2160, "new players receive the 2,000 fragment grant before the wave reward");
 assert.deepEqual(
   (({ starFragments, meteorFragments }) => ({ starFragments, meteorFragments }))(JSON.parse(storage.get("zodiacDefenseProgress"))),
-  { starFragments: 6080, meteorFragments: 2 },
+  { starFragments: 2160, meteorFragments: 2 },
 );
 window.__TDS__.leaveBattle();
-assert.equal(window.__TDS__.playerProgress.starFragments, 6080, "a battle reward must only be granted once");
+assert.equal(window.__TDS__.playerProgress.starFragments, 2160, "a battle reward must only be granted once");
 assert.equal(window.__TDS__.playerProgress.meteorFragments, 2, "wave 40 must award two meteor fragments once");
 elements.get("restart").onclick();
 assert.equal(window.__TDS__.currentScreen, "MAIN_MENU");
@@ -152,7 +152,17 @@ window.__TDS__.showBattleMenu();
 window.__TDS__.startBattle();
 assert.notEqual(window.__TDS__.game, game, "re-entry must create a fresh combat state");
 assert.equal(window.__TDS__.game.wave.wave, 0, "re-entry must begin with preparation before wave 1");
+const secondBattle = window.__TDS__.game;
+secondBattle.wave.wave = 100;
+window.__TDS__.leaveBattle();
+assert.equal(secondBattle.starFragmentReward, 400, "wave 100 awards 400 star fragments");
+assert.equal(secondBattle.meteorFragmentReward, 5, "wave 100 keeps the one-per-20-waves meteor reward");
+assert.equal(elements.get("fragmentReward").textContent, 400, "results show the exact ×4 star-fragment reward");
+assert.equal(elements.get("meteorFragmentReward").textContent, 5, "results show the unchanged meteor reward");
+window.__TDS__.leaveBattle();
+assert.equal(window.__TDS__.playerProgress.starFragments, 2560, "repeat finish calls cannot duplicate wave 100 rewards");
+assert.equal(window.__TDS__.playerProgress.meteorFragments, 7, "repeat finish calls cannot duplicate meteor rewards");
 assert.equal(elements.has("bootError"), false, "successful boot must not display diagnostics");
-assert.equal((html.match(/<script src="game\.js\?v=40" defer><\/script>/g) || []).length, 1);
+assert.equal((html.match(/<script src="game\.js\?v=41" defer><\/script>/g) || []).length, 1);
 
 console.log("Runtime bootstrap smoke passed: DOM ready, 2 players, 30 star positions, resources, wave 1, enemy spawn, and RAF verified.");

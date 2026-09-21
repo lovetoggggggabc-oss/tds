@@ -35,8 +35,10 @@ let controlsBound = false;
 let toastTimer = 0;
 const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
-const STAR_FRAGMENT_GRANT_VERSION = 1;
-const STAR_FRAGMENT_GRANT_AMOUNT = 1000;
+const STAR_FRAGMENT_GRANT_VERSION = 2;
+const STAR_FRAGMENT_GRANT_AMOUNT = 2000;
+const DEFAULT_STAR_FRAGMENTS = 0;
+let starFragmentGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([10, 100]) });
 const GACHA_RULES = Object.freeze({ starChance: .9, constellationChance: .1, pityLimit: 20 });
@@ -71,8 +73,9 @@ function loadPlayerProgress() {
     const equippedConstellations = [...new Set(saved?.equippedConstellations ?? STARTER_COLLECTION.equippedConstellations)]
       .filter((id) => ownedConstellations.includes(id)).slice(0, MAX_EQUIPPED_CONSTELLATIONS);
     const grantClaimed = (Number(saved?.starFragmentGrantVersion) || 0) >= STAR_FRAGMENT_GRANT_VERSION;
+    starFragmentGrantApplied = !grantClaimed;
     return {
-      starFragments: Math.max(0, Number.isFinite(saved?.starFragments) ? Math.floor(saved.starFragments) : 5000) + (grantClaimed ? 0 : STAR_FRAGMENT_GRANT_AMOUNT),
+      starFragments: Math.max(0, Number.isFinite(saved?.starFragments) ? Math.floor(saved.starFragments) : DEFAULT_STAR_FRAGMENTS) + (grantClaimed ? 0 : STAR_FRAGMENT_GRANT_AMOUNT),
       meteorFragments: Math.max(0, Number.isFinite(saved?.meteorFragments) ? Math.floor(saved.meteorFragments) : 0),
       ownedStars,
       ownedConstellations,
@@ -81,7 +84,8 @@ function loadPlayerProgress() {
       starFragmentGrantVersion: STAR_FRAGMENT_GRANT_VERSION,
     };
   } catch (_error) {
-    return { starFragments: 5000 + STAR_FRAGMENT_GRANT_AMOUNT, meteorFragments: 0, ownedStars: { ...STARTER_COLLECTION.ownedStars }, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, starFragmentGrantVersion: STAR_FRAGMENT_GRANT_VERSION };
+    starFragmentGrantApplied = true;
+    return { starFragments: DEFAULT_STAR_FRAGMENTS + STAR_FRAGMENT_GRANT_AMOUNT, meteorFragments: 0, ownedStars: { ...STARTER_COLLECTION.ownedStars }, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, starFragmentGrantVersion: STAR_FRAGMENT_GRANT_VERSION };
   }
 }
 const playerProgress = loadPlayerProgress();
@@ -1985,14 +1989,25 @@ function constellationPreview(definition) {
   return `<svg viewBox="0 0 100 100" aria-hidden="true"><g>${edges}</g>${nodes}</svg>`;
 }
 
+const SUMMON_STATES = Object.freeze({ START: "SUMMON_START", FORMING: "CONSTELLATION_FORMING", COMPLETE: "CONSTELLATION_COMPLETE", FLASH: "REVEAL_FLASH", REVEAL: "RESULT_REVEAL", IDLE: "RESULT_IDLE" });
+const CONSTELLATION_SUMMON_COLORS = Object.freeze({
+  DAWN: ["#e7e5ff", "#9d75ff"], RADIANCE: ["#fffef0", "#ffd65c"], SAGITTARIUS: ["#65baff", "#ffe06b"],
+  ASTROLOGER: ["#bd75ff", "#ffd96b"], GUARDIAN: ["#d9f8ff", "#5dbdff"], TWILIGHT: ["#9a48dc", "#ff4d68"],
+});
+
 function summonSequencePreview(results) {
   const constellation = [...results].reverse().find((result) => result.kind === "constellation");
   const layout = constellation
     ? CONSTELLATION_DEFINITIONS[constellation.id].previewLayout
     : { nodes: [[14, 66], [31, 35], [52, 55], [70, 24], [87, 65]], edges: [[0, 1], [1, 2], [2, 3], [3, 4]] };
-  const edges = layout.edges.map(([from, to], index) => `<line style="--link-order:${index}" x1="${layout.nodes[from][0]}" y1="${layout.nodes[from][1]}" x2="${layout.nodes[to][0]}" y2="${layout.nodes[to][1]}"/>`).join("");
-  const nodes = layout.nodes.map(([x, y], index) => `<text style="--star-order:${index}" x="${x}" y="${y}">✦</text>`).join("");
-  return `<svg viewBox="0 0 100 90" aria-hidden="true"><g>${edges}</g>${nodes}</svg>`;
+  // Expand the compact collection layout across the safe central 84% of the 9:16 stage.
+  const points = layout.nodes.map(([x, y]) => [8 + x * .84, 7 + y * .94]);
+  const edges = layout.edges.map(([from, to], index) => {
+    const [x1, y1] = points[from], [x2, y2] = points[to];
+    return `<g style="--link-order:${index}"><line class="summon-link-base" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><line class="summon-link-energy" pathLength="1" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><circle class="summon-runner" r="1.25"><animateMotion begin="${.7 + index * .34}s" dur=".48s" fill="freeze" path="M${x1},${y1} L${x2},${y2}"/></circle></g>`;
+  }).join("");
+  const nodes = points.map(([x, y], index) => `<text class="summon-node" style="--star-order:${index}" x="${x}" y="${y}">✦</text>`).join("");
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><g>${edges}</g>${nodes}</svg>`;
 }
 
 function toggleEquippedConstellation(id) {
@@ -2089,6 +2104,39 @@ function bootstrapGame() {
     toast.textContent = message; toast.hidden = false; clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { toast.hidden = true; }, 2200);
   };
+  const resultDialog = getRequiredElement("draw-results");
+  const summonController = {
+    state: SUMMON_STATES.IDLE, timers: [], results: [],
+    active() { return !resultDialog.hidden && this.state !== SUMMON_STATES.IDLE; },
+    clearTimers() { this.timers.forEach(clearTimeout); this.timers.length = 0; },
+    schedule(state, delay, action) { this.timers.push(setTimeout(() => { this.state = state; resultDialog.dataset.summonState = state; action?.(); }, delay)); },
+    begin(results) {
+      this.clearTimers(); this.results = results;
+      const featured = [...results].reverse().find((item) => item.kind === "constellation") || results[0];
+      const colors = featured.kind === "constellation" ? CONSTELLATION_SUMMON_COLORS[featured.id] : [STAR_TYPES[featured.id].color, "#ffffff"];
+      resultDialog.style.setProperty("--summon-primary", colors[0]); resultDialog.style.setProperty("--summon-secondary", colors[1]);
+      resultDialog.className = `draw-result-dialog ${featured.kind === "constellation" ? "featured-constellation" : "featured-star"}`;
+      resultDialog.hidden = false; document.body.classList.add("summon-input-locked");
+      this.state = SUMMON_STATES.START; resultDialog.dataset.summonState = this.state;
+      void resultDialog.offsetWidth;
+      this.schedule(SUMMON_STATES.FORMING, 260);
+      this.schedule(SUMMON_STATES.COMPLETE, 2100);
+      this.schedule(SUMMON_STATES.FLASH, 2600);
+      this.schedule(SUMMON_STATES.REVEAL, 2920, () => resultDialog.classList.add("summon-complete"));
+      this.schedule(SUMMON_STATES.IDLE, 2920 + results.length * 90, () => resultDialog.classList.add("results-idle"));
+    },
+    skip() {
+      if (!this.active()) return;
+      this.clearTimers(); this.state = SUMMON_STATES.IDLE; resultDialog.dataset.summonState = this.state;
+      resultDialog.classList.add("summon-complete", "results-idle", "summon-skipped");
+    },
+    close() {
+      if (this.state !== SUMMON_STATES.IDLE) return;
+      this.clearTimers(); this.results = []; resultDialog.hidden = true; resultDialog.removeAttribute("data-summon-state");
+      resultDialog.className = "draw-result-dialog"; document.body.classList.remove("summon-input-locked");
+      getRequiredElement("draw-sequence").replaceChildren(); getRequiredElement("draw-result-grid").replaceChildren();
+    },
+  };
   const renderCollection = () => {
     getRequiredElement("star-collection").innerHTML = Object.values(STAR_TYPES).map((star) => {
       const count = playerProgress.ownedStars[star.id] || 0;
@@ -2125,7 +2173,7 @@ function bootstrapGame() {
   finishBattle = (battle = game) => {
     if (!battle) return 0;
     const reachedWave = Math.max(0, Math.floor(battle.wave.wave));
-    const reward = reachedWave * 2;
+    const reward = reachedWave * 4;
     const meteorReward = Math.floor(reachedWave / 20);
     if (!battle.battleRewardGranted) {
       battle.battleRewardGranted = true;
@@ -2193,37 +2241,30 @@ function bootstrapGame() {
   });
   document.querySelectorAll?.("[data-draw]").forEach((button) => {
     button.onclick = () => {
-      if (button.disabled) return;
+      if (button.disabled || summonController.active()) return;
       if (button.dataset.draw === "relic") return showToast("유물 뽑기 확률 설정 후 이용할 수 있습니다.");
       const results = performConstellationDraws(Number(button.dataset.cost) === 1000 ? 10 : 1);
       if (!results) return showToast("별조각이 부족합니다.");
-      const resultDialog = getRequiredElement("draw-results");
       const resultSequence = getRequiredElement("draw-sequence");
       resultSequence.innerHTML = summonSequencePreview(results);
       getRequiredElement("draw-result-grid").innerHTML = results.map((result, index) => result.kind === "star"
         ? `<article class="draw-result star-result" style="--star-color:${STAR_TYPES[result.id].color};--result-order:${index}"><i>✦</i><b>${STAR_TYPES[result.id].name} 별</b></article>`
-        : `<article class="draw-result constellation-result" style="--result-order:${index}">${result.isNew ? "<em>NEW</em>" : "<em>보유 중</em>"}${constellationPreview(CONSTELLATION_DEFINITIONS[result.id])}<b>${CONSTELLATION_DEFINITIONS[result.id].name}</b>${result.guaranteed ? "<small>확정 소환</small>" : ""}</article>`).join("");
-      resultDialog.hidden = false;
-      resultDialog.classList.remove("summon-complete");
-      void resultDialog.offsetWidth;
-      resultDialog.classList.add("summoning");
-      setTimeout(() => {
-        if (resultDialog.hidden) return;
-        resultDialog.classList.remove("summoning");
-        resultDialog.classList.add("summon-complete");
-      }, 1500);
+        : `<article class="draw-result constellation-result constellation-${result.id.toLowerCase()}" style="--result-order:${index};--identity:${CONSTELLATION_SUMMON_COLORS[result.id][0]}">${result.isNew ? "<em>NEW</em>" : "<em>보유 중</em>"}${constellationPreview(CONSTELLATION_DEFINITIONS[result.id])}<b>${CONSTELLATION_DEFINITIONS[result.id].name}</b><strong>${result.id}</strong>${result.guaranteed ? "<small>확정 소환</small>" : ""}</article>`).join("");
+      summonController.begin(results);
       updateMetaCurrency(); renderCollection();
     };
   });
-  getRequiredElement("close-draw-results").onclick = () => { const dialog = getRequiredElement("draw-results"); dialog.hidden = true; dialog.classList.remove("summoning", "summon-complete"); };
+  getRequiredElement("skip-summon").onclick = () => summonController.skip();
+  getRequiredElement("close-draw-results").onclick = () => summonController.close();
   window.addEventListener("resize", () => {
     RangeSystem.refresh();
     game?.markDirty();
   }, { passive: true });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   showMainMenu();
+  if (starFragmentGrantApplied) showToast("특별 지급\n별조각 ✦ 2,000개를 획득했습니다!");
   const diagnostics = {
-    CONFIG, STAR_TYPES, STARTER_COLLECTION, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, PREPARATION_SECONDS, GACHA_COSTS, playerProgress, performConstellationDraws, toggleEquippedConstellation,
+    CONFIG, STAR_TYPES, STARTER_COLLECTION, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, playerProgress, performConstellationDraws, toggleEquippedConstellation, summonController,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
     showMainMenu, showBattleMenu, showGacha, startBattle, leaveBattle, finishBattle,
