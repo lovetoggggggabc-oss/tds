@@ -41,8 +41,8 @@ let activeGameMode = GAME_MODES.NORMAL;
 
 const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", MAP_VOTE: "MAP_VOTE", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
-const PROGRESS_SCHEMA_VERSION = 6;
-const UPDATE_REWARD_ID = "difficulty_update_star_shards_3000_v1";
+const PROGRESS_SCHEMA_VERSION = 7;
+const UPDATE_REWARD_ID = "balance_update_stardust_3000_v1";
 const METEOR_MAIL_REWARD_ID = "meteor_fragment_mail_30_v1";
 const STAR_DUST_GRANT_ID = "starDust5000_v1";
 const METEOR_GRANT_ID = "meteorFragments20_v2";
@@ -54,6 +54,16 @@ const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), r
 const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong" });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
+  id: "constellation_balance_judgement_v1", date: "2026.09.21", title: "✦ 별자리 & 전투 밸런스 업데이트",
+  sections: Object.freeze([
+    Object.freeze({ title: "신규 별자리", paragraphs: Object.freeze(["⚖ 심판의 자리", "백색 별 2개로 완성하는 새로운 공격형 별자리입니다. 매 웨이브 적 1명을 심판 대상으로 지정하고, 사거리 안에서는 집중 공격합니다."]), bullets: Object.freeze(["심판 대상을 공격할 때마다 공격 직전 현재 체력의 10% 추가 피해"]) }),
+    Object.freeze({ title: "수호자의 자리 조정", bullets: Object.freeze(["수호의 빛 비용: 별빛 200 → 350", "풀피 최대 체력 증가: 1 + (구성 별 Stage 합 ÷ 4)%", "기지 최대 체력 상한: 500,000"]) }),
+    Object.freeze({ title: "광휘의 별자리 개선", bullets: Object.freeze(["공격 대상이 체력이 가장 높은 적에서 가장 앞에 있는 적으로 변경되었습니다.", "연쇄 공격 효과를 간소화하여 전투 성능을 개선했습니다."]) }),
+    Object.freeze({ title: "일반 모드", bullets: Object.freeze(["Wave 1~10: +4.5%", "Wave 11~20: +5.5%", "Wave 21~40: +6.5%", "Wave 41 이상: +7.5%", "전투 별가루 보상: 웨이브당 8개"]) }),
+    Object.freeze({ title: "세로 대전장 BETA", bullets: Object.freeze(["적이 세로 방향의 길에서 비정상적으로 빠르게 이동하던 문제를 수정했습니다."]) }),
+    Object.freeze({ title: "업데이트 보상", paragraphs: Object.freeze(["별가루 ×3,000", "우편함에서 수령할 수 있습니다."]) }),
+  ]), footer: "새로운 심판의 별과 개선된 전투를 만나보세요.",
+}), Object.freeze({
   id: "difficulty_rebalance_2026_09_v1", date: "2026.09.21", title: "✦ 전투 난이도 개편 업데이트",
   sections: Object.freeze([
     Object.freeze({ title: "전투 난이도 개편", paragraphs: Object.freeze(["일반 모드의 몬스터 성장 곡선을 개편했습니다.", "초반은 보다 안정적으로 성장할 수 있고, 후반으로 갈수록 점차 강한 적이 등장합니다."]) }),
@@ -382,8 +392,10 @@ const CONSTELLATION_IDS = Object.freeze({
   LINK: "LINK",
   STRIKE: "STRIKE",
   HORIZON: "HORIZON",
+  JUDGEMENT: "JUDGEMENT",
 });
 const BASE_MAX_HP = 400;
+const BASE_MAX_HP_CAP = 500000;
 const BASE_MAX_STARS = 21;
 function effectiveMaxStars() { const currentGame=typeof game === "undefined" ? null : game; return BASE_MAX_STARS + getRelicEffect("GOOD_OF_BINDING_STAR") + (currentGame?.fateDice?.kind === "maxStars" ? currentGame.fateDice.value : 0); }
 const MAX_STARS_PER_PLAYER = effectiveMaxStars();
@@ -449,6 +461,7 @@ const VERTICAL_BETA_WAYPOINTS = Object.freeze([
 ].map(Object.freeze));
 const EXPERIMENTAL_VERTICAL_MAP = Object.freeze({
   id: "EXPERIMENTAL_NEBULA_ROUTE", name: "거대 성운 항로", roadWidth: 30, placementPadding: 3,
+  worldHeightScale: 2.8,
   spawn: Object.freeze({ x: 50, y: 3 }), destination: Object.freeze({ x: 25, y: 97 }),
   route: buildRoundedOrthogonalRoute(VERTICAL_BETA_WAYPOINTS), cornerRadius: 1.25,
   waypoints: VERTICAL_BETA_WAYPOINTS, arrows: Object.freeze([.05,.14,.25,.36,.46,.55,.65,.76,.87,.95]),
@@ -461,7 +474,11 @@ function getConstellationStageMultiplier(constellation) {
   return constellation.componentStageSum / 4;
 }
 function getStageScaledDamage(constellation) {
-  return constellation.definition.attackDamage * getConstellationStageMultiplier(constellation);
+  const stageMultiplier = getConstellationStageMultiplier(constellation);
+  // Judgement's two-star recipe must still deliver its specified 1,000 base
+  // hit at Stage 1; higher component stages continue to use global scaling.
+  return constellation.definition.attackDamage *
+    (constellation.definitionId === CONSTELLATION_IDS.JUDGEMENT ? Math.max(1, stageMultiplier) : stageMultiplier);
 }
 function formatMultiplier(value) {
   return Number(value.toFixed(2)).toString();
@@ -487,7 +504,7 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
   [CONSTELLATION_IDS.RADIANCE]: Object.freeze({
     id: CONSTELLATION_IDS.RADIANCE, name: "광휘의 별자리",
     recipe: Object.freeze({ red: 2, white: 1 }), attackDamage: 950,
-    attackSpeed: 1, range: 6, targeting: "highest",
+    attackSpeed: 1, range: 6, targeting: "progress",
     previewLayout: Object.freeze({
       nodes: Object.freeze([[18, 70], [50, 24], [82, 70]]),
       edges: Object.freeze([[0, 1], [1, 2], [2, 0]]),
@@ -533,7 +550,7 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     }),
     contextualAction: "guardianLight",
     specialDescriptions: Object.freeze([
-      "수호의 빛 200: 별빛 200을 사용합니다. 기지가 피해를 입었다면 체력을 회복하고, 기지가 풀피라면 최대 체력을 증가시킵니다.",
+      "수호의 빛 350: 별빛 350을 사용합니다. 기지가 피해를 입었다면 50 + 최대 체력의 1%를 회복하고, 풀피라면 1 + (구성 별 Stage 합 ÷ 4)%만큼 최대 체력을 증가시킵니다 (기지 최대 500,000).",
       "15초마다 기지에서 수호자를 소환합니다. 수호자는 길을 거꾸로 이동하며 적과 만나면 현재 체력 + 공격력만큼 피해를 준 뒤 사라집니다. 수호자의 최대 체력은 기지 최대 체력과 별자리 단계 합에 따라 결정되며 최대 300,000입니다.",
     ]),
   }),
@@ -593,6 +610,16 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     previewLayout: Object.freeze({ nodes: Object.freeze([[17, 52], [50, 50], [83, 48]]), edges: Object.freeze([[0, 1], [1, 2]]) }),
     specialDescriptions: Object.freeze(["직접 공격하지 않습니다. 지평선의 초점으로 다른 활성 별자리의 능력 정의를 독립적으로 계승합니다.", "힘을 계승당한 원본 별자리는 공격 cycle마다 15% 확률로 추가 공격을 1회 합니다."]),
   }),
+  [CONSTELLATION_IDS.JUDGEMENT]: Object.freeze({
+    id: CONSTELLATION_IDS.JUDGEMENT, name: "심판의 자리",
+    recipe: Object.freeze({ white: 2 }), attackDamage: 1000,
+    attackSpeed: 5.5, range: 7.5, targeting: "progress",
+    previewLayout: Object.freeze({ nodes: Object.freeze([[25, 58], [75, 58]]), edges: Object.freeze([[0, 1]]) }),
+    specialDescriptions: Object.freeze([
+      "특수능력 — 심판 대상: 매 웨이브 적 1명을 심판 대상으로 지정합니다. 대상이 사정거리 안에 있다면 최우선으로 공격합니다.",
+      "특수능력 — 처단: 심판 대상을 공격할 때마다 대상의 공격 직전 현재 체력의 10%만큼 추가 피해를 입힙니다.",
+    ]),
+  }),
 });
 playerProgress.ownedConstellations = playerProgress.ownedConstellations.filter((id) => CONSTELLATION_DEFINITIONS[id]);
 playerProgress.equippedConstellations = playerProgress.equippedConstellations
@@ -605,7 +632,7 @@ const CONFIG = {
   summonCost: 30,
   swapCost: 10,
   divinationCost: 30,
-  guardianLightCost: 200,
+  guardianLightCost: 350,
   bondOfferingCost: 200,
   startStarlight: 300,
   startDivinity: 1,
@@ -661,10 +688,10 @@ const MODE_CONFIG = Object.freeze({
 
 function getNormalWaveHpMultiplier(wave) {
   const n = Math.max(1, Math.floor(Number(wave) || 1));
-  const multiplier = Math.pow(1.04, Math.min(n - 1, 9))
-    * Math.pow(1.05, Math.min(Math.max(n - 10, 0), 10))
-    * Math.pow(1.06, Math.min(Math.max(n - 20, 0), 20))
-    * Math.pow(1.07, Math.max(n - 40, 0));
+  const multiplier = Math.pow(1.045, Math.min(n - 1, 9))
+    * Math.pow(1.055, Math.min(Math.max(n - 10, 0), 10))
+    * Math.pow(1.065, Math.min(Math.max(n - 20, 0), 20))
+    * Math.pow(1.075, Math.max(n - 40, 0));
   return Number.isFinite(multiplier) ? Math.min(multiplier, 1e300) : 1e300;
 }
 
@@ -754,7 +781,7 @@ class PlayerResources {
   }
 }
 class Enemy {
-  constructor(type, lane, wave) {
+  constructor(type, lane, wave, judgementTarget = false) {
     Object.assign(this, CONFIG.monsters[type]);
     this.type = type;
     // lane is retained as a harmless compatibility field for saved/test data;
@@ -774,6 +801,7 @@ class Enemy {
       : getWaveHpMultiplier(runtimeMode, wave));
     this.hp = this.maxHp;
     this.dead = false;
+    this.judgementTarget = judgementTarget;
     this.isBoss = this.boss === true;
     this.spawnTime = game?.gameTime || 0;
     this.abilityTriggered = false;
@@ -788,8 +816,8 @@ class Enemy {
     this.lastHpPercent = -1;
     this.lastHpText = "";
     this.el = document.createElement("div");
-    this.el.className = `enemy ${this.type}${this.boss ? " boss" : ""}`;
-    this.el.innerHTML = `<div class="enemy-health"><span class="enemy-hp"></span><div class="bar" aria-hidden="true"><i></i></div></div><span class="enemy-body"></span><small>${this.boss ? this.name : ""}</small>`;
+    this.el.className = `enemy ${this.type}${this.boss ? " boss" : ""}${this.judgementTarget ? " judgement-target" : ""}`;
+    this.el.innerHTML = `<div class="enemy-health"><span class="enemy-hp"></span><div class="bar" aria-hidden="true"><i></i></div></div><span class="enemy-body"></span>${this.judgementTarget ? '<b class="judgement-mark" aria-label="심판 대상">⚖</b>' : ""}<small>${this.boss ? this.name : ""}</small>`;
     this.hpFill = this.el.querySelector(".bar i");
     this.hpText = this.el.querySelector(".enemy-hp");
     this.hpText.hidden = !playerProgress.settings.showMonsterHpNumbers;
@@ -872,7 +900,7 @@ class Enemy {
     if (this.dead || n <= 0) return false;
     const lightMultiplier = this.statusEffects.lightUntil > game.gameTime ? 1 + this.statusEffects.lightPercent / 100 : 1;
     this.hp -= n * lightMultiplier;
-    UIManager.beam(from, this.position());
+    if (!isStatusDamage) UIManager.beam(from, this.position());
     if (this.hp <= 0 && !this.dead) {
       this.dead = true;
       this.el.remove();
@@ -991,15 +1019,17 @@ class EnemySpawner {
     let boss = WaveManager.isBoss(n, this.game.mode);
     if (boss) {
       let type = bossTypeForWave(n);
-      this.queue.push({ at: 0, type, lane: 0 });
+      this.queue.push({ at: 0, type, lane: 0, judgementTarget: true });
     } else {
       const normalCount = Math.min(4 + Math.floor(n * 1.2), 25);
       let count = normalCount * (MODE_CONFIG[this.game.mode]?.enemyCountMultiplier || 1);
+      const judgementIndex = Math.floor(Math.random() * count);
       for (let i = 0; i < count; i++)
         this.queue.push({
           at: i * 0.7,
           type: (i + n) % 3 === 0 ? "bug" : "slime",
           lane: 0,
+          judgementTarget: i === judgementIndex,
         });
     }
   }
@@ -1007,7 +1037,7 @@ class EnemySpawner {
     this.queue.forEach((x) => (x.at -= dt));
     while (this.queue[0] && this.queue[0].at <= 0) {
       let x = this.queue.shift();
-      this.game.enemies.push(new Enemy(x.type, x.lane, this.game.wave.wave));
+      this.game.enemies.push(new Enemy(x.type, x.lane, this.game.wave.wave, x.judgementTarget));
     }
   }
 }
@@ -1078,9 +1108,14 @@ function curvePoint(points, t) {
     y: u ** 3 * points[0].y + 3 * u * u * t * points[1].y + 3 * u * t * t * points[2].y + t ** 3 * points[3].y };
 }
 function buildRouteCache(map) {
+  // Vertical battlefields render a 2.8x taller world. Measure route samples
+  // in that same world metric so an equal travelled distance is independent
+  // of whether a segment is horizontal, vertical, or curved.
+  const xScale = 1;
+  const yScale = map.worldHeightScale || 1;
   const samples = [{ ...map.spawn, distance: 0 }]; let total = 0; let previous = map.spawn;
   map.route.forEach((segment) => { for (let step = 1; step <= 80; step++) {
-    const point = curvePoint(segment, step / 80); total += Math.hypot(point.x - previous.x, point.y - previous.y);
+    const point = curvePoint(segment, step / 80); total += Math.hypot((point.x - previous.x) * xScale, (point.y - previous.y) * yScale);
     samples.push({ ...point, distance: total }); previous = point;
   }});
   return Object.freeze({ samples: Object.freeze(samples), length: total });
@@ -1125,6 +1160,8 @@ class Targeting {
       // SpatialGrid preserves the game's enemy ordering; strict comparison
       // therefore keeps the first enemy as the stable tie-breaker.
       return targets.reduce((best, enemy) => !best || enemy.hp < best.hp ? enemy : best, null);
+    if (star.data().target === "progress")
+      return targets.reduce((best, enemy) => !best || enemy.distanceTravelled > best.distanceTravelled ? enemy : best, null);
     return targets.reduce((best, enemy) => !best || enemy.progress > best.progress ? enemy : best, null);
   }
   static dist(a, b) {
@@ -1335,6 +1372,17 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
     createRuntime: (constellation) => ({ componentStageSum: constellation.componentStageSum, inheritedDefinitionId: null, inheritedRuntime: null }),
     update() {}, attack() {},
   }),
+  [CONSTELLATION_IDS.JUDGEMENT]: Object.freeze({
+    createRuntime: (constellation) => ({ componentStageSum: constellation.componentStageSum }),
+    attack(constellation, target, origin) {
+      const judgementDamage = target.judgementTarget ? target.hp * 0.10 : 0;
+      target.hit(constellation.currentDamage(), origin, constellation);
+      // Additional judgement damage is deliberately source-less: it cannot
+      // recursively trigger constellation on-hit or kill abilities.
+      if (judgementDamage > 0 && !target.dead)
+        target.hit(judgementDamage, origin, null, true);
+    },
+  }),
 });
 class Constellation {
   constructor(owner, center, members, definitionId, connectionOrder = members) {
@@ -1379,6 +1427,14 @@ class Constellation {
     }
     this.cooldown -= dt;
     const position = this.owner.pos(this.center);
+    if (this.definitionId === CONSTELLATION_IDS.JUDGEMENT) {
+      const marked = game.enemies.find((enemy) => !enemy.dead && enemy.judgementTarget &&
+        RangeSystem.contains(position, enemy.position(), this.effectiveRange()));
+      if (marked && marked !== this.target) {
+        this.target = marked;
+        this.behavior.onTargetChanged?.(this, marked);
+      }
+    }
     if (this.target && (this.target.dead || !RangeSystem.contains(position, this.target.position(), this.effectiveRange())))
       this.resetTarget();
     const nextSpeed = this.effectiveAttackSpeed(this.target);
@@ -1530,12 +1586,13 @@ class Constellation {
   }
   chainAttack(first, origin) {
     const hit = new Set();
+    const points = [origin];
     let target = first;
     let from = origin;
     while (target && hit.size < this.runtime.componentStageSum) {
       const targetPosition = target.position();
-      target.hit(this.currentDamage(), from, this);
-      if (hit.size) UIManager.chainBeam(from, targetPosition);
+      target.hit(this.currentDamage(), from, this, true);
+      points.push(targetPosition);
       hit.add(target);
       from = targetPosition;
       let nearestDistance = Infinity;
@@ -1549,6 +1606,7 @@ class Constellation {
         }
       }
     }
+    UIManager.chainPath?.(points);
   }
   release() {
     this.behavior.dispose?.(this);
@@ -1857,6 +1915,7 @@ function constellationSignature(definitionId) {
     LINK: '<path d="M50 50 50 14M50 50 86 50M50 50 50 86M50 50 14 50"/><path d="m50 38 12 12-12 12-12-12Z"/><circle cx="50" cy="14" r="4"/><circle cx="86" cy="50" r="4"/><circle cx="50" cy="86" r="4"/><circle cx="14" cy="50" r="4"/>',
     STRIKE: '<path d="M8 55h62M18 45h52M66 34l25 16-25 16"/><circle cx="25" cy="50" r="7"/>',
     HORIZON: '<path d="M7 57h86M20 63h60"/><path d="M36 56a14 14 0 0 1 28 0"/><path d="m50 25 4 10 10 4-10 4-4 10-4-10-10-4 10-4Z"/>',
+    JUDGEMENT: '<path d="M18 66h64M50 20v46M27 34h46M27 34 16 56h22ZM73 34 62 56h22Z"/><path d="m50 9 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/>',
   };
   return art[definitionId] ? `<span class="constellation-signature signature-${definitionId.toLowerCase()}"><svg viewBox="0 0 100 100" aria-hidden="true">${art[definitionId]}</svg></span>` : "";
 }
@@ -2058,16 +2117,18 @@ class GuardianLightSystem {
     )
       return UIManager.hint("수호자의 자리를 선택하세요.");
     const resources = manager.player.resources;
-    if (!resources.spend(CONFIG.guardianLightCost))
-      return UIManager.hint("별빛 200이 필요합니다.");
-
     const base = game.base;
+    if (base.hp >= base.maxHp && base.maxHp >= BASE_MAX_HP_CAP)
+      return UIManager.hint("기지 최대 체력이 상한에 도달했습니다.");
+    if (!resources.spend(CONFIG.guardianLightCost))
+      return UIManager.hint("별빛 350이 필요합니다.");
     if (base.hp < base.maxHp)
       base.hp = Math.min(base.maxHp, base.hp + 50 + base.maxHp * 0.01);
     else {
-      const increaseAmount = base.maxHp * ((10 + star.constellation.componentStageSum) / 100);
-      base.maxHp += increaseAmount;
-      base.hp += increaseAmount;
+      const increasePercent = 1 + star.constellation.componentStageSum / 4;
+      const nextMaxHp = Math.min(BASE_MAX_HP_CAP, base.maxHp + base.maxHp * increasePercent / 100);
+      base.maxHp = nextMaxHp;
+      base.hp = nextMaxHp;
     }
     UIManager.hint("수호의 빛을 사용했습니다.");
     game.markDirty();
@@ -2132,6 +2193,21 @@ class UIManager {
       line.setAttribute(key, [a.x, a.y, b.x, b.y][index]),
     );
     this.addTransient(line, effects, 230);
+  }
+  static chainPath(points) {
+    if (!points || points.length < 2) return;
+    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    group.setAttribute("class", "chain-path-effect");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    path.setAttribute("class", "chain-beam");
+    path.setAttribute("points", points.map(({ x, y }) => `${x},${y}`).join(" "));
+    group.append(path);
+    for (const point of points.slice(1)) {
+      const flash = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      flash.setAttribute("class", "chain-flash"); flash.setAttribute("cx", point.x); flash.setAttribute("cy", point.y); flash.setAttribute("r", ".65");
+      group.append(flash);
+    }
+    this.addTransient(group, effects, 140);
   }
   static areaImpact(position, range) {
     const pulse = document.createElement("i");
@@ -2410,13 +2486,14 @@ class UIManager {
       const isStrike = constellation.definitionId === CONSTELLATION_IDS.STRIKE;
       const isHorizon = constellation.definitionId === CONSTELLATION_IDS.HORIZON;
       const canDivine = isAstrologer && pick.m.player.resources.can(CONFIG.divinationCost);
-      const canUseGuardianLight = isGuardian && pick.m.player.resources.starlight >= CONFIG.guardianLightCost;
+      const canUseGuardianLight = isGuardian && pick.m.player.resources.starlight >= CONFIG.guardianLightCost &&
+        (game.base.hp < game.base.maxHp || game.base.maxHp < BASE_MAX_HP_CAP);
       const canOfferBond = isBond && constellation.runtime.bindChance < 1 && pick.m.player.resources.can(CONFIG.bondOfferingCost);
       // definitionId is deliberately part of the cache key: actions from a
       // previous tower type must never survive a selection/type change.
       let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}:${canUseGuardianLight}:${canOfferBond}:${constellation.runtime.bindChance}:${constellation.runtime.strikeStacks || 0}:${constellation.runtime.inheritedDefinitionId || "none"}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 200</button>` : ""}${isBond ? `<button class="bond-offering action-above" data-context="bond-offering"${canOfferBond ? "" : " disabled"}>별빛 헌납 200</button>` : ""}${isStrike ? `<button class="strike-action action-above" data-context="strike"${constellation.runtime.strikeStacks ? "" : " disabled"}>일격 가하기</button>` : ""}${isHorizon ? `<button class="horizon-action action-above" data-context="horizon">지평선의 초점</button>` : ""}<button class="${isAstrologer || isGuardian || isBond || isStrike || isHorizon ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
+        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 350</button>` : ""}${isBond ? `<button class="bond-offering action-above" data-context="bond-offering"${canOfferBond ? "" : " disabled"}>별빛 헌납 200</button>` : ""}${isStrike ? `<button class="strike-action action-above" data-context="strike"${constellation.runtime.strikeStacks ? "" : " disabled"}>일격 가하기</button>` : ""}${isHorizon ? `<button class="horizon-action action-above" data-context="horizon">지평선의 초점</button>` : ""}<button class="${isAstrologer || isGuardian || isBond || isStrike || isHorizon ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
         if (isAstrologer)
           contextActions.querySelector('[data-context="divination"]').onclick = () =>
             DivinationSystem.execute(pick.m, pick.index);
@@ -2605,7 +2682,7 @@ class GameManager {
     this.battleRewardGranted = false;
     this.galaxyFragmentsEarned = 0;
     this.fateDice = this.rollFateDice();
-    const initialBaseHp = BASE_MAX_HP + getRelicEffect("STEADFAST_HEART");
+    const initialBaseHp = Math.min(BASE_MAX_HP_CAP, BASE_MAX_HP + getRelicEffect("STEADFAST_HEART"));
     this.base = { hp: initialBaseHp, maxHp: initialBaseHp };
     this.remainingBaseShields = getRelicEffect("IMMORTAL_NEBULA");
     Object.defineProperty(this, "baseHP", {
@@ -2913,6 +2990,7 @@ const CONSTELLATION_SUMMON_COLORS = Object.freeze({
   DAWN: ["#e7e5ff", "#9d75ff"], RADIANCE: ["#fffef0", "#ffd65c"], SAGITTARIUS: ["#65baff", "#ffe06b"],
   ASTROLOGER: ["#bd75ff", "#ffd96b"], GUARDIAN: ["#d9f8ff", "#5dbdff"], TWILIGHT: ["#9a48dc", "#ff4d68"],
   BOND: ["#f7fff9", "#55db85"], LINK: ["#b16cff", "#ff5064"], STRIKE: ["#ff5064", "#e9dfff"], HORIZON: ["#55db85", "#b16cff"],
+  JUDGEMENT: ["#fff8d7", "#91cfff"],
 });
 
 function summonSequencePreview(results) {
@@ -3168,8 +3246,8 @@ function bootstrapGame() {
     const reachedWave = Math.max(0, Math.floor(battle.wave.wave));
     battle.resultMode = battle.mode || GAME_MODES.NORMAL;
     const rewardMultiplier = relicMultiplier("SUPERNOVA_TEAR");
-    const reward = Math.floor(reachedWave * 4 * rewardMultiplier);
     const vertical = battle.resultMode === VERTICAL_BETA;
+    const reward = Math.floor(reachedWave * (vertical ? 4 : 8) * rewardMultiplier);
     // Legacy normal formula remains `const shardReward = reachedWave * 2`;
     // the BETA branch deliberately uses its independent inclusive-wave rule.
     const shardReward = Math.floor((vertical ? (reachedWave < 10 ? 0 : (reachedWave - 9) * 5) : reachedWave * 2) * rewardMultiplier);
@@ -3326,7 +3404,7 @@ function bootstrapGame() {
   };
   document.querySelectorAll?.("[data-open-mail]").forEach((button)=>button.onclick=()=>{refreshMail();setModalOpen(mailDialog,true);});
   let updateRewardClaiming = false;
-  const claimUpdateReward = getRequiredElement("claim-update-reward"); claimUpdateReward.onclick=()=>{ if(updateRewardClaiming || playerProgress.claimedMail[UPDATE_REWARD_ID]) return; updateRewardClaiming=true; claimUpdateReward.disabled=true; playerProgress.claimedMail[UPDATE_REWARD_ID]=true; playerProgress.starShards+=3000; savePlayerProgress(); refreshMail(); updateMetaCurrency(); updateRewardClaiming=false; };
+  const claimUpdateReward = getRequiredElement("claim-update-reward"); claimUpdateReward.onclick=()=>{ if(updateRewardClaiming || playerProgress.claimedMail[UPDATE_REWARD_ID]) return; updateRewardClaiming=true; claimUpdateReward.disabled=true; playerProgress.claimedMail[UPDATE_REWARD_ID]=true; playerProgress.starDust+=3000; savePlayerProgress(); refreshMail(); updateMetaCurrency(); updateRewardClaiming=false; };
   const claimMeteorReward = getRequiredElement("claim-meteor-mail"); claimMeteorReward.onclick=()=>{ if(playerProgress.claimedMail[METEOR_MAIL_REWARD_ID]) return; playerProgress.claimedMail[METEOR_MAIL_REWARD_ID]=true; playerProgress.meteorFragments+=30; savePlayerProgress(); refreshMail(); updateMetaCurrency(); };
   document.querySelectorAll?.("[data-open-rates]").forEach((button)=>button.onclick=()=>{ const stars=Object.values(STAR_TYPES), zodiacs=Object.values(CONSTELLATION_DEFINITIONS); getRequiredElement("rate-details").innerHTML=`<h3>일반 별 개별 확률</h3>${stars.map((x)=>`<div><span>${x.name}</span><b>${(GACHA_RULES.starChance/stars.length*100).toFixed(2)}%</b></div>`).join("")}<h3>별자리 개별 확률</h3>${zodiacs.map((x)=>`<div><span>${x.name}</span><b>${(GACHA_RULES.constellationChance/zodiacs.length*100).toFixed(2)}%</b></div>`).join("")}`; settingsDialog.querySelector("[data-star-rate-total]").textContent=`${GACHA_RULES.starChance*100}%`; settingsDialog.querySelector("[data-zodiac-rate-total]").textContent=`${GACHA_RULES.constellationChance*100}%`; showSettingsView("rates"); });
   settingsDialog.querySelectorAll("[data-settings-back]").forEach((button) => button.onclick=()=>showSettingsView("main"));

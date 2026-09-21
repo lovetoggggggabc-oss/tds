@@ -2100,3 +2100,11 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 @keyframes normalAreaImpact{from{opacity:.85;transform:translate(-50%,-50%) scale(.35)}to{opacity:0;transform:translate(-50%,-50%) scale(1.25)}}
 @keyframes normalResonance{50%{opacity:.7;transform:scale(1.08)}}
 @keyframes normalSupportAura{50%{opacity:.8;transform:scale(1.13)}}
+/* Lightweight shared judgement/chain visuals: no per-target animation loop. */
+.enemy .judgement-mark{position:absolute;left:50%;top:-20px;transform:translateX(-50%);z-index:4;color:#fff2a8;font-size:13px;line-height:1;filter:drop-shadow(0 0 2px #66cfff);pointer-events:none}
+.enemy.judgement-target .enemy-body{outline:1px solid #ffe48a;outline-offset:2px}
+.chain-path-effect{pointer-events:none;animation:chainPathFade .14s ease-out forwards}
+.chain-path-effect .chain-beam{stroke-width:.55;filter:drop-shadow(0 0 1px #fff);animation:none}
+.chain-flash{fill:#fff8bf;stroke:#e7c95e;stroke-width:.18}
+@keyframes chainPathFade{to{opacity:0}}
+.signature-judgement{color:#fff2b0;filter:drop-shadow(0 0 3px #76bfff)}

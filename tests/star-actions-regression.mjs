@@ -41,7 +41,7 @@ const { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, St
   context.testApi;
 playerProgress.ownedConstellations = Object.keys(CONSTELLATION_DEFINITIONS);
 playerProgress.equippedConstellations = Object.keys(CONSTELLATION_DEFINITIONS);
-assert.deepEqual(Object.keys(CONSTELLATION_DEFINITIONS), ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER", "GUARDIAN", "TWILIGHT", "BOND", "LINK", "STRIKE", "HORIZON"]);
+assert.deepEqual(Object.keys(CONSTELLATION_DEFINITIONS), ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER", "GUARDIAN", "TWILIGHT", "BOND", "LINK", "STRIKE", "HORIZON", "JUDGEMENT"]);
 for (const [id, definition] of Object.entries(CONSTELLATION_DEFINITIONS))
   assert.equal(definition.id, id, `${id} must carry its stable definition id`);
 assert.deepEqual(JSON.parse(JSON.stringify(CONSTELLATION_DEFINITIONS.TWILIGHT.recipe)), { red: 2, white: 1, blue: 1 });
@@ -287,6 +287,26 @@ context.game.enemies = chained.slice(0, 2).map((enemy) => ({ ...enemy, hp: 10000
 radiance.cooldown = 0;
 radiance.attack(0);
 assert.deepEqual(context.game.enemies.map((enemy) => enemy.received), [[radianceDamage], [radianceDamage]]);
+
+const judgementDefinition = CONSTELLATION_DEFINITIONS.JUDGEMENT;
+assert.deepEqual(JSON.parse(JSON.stringify(judgementDefinition.recipe)), { white: 2 });
+assert.deepEqual([judgementDefinition.attackDamage, judgementDefinition.attackSpeed, judgementDefinition.range], [1000, 5.5, 7.5]);
+const judgementManager = makeManager();
+judgementManager.stars[0] = new Star("white", 1);
+judgementManager.stars[1] = new Star("white", 1);
+judgementManager.zodiacMode = true; judgementManager.selected = [0, 1];
+ZodiacSystem.create(judgementManager);
+const judgement = judgementManager.stars[0].constellation;
+assert.equal(judgement.definitionId, "JUDGEMENT");
+assert.equal(judgement.currentDamage(), 1000);
+const judgementEnemy = { dead:false, judgementTarget:true, hp:10000, distanceTravelled:20, position:()=>({x:50,y:50}), hit(amount){ this.hp-=amount; if(this.hp<=0)this.dead=true; return true; } };
+const frontEnemy = { dead:false, judgementTarget:false, hp:50000, distanceTravelled:90, position:()=>({x:50,y:50}), hit:judgementEnemy.hit };
+context.game.enemies = [frontEnemy, judgementEnemy]; context.game.spatial = null;
+judgement.behavior.attack(judgement, judgementEnemy, {x:50,y:50});
+assert.equal(judgementEnemy.hp, 8000, "judgement deals 1,000 plus 10% of the target's pre-hit current HP");
+assert.equal(frontEnemy.hp, 50000, "an in-range judgement target takes priority over route progress");
+const progressed = Targeting.choose({ data:()=>({range:7.5,target:"progress"}) }, [judgementEnemy, frontEnemy], {x:50,y:50});
+assert.equal(progressed, frontEnemy, "progress targeting uses route distance rather than HP or screen position");
 
 // Kill progression is instance-local. Dawn triggers exactly once on the fifth
 // direct kill and moonfall deals 20% current HP without assigning a damage source.
