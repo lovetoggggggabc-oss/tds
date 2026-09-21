@@ -163,6 +163,6 @@ window.__TDS__.leaveBattle();
 assert.equal(window.__TDS__.playerProgress.starDust, 5560, "repeat finish calls cannot duplicate wave 100 rewards");
 assert.equal(window.__TDS__.playerProgress.meteorFragments, 48, "repeat finish calls cannot duplicate meteor rewards");
 assert.equal(elements.has("bootError"), false, "successful boot must not display diagnostics");
-assert.equal((html.match(/<script src="game\.js\?v=44" defer><\/script>/g) || []).length, 1);
+assert.equal((html.match(/<script src="game\.js\?v=45" defer><\/script>/g) || []).length, 1);
 
 console.log("Runtime bootstrap smoke passed: DOM ready, 2 players, 42 star positions, resources, wave 1, enemy spawn, and RAF verified.");
