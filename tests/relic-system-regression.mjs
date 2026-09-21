@@ -32,6 +32,6 @@ Object.assign(playerProgress.relicProgress.STEADFAST_HEART,{owned:true,level:1,d
 assert.equal(upgradeRelic("STEADFAST_HEART"),true); assert.deepEqual(JSON.parse(JSON.stringify(playerProgress.relicProgress.STEADFAST_HEART)),{owned:true,level:2,duplicates:0}); assert.equal(playerProgress.starShards,0);
 assert.match(file, /dawnKillProgress < 5/);
 assert.doesNotMatch(file, /dawnKillProgress < 3/);
-assert.match(file, /Math\.floor\(reachedWave \* 4 \* rewardMultiplier\)/);
+assert.match(file, /Math\.floor\(reachedWave \* \(vertical \? 4 : 8\) \* rewardMultiplier\)/);
 assert.match(file, /Math\.floor\(reachedWave \/ 5\)/);
 console.log("Relic regression passed: registry, migration, equal-pool draws, duplicate handling, costs, cap bonus, Dawn threshold, and reward flooring verified.");

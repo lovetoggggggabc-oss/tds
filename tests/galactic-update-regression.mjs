@@ -18,7 +18,7 @@ assert.match(js, /recipe: Object\.freeze\(\{ green: 2, purple: 1 \}\)/);
 assert.match(js, /target\.isBoss \? 2\.2 : \.85/);
 assert.match(js, /1 \+ stacks \* \.0035/);
 assert.match(js, /Math\.random\(\) < \.15/);
-assert.equal((js.match(/id: CONSTELLATION_IDS\./g) || []).length, 10);
+assert.equal((js.match(/id: CONSTELLATION_IDS\./g) || []).length, 11);
 assert.match(html, /data-galaxy-fragments/); assert.match(html, /id="galaxyFragmentReward"/);
 assert.match(css, /\.enemy\.kingSlime/); assert.match(css, /\.battle-result-overlay/); assert.match(css, /\.main-lobby/);
 const prefix = js.slice(js.indexOf("const SCREEN_STATES"), js.indexOf("function performConstellationDraws"));
