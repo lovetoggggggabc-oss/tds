@@ -37,6 +37,7 @@ const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATT
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
 const PROGRESS_SCHEMA_VERSION = 5;
 const UPDATE_REWARD_ID = "update_reward_3000_v1";
+const METEOR_MAIL_REWARD_ID = "meteor_fragment_mail_30_v1";
 const STAR_DUST_GRANT_ID = "starDust5000_v1";
 const METEOR_GRANT_ID = "meteorFragments20_v2";
 const STAR_DUST_GRANT_AMOUNT = 5000;
@@ -383,8 +384,8 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     }),
     contextualAction: "guardianLight",
     specialDescriptions: Object.freeze([
-      "수호의 빛 50: 별빛이 1111 이상일 때 현재 별빛의 80%를 사용합니다. 기지가 다쳤다면 50 + 최대 체력의 1%를 회복하고, 풀피라면 현재 최대 체력을 (10 + 재료 단계 합)% 늘려 풀피를 유지합니다.",
-      "15초마다 기지에서 수호자를 소환합니다. 수호자는 길을 거꾸로 이동하며 적과 만나면 현재 체력 + 공격력만큼 그 적 하나에게 피해를 준 뒤 사라집니다.",
+      "수호의 빛 200: 별빛 200을 사용합니다. 기지가 피해를 입었다면 체력을 회복하고, 기지가 풀피라면 최대 체력을 증가시킵니다.",
+      "15초마다 기지에서 수호자를 소환합니다. 수호자는 길을 거꾸로 이동하며 적과 만나면 현재 체력 + 공격력만큼 피해를 준 뒤 사라집니다. 수호자의 최대 체력은 기지 최대 체력과 별자리 단계 합에 따라 결정되며 최대 300,000입니다.",
     ]),
   }),
   [CONSTELLATION_IDS.TWILIGHT]: Object.freeze({
@@ -455,7 +456,7 @@ const CONFIG = {
   summonCost: 30,
   swapCost: 10,
   divinationCost: 30,
-  guardianLightMinimum: 1111,
+  guardianLightCost: 200,
   bondOfferingCost: 200,
   startStarlight: 300,
   startDivinity: 1,
@@ -686,7 +687,7 @@ class Enemy {
 class GuardianUnit {
   constructor(base, componentStageSum = 0) {
     this.team = "ALLY";
-    this.maxHp = base.maxHp * ((50 + componentStageSum) / 100);
+    this.maxHp = Math.min(300000, base.maxHp * ((50 + componentStageSum) / 100));
     this.damage = base.maxHp * 0.50;
     this.hp = this.maxHp;
     this.pathProgress = 1;
@@ -1514,7 +1515,7 @@ class StarManager {
           ? " constellation-linked"
           : "");
       el.innerHTML = s
-        ? `<span class="star" style="color:${s.data().color}">✦<b class="star-level">${s.tier}</b>${picked && this.zodiacMode ? `<em class="pick-order">${this.selected.indexOf(i) + 1}</em>` : ""}</span>`
+        ? renderNormalStarVisual(s, picked && this.zodiacMode ? this.selected.indexOf(i) + 1 : 0)
         : "";
       el.setAttribute(
         "aria-label",
@@ -1525,6 +1526,12 @@ class StarManager {
       el.setAttribute("aria-pressed", picked);
     });
   }
+}
+
+// One shared visual grammar keeps all seven colours identifiable while stage
+// controls the core, halo, rays and orbit rather than merely scaling the star.
+function renderNormalStarVisual(star, pickOrder = 0) {
+  return `<span class="star stage-${star.tier}" style="--star-color:${star.data().color};color:${star.data().color}"><i class="star-halo"></i><i class="star-orbit"></i><span class="star-core">✦</span><i class="star-sparks"></i><b class="star-level">${star.tier}</b>${pickOrder ? `<em class="pick-order">${pickOrder}</em>` : ""}</span>`;
 }
 class MergeSystem {
   static partner(m) {
@@ -1721,10 +1728,8 @@ class GuardianLightSystem {
     )
       return UIManager.hint("수호자의 자리를 선택하세요.");
     const resources = manager.player.resources;
-    if (resources.starlight < CONFIG.guardianLightMinimum)
-      return UIManager.hint("별빛 1111 이상일 때 사용할 수 있습니다.");
-    const cost = Math.floor(resources.starlight * 0.8);
-    resources.starlight -= cost;
+    if (!resources.spend(CONFIG.guardianLightCost))
+      return UIManager.hint("별빛 200이 필요합니다.");
 
     const base = game.base;
     if (base.hp < base.maxHp)
@@ -2039,7 +2044,7 @@ class UIManager {
     const horizonInfo = constellation?.definitionId === CONSTELLATION_IDS.HORIZON ? `<span>계승 대상: ${constellation.runtime.inheritedDefinitionId ? CONSTELLATION_DEFINITIONS[constellation.runtime.inheritedDefinitionId].name : "없음"}</span>` : "";
     starInfo.innerHTML = constellation
       ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합: ${constellation.componentStageSum}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span>${linkInfo}${strikeInfo}${horizonInfo}<span>현재 공격력: ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellation.definitionId === CONSTELLATION_IDS.TWILIGHT && constellation.target?.hp <= constellation.target?.maxHp * .5 ? constellationStats.attackSpeed * 2 : constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellation.effectiveRange()}</span>${bondInfo}${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/5</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : ""}${twilightInfo}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
-      : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
+      : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · Stage ${s.tier}</span><span>Lv.${playerProgress.starCollection[s.type.toUpperCase()]?.level || 1}</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사거리 ${d.range}</span><span>타겟 방식 ${TARGET_LABELS[d.target]}</span></div>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? constellation.effectiveRange() : d.range,
       diameter = RangeSystem.radius(shownRange) * 2;
@@ -2052,8 +2057,8 @@ class UIManager {
     const arenaRect = arena.getBoundingClientRect();
     const actionX = Math.min(arenaRect.width - 54, Math.max(54, arenaRect.width * p.x / 100));
     const actionY = Math.min(arenaRect.height - 42, Math.max(42, arenaRect.height * p.y / 100));
-    contextActions.style.left = `${actionX}px`;
-    contextActions.style.top = `${actionY}px`;
+    contextActions.style.setProperty("--action-x", `${actionX}px`);
+    contextActions.style.setProperty("--action-y", `${actionY}px`);
     if (constellation) {
       let enabled = pick.m.player.resources.divinity >= 1;
       const isAstrologer = constellation.definitionId === CONSTELLATION_IDS.ASTROLOGER;
@@ -2062,13 +2067,13 @@ class UIManager {
       const isStrike = constellation.definitionId === CONSTELLATION_IDS.STRIKE;
       const isHorizon = constellation.definitionId === CONSTELLATION_IDS.HORIZON;
       const canDivine = isAstrologer && pick.m.player.resources.can(CONFIG.divinationCost);
-      const canUseGuardianLight = isGuardian && pick.m.player.resources.starlight >= CONFIG.guardianLightMinimum;
+      const canUseGuardianLight = isGuardian && pick.m.player.resources.starlight >= CONFIG.guardianLightCost;
       const canOfferBond = isBond && constellation.runtime.bindChance < 1 && pick.m.player.resources.can(CONFIG.bondOfferingCost);
       // definitionId is deliberately part of the cache key: actions from a
       // previous tower type must never survive a selection/type change.
       let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}:${canUseGuardianLight}:${canOfferBond}:${constellation.runtime.bindChance}:${constellation.runtime.strikeStacks || 0}:${constellation.runtime.inheritedDefinitionId || "none"}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 50</button><small class="guardian-cost-note">별빛 1111 이상 · 현재 별빛의 80% 사용</small>` : ""}${isBond ? `<button class="bond-offering action-above" data-context="bond-offering"${canOfferBond ? "" : " disabled"}>별빛 헌납 200</button>` : ""}${isStrike ? `<button class="strike-action action-above" data-context="strike"${constellation.runtime.strikeStacks ? "" : " disabled"}>일격 가하기</button>` : ""}${isHorizon ? `<button class="horizon-action action-above" data-context="horizon">지평선의 초점</button>` : ""}<button class="${isAstrologer || isGuardian || isBond || isStrike || isHorizon ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
+        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 200</button>` : ""}${isBond ? `<button class="bond-offering action-above" data-context="bond-offering"${canOfferBond ? "" : " disabled"}>별빛 헌납 200</button>` : ""}${isStrike ? `<button class="strike-action action-above" data-context="strike"${constellation.runtime.strikeStacks ? "" : " disabled"}>일격 가하기</button>` : ""}${isHorizon ? `<button class="horizon-action action-above" data-context="horizon">지평선의 초점</button>` : ""}<button class="${isAstrologer || isGuardian || isBond || isStrike || isHorizon ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
         if (isAstrologer)
           contextActions.querySelector('[data-context="divination"]').onclick = () =>
             DivinationSystem.execute(pick.m, pick.index);
@@ -2830,9 +2835,19 @@ function bootstrapGame() {
   const hpSettingButton = settingsDialog.querySelector("[data-setting-hp]"), vfxSettingButton = settingsDialog.querySelector("[data-setting-vfx]");
   if (hpSettingButton) hpSettingButton.onclick = () => { playerProgress.settings.showMonsterHpNumbers = !playerProgress.settings.showMonsterHpNumbers; savePlayerProgress(); refreshSettings(); };
   if (vfxSettingButton) vfxSettingButton.onclick = () => { playerProgress.settings.zodiacVfx = playerProgress.settings.zodiacVfx === "strong" ? "weak" : "strong"; savePlayerProgress(); refreshSettings(); };
-  const refreshMail = () => { const claimed = playerProgress.claimedMail[UPDATE_REWARD_ID] === true; document.querySelectorAll?.("[data-mail-badge]").forEach((node)=>node.hidden=claimed); const button=getRequiredElement("claim-update-reward"); button.disabled=claimed; button.textContent=claimed?"수령 완료":"보상 수령"; };
+  const refreshMail = () => {
+    const updateClaimed = playerProgress.claimedMail[UPDATE_REWARD_ID] === true;
+    const meteorClaimed = playerProgress.claimedMail[METEOR_MAIL_REWARD_ID] === true;
+    document.querySelectorAll?.("[data-mail-badge]").forEach((node) => {
+      const unread = Number(!updateClaimed) + Number(!meteorClaimed);
+      node.hidden = unread === 0; node.textContent = unread;
+    });
+    const updateButton=getRequiredElement("claim-update-reward"); updateButton.disabled=updateClaimed; updateButton.textContent=updateClaimed?"수령 완료":"보상 수령";
+    const meteorButton=getRequiredElement("claim-meteor-mail"); meteorButton.disabled=meteorClaimed; meteorButton.textContent=meteorClaimed?"수령 완료":"보상 수령";
+  };
   document.querySelectorAll?.("[data-open-mail]").forEach((button)=>button.onclick=()=>{refreshMail();setModalOpen(mailDialog,true);});
   const claimUpdateReward = getRequiredElement("claim-update-reward"); claimUpdateReward.onclick=()=>{ if(playerProgress.claimedMail[UPDATE_REWARD_ID]) return; playerProgress.claimedMail[UPDATE_REWARD_ID]=true; playerProgress.starDust+=3000; savePlayerProgress(); refreshMail(); updateMetaCurrency(); };
+  const claimMeteorReward = getRequiredElement("claim-meteor-mail"); claimMeteorReward.onclick=()=>{ if(playerProgress.claimedMail[METEOR_MAIL_REWARD_ID]) return; playerProgress.claimedMail[METEOR_MAIL_REWARD_ID]=true; playerProgress.meteorFragments+=30; savePlayerProgress(); refreshMail(); updateMetaCurrency(); };
   document.querySelectorAll?.("[data-open-rates]").forEach((button)=>button.onclick=()=>{ const stars=Object.values(STAR_TYPES), zodiacs=Object.values(CONSTELLATION_DEFINITIONS); getRequiredElement("rate-details").innerHTML=`<h3>일반 별 개별 확률</h3>${stars.map((x)=>`<div><span>${x.name}</span><b>${(GACHA_RULES.starChance/stars.length*100).toFixed(2)}%</b></div>`).join("")}<h3>별자리 개별 확률</h3>${zodiacs.map((x)=>`<div><span>${x.name}</span><b>${(GACHA_RULES.constellationChance/zodiacs.length*100).toFixed(2)}%</b></div>`).join("")}`; settingsDialog.querySelector("[data-star-rate-total]").textContent=`${GACHA_RULES.starChance*100}%`; settingsDialog.querySelector("[data-zodiac-rate-total]").textContent=`${GACHA_RULES.constellationChance*100}%`; showSettingsView("rates"); });
   settingsDialog.querySelectorAll("[data-settings-back]").forEach((button) => button.onclick=()=>showSettingsView("main"));
   const specialCodeButton = settingsDialog.querySelector("[data-open-special-code]");

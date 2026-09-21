@@ -9,17 +9,17 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=42" />
+    <link rel="stylesheet" href="styles.css?v=43" />
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
       <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="permanent-wallet" aria-label="보유 영구 재화">
+      <div class="main-top-bar"><div class="permanent-wallet" aria-label="보유 영구 재화">
         <span><i class="fragment-gem">✦</i><small>별가루</small><b data-star-dust>0</b></span>
         <span><i class="shard-gem">◆</i><small>별조각</small><b data-star-shards>0</b></span>
         <span><i class="meteor-gem">☄</i><small>운석조각</small><b data-meteor-fragments>0</b></span>
       </div>
-      <div class="menu-tools"><button type="button" data-open-mail aria-label="편지함">✉<b data-mail-badge>1</b></button><button type="button" data-open-settings aria-label="설정">⚙</button></div>
+      <div class="menu-tools"><button type="button" data-open-mail aria-label="편지함">✉<b data-mail-badge>2</b></button><button type="button" data-open-settings aria-label="설정">⚙</button></div></div>
       <header class="lobby-title">
         <div class="celestial-emblem" aria-hidden="true"><i>✦</i></div>
         <h1 id="main-menu-title">별자리 디펜스</h1>
@@ -98,10 +98,10 @@
     <section class="lobby-screen map-vote-screen" id="map-vote" hidden aria-labelledby="map-vote-title"><div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div><header><small>CHOOSE THE BATTLEFIELD</small><h1 id="map-vote-title">맵 선택 · <span id="map-vote-time">10</span></h1></header><div id="map-vote-cards" class="map-vote-cards"></div><div id="map-vote-result" class="map-vote-result" hidden><small>전장 결정</small><strong></strong></div></section>
 
     <section class="utility-dialog" id="settings-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="settings-title"><div class="modal-panel"><div class="settings-main" data-settings-view="main"><header class="modal-title"><h2 id="settings-title">설정</h2><button type="button" data-close-utility aria-label="설정 닫기">×</button></header><div class="modal-body"><label><span>몬스터 체력 숫자<small>전투 중 몬스터의 현재 체력을 표시합니다.</small></span><button type="button" data-setting-hp>ON</button></label><label><span>조디악 연결 효과<small>별자리 연결 시각 효과의 강도를 조절합니다.</small></span><button type="button" data-setting-vfx>강하게</button></label><button type="button" class="settings-link" data-open-rates>별자리 뽑기 확률 <b>›</b></button><button type="button" class="settings-link" data-open-special-code>특별 코드 <b>›</b></button></div></div><div class="settings-rates" data-settings-view="rates" hidden><header class="modal-title"><button type="button" data-settings-back aria-label="설정으로 돌아가기">←</button><h2>별자리 뽑기 확률</h2></header><div class="rate-summary"><strong>일반 별 <b data-star-rate-total>95%</b></strong><strong>별자리 <b data-zodiac-rate-total>5%</b></strong></div><div id="rate-details" class="modal-body rate-list"></div></div><div class="settings-code" data-settings-view="code" hidden><header class="modal-title"><button type="button" data-settings-back aria-label="설정으로 돌아가기">←</button><h2>특별 코드</h2></header><form class="modal-body special-code-form" data-special-code-form><label for="special-code-input">특별 코드 입력</label><div><input id="special-code-input" data-special-code-input autocomplete="off" spellcheck="false"><button type="submit">입력</button></div><p data-special-code-result role="status" aria-live="polite"></p></form></div></div></section>
-    <section class="utility-dialog" id="mail-dialog" hidden role="dialog" aria-modal="true"><div><h2>편지함</h2><article><h3>[보상]</h3><p>업데이트 보상이 도착했습니다.</p><strong>별가루 ×3000</strong><button type="button" id="claim-update-reward">보상 수령</button></article><button type="button" data-close-utility>닫기</button></div></section>
+    <section class="utility-dialog" id="mail-dialog" hidden role="dialog" aria-modal="true"><div class="mail-panel"><header class="modal-title"><h2>편지함</h2><button type="button" data-close-utility aria-label="편지함 닫기">×</button></header><div class="modal-body mail-list"><article><h3>[보상]</h3><p>업데이트 보상이 도착했습니다.</p><strong>별가루 ×3000</strong><button type="button" id="claim-update-reward">보상 수령</button></article><article><h3>[보상] 운석파편 지원</h3><p>별자리 수호자님께 운석파편 30개를 보내드립니다.</p><strong>운석파편 ×30</strong><button type="button" id="claim-meteor-mail">보상 수령</button></article></div></div></section>
 
-    <main class="app" id="game-shell" hidden>
-      <header class="game-hud">
+    <main class="app battle-screen" id="game-shell" hidden>
+      <header class="game-hud battle-top-hud">
         <div class="brand"><b>별자리 디펜스</b><small>ZODIAC DEFENSE</small></div>
         <div class="wave">
           <b>WAVE <span id="wave">0</span></b><i aria-hidden="true"></i>
@@ -118,8 +118,8 @@
           <small>NEXT ENEMY</small><b>다음 적 정보</b><div id="nextEnemies"></div>
         </aside>
       </header>
-      <aside class="star-info" id="starInfo" hidden aria-live="polite"></aside>
-      <section class="arena" id="arena" aria-label="게임 필드">
+      <div class="battle-status-area"><div class="binding-status-slot"></div><aside class="star-info" id="starInfo" hidden aria-live="polite"></aside></div>
+      <div class="battle-map-area"><section class="arena" id="arena" aria-label="게임 필드">
         <div class="planet a"><i></i><i></i><i></i></div>
         <div class="planet b"></div>
         <div class="space-dust" aria-hidden="true"></div>
@@ -149,7 +149,7 @@
             <circle class="base-core" cx="0" cy="0" r="1.15" />
             <text class="base-star" x="0" y="1.05">✦</text>
           </g>
-          <text class="destination-label">DESTINATION</text>
+          <text class="destination-label">기지</text>
           <g class="spawn-portal">
             <circle class="portal-aura" cx="0" cy="0" r="4.1" />
             <circle class="portal-rim" cx="0" cy="0" r="3.45" />
@@ -157,7 +157,7 @@
             <circle class="start" cx="0" cy="0" r="1.75" />
             <path class="portal-swirl" d="M-2.1 0c1-2 4.5-1.7 4.6.4.1 1.7-2.9 2.2-3.5.6-.4-1.2 1.5-1.9 2.1-.7" />
           </g>
-          <text class="start-label">SPAWN</text>
+          <text class="start-label">출발</text>
         </svg>
         <svg id="links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg
         ><svg id="ranges" viewBox="0 0 100 100" preserveAspectRatio="none"></svg
@@ -213,7 +213,7 @@
         <button type="button" id="battle-exit" aria-label="전투 나가기"><span>나가기</span></button>
         <button type="button" class="speed" id="speed" aria-label="게임 속도 변경">×1</button>
         <button type="button" data-open-settings aria-label="설정">⚙</button>
-      </nav>
+      </nav></div>
       <section
         class="zodiac-codex"
         id="zodiacCodex"
@@ -230,19 +230,19 @@
           <div id="zodiacCodexList" class="codex-list" tabindex="0"></div>
         </div>
       </section>
-      <nav class="control-deck" id="controls" aria-label="플레이어 게임 조작">
+      <div class="battle-bottom-area"><nav class="control-deck" id="controls" aria-label="플레이어 게임 조작">
         <section class="game-controls" data-player="0" aria-label="1P 게임 조작">
           <b class="player-badge">1P</b>
           <button type="button" class="zodiac-cancel" data-act="zodiac-cancel" hidden>조디악 실행 취소</button>
           <button type="button" data-act="zodiac"><i>✦</i><span>조디악<small>ZODIAC</small></span></button>
           <button type="button" class="codex-button" data-act="codex">별자리 도감</button>
         </section>
-      </nav>
+      </nav></div>
     </main>
     <div class="game-toast" id="game-toast" role="status" aria-live="polite" hidden>준비 중인 콘텐츠입니다.</div>
     <section class="confirm-dialog" id="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" hidden>
       <div><small>LEAVE BATTLE</small><h2 id="exit-dialog-title">전투 종료</h2><p>전투를 종료하고 메인 메뉴로 돌아가시겠습니까?</p><footer><button type="button" id="exit-cancel">취소</button><button type="button" class="danger" id="exit-confirm">나가기</button></footer></div>
     </section>
-    <script src="game.js?v=42" defer></script>
+    <script src="game.js?v=43" defer></script>
   </body>
 </html>

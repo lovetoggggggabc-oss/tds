@@ -35,14 +35,14 @@ assert.deepEqual(JSON.parse(JSON.stringify(definition.recipe)), { green: 2, yell
 assert.equal(definition.attackDamage, 300);
 assert.equal(definition.attackSpeed, 0.5);
 assert.equal(definition.range, 3);
-assert.match(definition.specialDescriptions[0], /수호의 빛 50/);
+assert.match(definition.specialDescriptions[0], /수호의 빛 200/);
 assert.doesNotMatch(definition.specialDescriptions[0], /공격에 성공할 때마다/);
 assert.equal(ZodiacSystem.exactMatch({ green: 2, yellow: 1 }), "GUARDIAN");
 assert.equal(ZodiacSystem.exactMatch({ orange: 1, white: 2 }), undefined);
 
 const stars = [new Star("green", 2), new Star("green", 2), new Star("yellow", 3)];
 const owner = { player: { index: 0 }, stars, pos: () => ({ x: 10, y: 10 }) };
-owner.player.resources = { starlight: 1111, spend(amount) { if (this.starlight < amount) return false; this.starlight -= amount; return true; } };
+owner.player.resources = { starlight: 200, spend(amount) { if (this.starlight < amount) return false; this.starlight -= amount; return true; } };
 context.game = {
   gameTime: 0,
   attackBuffUntil: 0,
@@ -62,16 +62,16 @@ CONSTELLATION_BEHAVIORS.GUARDIAN.attack(constellation, target, { x: 0, y: 0 });
 assert.equal(target.damage, 525);
 assert.equal(context.game.base.hp, 70, "normal attacks do not activate Guardian Light");
 GuardianLightSystem.execute(owner, 0);
-assert.equal(owner.player.resources.starlight, 223, "activation spends floor(80%) of current starlight");
+assert.equal(owner.player.resources.starlight, 0, "activation spends exactly 200 starlight");
 assert.equal(context.game.base.hp, 121.5, "damaged base heals by 50 + 1% max HP");
 context.game.base.hp = context.game.base.maxHp;
 owner.player.resources.starlight = 2000;
 GuardianLightSystem.execute(owner, 0);
 assert.equal(context.game.base.maxHp, 175.5);
 assert.equal(context.game.base.hp, 175.5, "full base grows and remains full");
-owner.player.resources.starlight = 1110;
+owner.player.resources.starlight = 199;
 GuardianLightSystem.execute(owner, 0);
-assert.equal(owner.player.resources.starlight, 1110, "insufficient starlight is not spent");
+assert.equal(owner.player.resources.starlight, 199, "insufficient starlight is not spent");
 assert.equal(context.game.base.maxHp, 175.5, "insufficient starlight does not activate the ability");
 
 CONSTELLATION_BEHAVIORS.GUARDIAN.update(constellation, 14.9);
@@ -89,6 +89,9 @@ unit.update(1);
 assert.ok(unit.pathProgress < 1, "guardian travels backward from destination toward spawn");
 assert.equal(unit.damage, 87.75);
 assert.equal(CONFIG.guardianUnit.attacksPerSecond, 3);
+const capped = new GuardianUnit({ hp: 500000, maxHp: 500000 }, 50);
+assert.equal(capped.maxHp, 300000, "only summoned guardian HP is capped at 300,000");
+assert.equal(capped.damage, 250000, "guardian attack remains an uncapped 50% base-HP snapshot");
 
 const collisionUnit = new GuardianUnit(context.game.base, 7);
 collisionUnit.hp = 500; collisionUnit.damage = 100;
@@ -97,4 +100,4 @@ context.game.enemies = [enemy]; collisionUnit.update(0);
 assert.equal(enemy.hp, 200, "collision applies current HP plus snapshotted attack once");
 assert.equal(collisionUnit.dead, true, "guardian disappears immediately after collision");
 collisionUnit.update(0); assert.equal(enemy.hp, 200, "resolved guardian cannot damage twice");
-console.log("Guardian regression passed: 1111 gate, 80% spend, healing/growth, 15-second summon, snapshots, reverse travel, and one-hit collision verified.");
+console.log("Guardian regression passed: fixed 200 cost, 300,000 HP cap, healing/growth, 15-second summon, snapshots, reverse travel, and one-hit collision verified.");
