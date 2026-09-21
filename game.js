@@ -50,14 +50,25 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.02 BETA";
+const GAME_VERSION = "1.03 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong" });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
-  id: "beta_1_02_mode_selection_fix", version: GAME_VERSION, date: "2026.09.21", title: "모바일 모드 선택 수정",
+  id: "beta_1_03_collection_ui_update", version: GAME_VERSION, date: "2026.09.21", title: "컬렉션 UI 개선",
+  sections: Object.freeze([
+    Object.freeze({ title: "[1.03 BETA]", paragraphs: Object.freeze(["[별 & 별자리 개선]"]) }),
+    Object.freeze({ title: "별 & 별자리 개선", bullets: Object.freeze(["별 목록을 4열 구조로 개편했습니다.", "카드에는 모양, 이름, 레벨, 보유 수량만 표시됩니다.", "별과 별자리를 터치하면 상세 정보와 업그레이드를 이용할 수 있습니다."]) }),
+    Object.freeze({ title: "뽑기 개선", bullets: Object.freeze(["결과의 긴 설명을 제거하고 모양과 이름을 강조했습니다."]) }),
+    Object.freeze({ title: "몬스터 도감 개선", bullets: Object.freeze(["목록을 간결하게 변경하고 상세 정보를 팝업으로 옮겼습니다."]) }),
+    Object.freeze({ title: "알림 시스템", bullets: Object.freeze(["새 별, 별자리, 유물과 업그레이드 가능한 항목을 하얀 알림 점으로 알려줍니다.", "현재 하단 메뉴는 흰 점 대신 테두리로 표시합니다."]) }),
+    Object.freeze({ title: "명칭 변경", bullets: Object.freeze(["메인 메뉴의 ‘뉴스’를 ‘소식’으로 변경했습니다."]) }),
+    Object.freeze({ title: "버그 수정", bullets: Object.freeze(["전투 탭을 연 입력이 모드 카드에 전달되어 자동 진행되던 문제를 수정했습니다."]) }),
+  ]), footer: "목록에서는 간단하게, 눌렀을 때 자세하게 확인하세요.",
+}), Object.freeze({
+  id: "beta_1_02_mode_selection_fix", version: "1.02 BETA", date: "2026.09.21", title: "모바일 모드 선택 수정",
   sections: Object.freeze([
     Object.freeze({ title: "[1.02 BETA]", paragraphs: Object.freeze(["[전투 모드 선택 개선]"]) }),
     Object.freeze({ title: "전투 모드 선택 개선", bullets: Object.freeze([
@@ -88,7 +99,7 @@ const NEWS_ITEMS = Object.freeze([Object.freeze({
     Object.freeze({ title: "맵 선택 개편", paragraphs: Object.freeze(["기존 맵 투표 시스템이 랜덤 맵 선택으로 변경되었습니다.", "일반 모드를 시작하면 3개의 전장 중 하나가 랜덤으로 결정됩니다.", "새로운 랜덤 선택 연출도 추가되었습니다."]) }),
     Object.freeze({ title: "보상 개선", bullets: Object.freeze(["일반 모드에서 획득하는 별가루: 웨이브당 8개"]) }),
     Object.freeze({ title: "모바일 개선", bullets: Object.freeze(["모바일에서 세로 대전장 카드까지 스크롤할 수 없어 플레이하지 못하던 문제를 수정했습니다."]) }),
-    Object.freeze({ title: "버그 수정", bullets: Object.freeze(["뉴스를 모두 읽어도 알림 숫자가 사라지지 않던 문제 수정", "다른 메뉴에서 전투 탭을 눌렀을 때 실제 전투가 바로 시작되던 문제 수정", "심판의 자리가 도감에서 누락되던 문제 수정"]) }),
+    Object.freeze({ title: "버그 수정", bullets: Object.freeze(["소식을 모두 읽어도 알림 숫자가 사라지지 않던 문제 수정", "다른 메뉴에서 전투 탭을 눌렀을 때 실제 전투가 바로 시작되던 문제 수정", "심판의 자리가 도감에서 누락되던 문제 수정"]) }),
   ]), footer: "개선된 전투와 새로운 랜덤 전장 연출을 만나보세요.",
 }), Object.freeze({
   id: "constellation_balance_judgement_v1", date: "2026.09.21", title: "✦ 별자리 & 전투 밸런스 업데이트",
@@ -338,13 +349,17 @@ function loadPlayerProgress() {
       oneTimeGrants: grants,
       lastReadNewsVersion,
       readNewsIds,
+      seenStars: { ...(saved?.seenStars || {}) },
+      seenConstellations: { ...(saved?.seenConstellations || {}) },
+      seenRelics: { ...(saved?.seenRelics || {}) },
+      seenMonsters: { ...(saved?.seenMonsters || {}) },
     };
     progress.ownedRelics = Object.entries(progress.relicProgress).filter(([,entry])=>entry.owned).map(([id])=>id);
     syncOwnedStars(progress);
     return progress;
   } catch (_error) {
     specialGrantApplied = true;
-    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, galaxyFragments: 0, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], constellationCollection: normalizeConstellationCollection(null, STARTER_COLLECTION.ownedConstellations), equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, relicProgress: normalizeRelicProgress(null), ownedRelics: [], settings: { ...DEFAULT_SETTINGS }, claimedMail: {}, redeemedSpecialCodes: {}, oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true }, lastReadNewsVersion: "", readNewsIds: {} };
+    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, galaxyFragments: 0, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], constellationCollection: normalizeConstellationCollection(null, STARTER_COLLECTION.ownedConstellations), equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, relicProgress: normalizeRelicProgress(null), ownedRelics: [], settings: { ...DEFAULT_SETTINGS }, claimedMail: {}, redeemedSpecialCodes: {}, oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true }, lastReadNewsVersion: "", readNewsIds: {}, seenStars: {}, seenConstellations: {}, seenRelics: {}, seenMonsters: {} };
     syncOwnedStars(progress);
     return progress;
   }
@@ -393,9 +408,10 @@ function performConstellationDraws(count, random = Math.random) {
       results.push({ kind: "constellation", id, isNew, guaranteed });
     } else {
       const id = starIds[Math.min(starIds.length - 1, Math.floor(random() * starIds.length))];
+      const isNew = !(next.stars[id] > 0);
       next.stars[id] = (next.stars[id] || 0) + 1;
       next.pity++;
-      results.push({ kind: "star", id });
+      results.push({ kind: "star", id, isNew });
     }
   }
   // Commit only after every result was generated, keeping currency and collection atomic.
@@ -3295,58 +3311,64 @@ function bootstrapGame() {
       getRequiredElement("draw-sequence").replaceChildren(); getRequiredElement("draw-result-grid").replaceChildren();
     },
   };
+  const detailModal = getRequiredElement("detail-modal");
+  const closeDetail = () => { detailModal.hidden = true; detailModal.dataset.kind = ""; };
+  detailModal.querySelectorAll("[data-close-detail]").forEach((button) => button.onclick = (event) => { event.stopPropagation(); closeDetail(); });
+  const detailPanel = detailModal.querySelector(".detail-modal-panel");
+  if (detailPanel) detailPanel.onclick = (event) => event.stopPropagation();
+  const openDetail = ({ kind, id, icon, name, subtitle, body, footer = "" }) => {
+    detailModal.dataset.kind = kind;
+    detailModal.querySelector("[data-detail-heading]").innerHTML = `<i>${icon}</i><div><h2 id="detail-modal-title">${name}</h2><small>${subtitle}</small></div>`;
+    detailModal.querySelector("[data-detail-body]").innerHTML = body;
+    const footerNode = detailModal.querySelector("[data-detail-footer]"); footerNode.innerHTML = footer; footerNode.hidden = !footer;
+    detailModal.hidden = false;
+  };
+  const starCanUpgrade = (id) => { const entry=playerProgress.starCollection[id], cost=starLevelCosts(entry.level); return Boolean(cost && entry.count>=cost.copies && playerProgress.starShards>=cost.shards); };
+  const constellationCanUpgrade = (id) => { const entry=playerProgress.constellationCollection[id], cost=entry&&CONSTELLATION_LEVEL_COSTS[entry.level]; return Boolean(cost&&entry.copies>=cost.copies&&playerProgress.galaxyFragments>=cost.galaxyFragments); };
+  const relicCanUpgrade = (id) => { const entry=playerProgress.relicProgress[id], cost=entry&&RELIC_UPGRADE_COSTS[entry.level]; return Boolean(cost&&entry.duplicates>=cost.duplicates&&playerProgress.starShards>=cost.starShards); };
+  const updateNotifications = () => {
+    const collectionNotice=Object.keys(STAR_TYPES).some((id)=>playerProgress.starCollection[id].count>0&&(!playerProgress.seenStars[id]||starCanUpgrade(id))) || playerProgress.ownedConstellations.some((id)=>!playerProgress.seenConstellations[id]||constellationCanUpgrade(id));
+    const relicNotice=Object.keys(RELIC_DEFINITIONS).some((id)=>playerProgress.relicProgress[id].owned&&(!playerProgress.seenRelics[id]||relicCanUpgrade(id)));
+    document.querySelectorAll?.("[data-open-collection]")?.forEach((node)=>node.classList.toggle("has-notification",collectionNotice));
+    document.querySelectorAll?.("[data-open-relics]")?.forEach((node)=>node.classList.toggle("has-notification",relicNotice));
+    document.querySelectorAll?.("[data-open-monster-codex]")?.forEach((node)=>node.classList.toggle("has-notification",MONSTER_CODEX_IDS.some((id)=>!playerProgress.seenMonsters[id])));
+  };
+  const openStarDetail = (id) => {
+    playerProgress.seenStars[id]=true; savePlayerProgress();
+    const star=STAR_TYPES[id], entry=playerProgress.starCollection[id], cost=starLevelCosts(entry.level), ready=starCanUpgrade(id), visualStage=Math.min(4,Math.ceil(entry.level/2));
+    openDetail({kind:"star",id,icon:`<span class="detail-star" style="--star-color:${star.color}">${normalStarGlyph(visualStage,star.key)}</span>`,name:`${star.name} 별`,subtitle:`Lv.${entry.level}${cost?"":" · MAX"}`,body:`<dl class="detail-stats"><div><dt>공격력</dt><dd>${star.damage}</dd></div><div><dt>공격속도</dt><dd>${star.rate}</dd></div><div><dt>사정거리</dt><dd>${star.range}</dd></div></dl><section><h3>특수능력 · 현재 Lv 효과</h3><p>${normalStarCollectionAbilityText(star.key,entry.level)}</p></section><section><h3>보유 재료</h3><p>보유 별 <b>${entry.count}${cost?` / ${cost.copies}`:""}</b><br>별조각 <b>${playerProgress.starShards.toLocaleString()}${cost?` / ${cost.shards.toLocaleString()}`:""}</b></p></section><section><h3>다음 레벨 효과</h3><p>${cost?normalStarNextLevelText(star.key):"최대 레벨에 도달했습니다."}</p></section>`,footer:cost?`<div><small>${star.name} 별 ×${cost.copies} + 별조각 ×${cost.shards}</small><button type="button" data-modal-upgrade-star="${id}" ${ready?"":"disabled"}>업그레이드</button></div>`:""});
+    detailModal.querySelector("[data-modal-upgrade-star]")?.addEventListener("click",()=>{if(upgradeStar(id)){updateMetaCurrency();renderCollection();openStarDetail(id);}}); updateNotifications();
+  };
+  const openConstellationDetail = (id) => {
+    playerProgress.seenConstellations[id]=true; savePlayerProgress(); const d=CONSTELLATION_DEFINITIONS[id], entry=playerProgress.constellationCollection[id], owned=Boolean(entry), cost=entry&&CONSTELLATION_LEVEL_COSTS[entry.level], ready=constellationCanUpgrade(id), order=playerProgress.equippedConstellations.indexOf(id);
+    const recipe=Object.entries(d.recipe).map(([type,n])=>`${CONFIG.stars[type].name} 별 ×${n}`).join(" + ");
+    const stats=d.supportOnly?`<div><dt>타겟 방식</dt><dd>지원형</dd></div>`:`<div><dt>공격력</dt><dd>${d.attackDamage}</dd></div><div><dt>공격속도</dt><dd>${d.attackSpeed}</dd></div><div><dt>사정거리</dt><dd>${d.range}</dd></div><div><dt>타겟 방식</dt><dd>${d.target||"전방"}</dd></div>`;
+    openDetail({kind:"constellation",id,icon:constellationPreview(d),name:d.name,subtitle:owned?`Lv.${entry.level}${cost?"":" · MAX"}`:"미획득",body:`<section><h3>조합</h3><p>${recipe}</p></section><dl class="detail-stats">${stats}</dl><section><h3>특수능력</h3>${d.specialDescriptions.map((x,i)=>`<p><b>${i+1}.</b> ${x}</p>`).join("")}</section><section><h3>현재 Lv 효과</h3><p>${d.supportOnly?"정의된 지원 효과 적용":`공격력 ×${formatMultiplier(constellationLevelDamageMultiplier(entry?.level||1))} · 공격속도 +${Math.round(constellationLevelAttackSpeedBonus(entry?.level||1)*100)}%`}</p></section><section><h3>보유 재료</h3><p>보유 수 <b>${entry?.copies||0}${cost?` / ${cost.copies}`:""}</b><br>은하파편 <b>${playerProgress.galaxyFragments}${cost?` / ${cost.galaxyFragments}`:""}</b></p></section>`,footer:owned?`<div class="detail-footer-actions"><button type="button" data-modal-equip="${id}">${order>=0?"장착 해제":"전투 장착"}</button>${cost?`<button type="button" data-modal-upgrade-constellation="${id}" ${ready?"":"disabled"}>업그레이드</button>`:""}</div>`:""});
+    detailModal.querySelector("[data-modal-equip]")?.addEventListener("click",()=>{toggleEquippedConstellation(id);renderCollection();openConstellationDetail(id);}); detailModal.querySelector("[data-modal-upgrade-constellation]")?.addEventListener("click",()=>{if(upgradeConstellation(id)){updateMetaCurrency();renderCollection();openConstellationDetail(id);}}); updateNotifications();
+  };
   const renderCollection = () => {
-    getRequiredElement("star-collection").innerHTML = Object.values(STAR_TYPES).map((star) => {
-      const entry = playerProgress.starCollection[star.id];
-      const cost = starLevelCosts(entry.level);
-      const canUpgrade = cost && entry.count >= cost.copies && playerProgress.starShards >= cost.shards;
-      const visualStage = Math.min(4, Math.ceil(entry.level / 2));
-      return `<article class="collection-card star-collection-card ${entry.count ? "owned" : "locked"}" style="--star-color:${star.color}"><div class="collection-star stage-${visualStage}">${normalStarGlyph(visualStage, star.key)}</div><h3>${star.name} 별</h3><b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.7 · MAX"}</b><div class="collection-ability"><strong>기본 스탯</strong><p>공격력 ${star.damage} · 공격속도 ${star.rate} · 사거리 ${star.range}</p><strong>특수능력 · 현재 Lv.</strong><p>${normalStarCollectionAbilityText(star.key, entry.level)}</p><strong>다음 Lv.</strong><p>${cost ? normalStarNextLevelText(star.key) : "최대 레벨"}</p></div><div class="star-upgrade-details"><span>보유 별: <b>${entry.count}${cost ? ` / ${cost.copies}` : ""}</b></span><span>별조각: <b>${playerProgress.starShards}${cost ? ` / ${cost.shards}` : ""}</b></span>${cost ? `<small>다음 비용 · ${star.name} 별 ×${cost.copies} + 별조각 ×${cost.shards}</small>` : `<small>최대 레벨 · 복사본은 계속 보관됩니다.</small>`}</div><button type="button" data-upgrade-star="${star.id}"${canUpgrade ? "" : " disabled"}>${cost ? "레벨업" : "MAX"}</button></article>`;
-    }).join("");
-    getRequiredElement("constellation-collection").innerHTML = Object.values(CONSTELLATION_DEFINITIONS).map((definition) => {
-      const owned = playerProgress.ownedConstellations.includes(definition.id);
-      const order = playerProgress.equippedConstellations.indexOf(definition.id);
-      const entry = playerProgress.constellationCollection[definition.id];
-      const cost = entry && CONSTELLATION_LEVEL_COSTS[entry.level];
-      const canUpgrade = cost && entry.copies >= cost.copies && playerProgress.galaxyFragments >= cost.galaxyFragments;
-      const recipe = Object.entries(definition.recipe).map(([type, amount]) => `${CONFIG.stars[type].name} 별 ×${amount}`).join(" + ");
-      return `<article class="collection-card constellation-collection-card ${owned ? "owned" : "locked"} ${order >= 0 ? "equipped" : ""}">${order >= 0 ? `<b class="equip-order">${order + 1}</b>` : ""}${constellationPreview(definition)}<h3>${definition.name}</h3><div class="collection-ability"><strong>Lv.${entry?.level || 1} · 조합</strong><p>${recipe}</p><strong>기본 능력</strong><p>${definition.supportOnly ? `지원형 · 사거리 ${definition.range}` : `공격력 ${definition.attackDamage} · 공격속도 ${definition.attackSpeed}회/초 · 사거리 ${definition.range}`}</p><strong>비용 · 쿨타임</strong><p>비용: 위 별 조합 · 쿨타임: ${definition.attackSpeed ? `${(1 / definition.attackSpeed).toFixed(2)}초` : "해당 없음"}</p><strong>현재 레벨 효과</strong><p>${definition.supportOnly ? "지원 능력은 정의된 특수 효과를 적용합니다." : `공격력 ×${formatMultiplier(constellationLevelDamageMultiplier(entry?.level || 1))} · 공격속도 보너스 +${Math.round(constellationLevelAttackSpeedBonus(entry?.level || 1) * 100)}%`}</p><strong>특수 능력 1 · 2</strong>${definition.specialDescriptions.map((text) => `<p>${text}</p>`).join("")}</div>${owned ? `<b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.4 · MAX"}</b><div class="constellation-upgrade-details"><span>복사본 <b>${entry.copies}${cost ? ` / ${cost.copies}` : ""}</b></span><span>은하파편 <b>${playerProgress.galaxyFragments}${cost ? ` / ${cost.galaxyFragments}` : ""}</b></span></div><div class="collection-actions"><button type="button" data-equip-constellation="${definition.id}">${order >= 0 ? "장착 해제" : "전투 장착"}</button><button type="button" data-upgrade-constellation="${definition.id}"${canUpgrade ? "" : " disabled"}>${cost ? `Lv.${entry.level + 1} 강화` : "MAX"}</button></div>` : "<small>🔒 미획득</small>"}</article>`;
-    }).join("");
-    document.querySelectorAll("[data-deck-count]").forEach((node) => { node.textContent = playerProgress.equippedConstellations.length; });
-    document.querySelectorAll("[data-equip-constellation]").forEach((button) => { button.onclick = () => { const result = toggleEquippedConstellation(button.dataset.equipConstellation); if (!result.ok) showToast(result.message); renderCollection(); }; });
-    document.querySelectorAll("[data-upgrade-star]").forEach((button) => { button.onclick = () => { if (upgradeStar(button.dataset.upgradeStar)) { updateMetaCurrency(); renderCollection(); } }; });
-    document.querySelectorAll("[data-upgrade-constellation]").forEach((button) => { button.onclick = () => { if (upgradeConstellation(button.dataset.upgradeConstellation)) { updateMetaCurrency(); renderCollection(); } }; });
+    getRequiredElement("star-collection").innerHTML=Object.values(STAR_TYPES).map((star)=>{const e=playerProgress.starCollection[star.id],cost=starLevelCosts(e.level),notice=e.count>0&&(!playerProgress.seenStars[star.id]||starCanUpgrade(star.id));return `<button type="button" class="collection-card compact-card star-collection-card ${e.count?"owned":"locked"} ${notice?"has-notification":""}" data-star-detail="${star.id}" style="--star-color:${star.color}"><span class="collection-star stage-${Math.min(4,Math.ceil(e.level/2))}">${normalStarGlyph(Math.min(4,Math.ceil(e.level/2)),star.key)}</span><h3>${star.name} 별</h3><b>Lv.${e.level}</b><small>${e.count}${cost?` / ${cost.copies}`:""} 보유중</small></button>`}).join("");
+    getRequiredElement("constellation-collection").innerHTML=Object.values(CONSTELLATION_DEFINITIONS).map((definition)=>{const e=playerProgress.constellationCollection[definition.id],owned=Boolean(e),notice=owned&&(!playerProgress.seenConstellations[definition.id]||constellationCanUpgrade(definition.id));return `<button type="button" class="collection-card compact-card constellation-collection-card ${owned?"owned":"locked"} ${notice?"has-notification":""}" data-constellation-detail="${definition.id}">${constellationPreview(definition)}<h3>${definition.name}</h3><b>${owned?`Lv.${e.level}`:"미획득"}</b><small>${owned?`${e.copies} 보유중`:"🔒 미획득"}</small></button>`}).join("");
+    document.querySelectorAll("[data-deck-count]").forEach((n)=>n.textContent=playerProgress.equippedConstellations.length); document.querySelectorAll("[data-star-detail]").forEach((b)=>b.onclick=()=>openStarDetail(b.dataset.starDetail)); document.querySelectorAll("[data-constellation-detail]").forEach((b)=>b.onclick=()=>openConstellationDetail(b.dataset.constellationDetail)); updateNotifications();
   };
-  const renderRelics = () => {
-    const collection=getRequiredElement("relic-collection");
-    collection.innerHTML = Object.values(RELIC_DEFINITIONS).map((relic) => {
-      const entry=playerProgress.relicProgress[relic.id], owned=entry.owned, cost=RELIC_UPGRADE_COSTS[entry.level];
-      const ready=Boolean(cost && entry.duplicates>=cost.duplicates && playerProgress.starShards>=cost.starShards);
-      const nebulaProgress=relic.id === "IMMORTAL_NEBULA" && entry.level < 4 ? `<p class="relic-growth">다음 보호막 증가까지 <b>${entry.level-1} / 3</b></p>` : "";
-      return `<article class="relic-card ${owned ? "owned" : "locked"} ${ready ? "upgrade-ready" : ""}" data-relic="${relic.id}"><i>${owned ? relic.icon : "🔒"}</i><div class="relic-card-copy"><small>${relic.effectType}</small><h2>${relic.name} <b>${owned ? (entry.level===4 ? "Lv.MAX" : `Lv.${entry.level}`) : "미획득"}</b></h2><p class="current-effect">현재 효과 · ${owned ? relicEffectText(relic.id,entry.level) : relicEffectText(relic.id,1)}</p>${owned && cost ? `<p>다음 Lv · ${relicEffectText(relic.id,entry.level+1)}</p><p>보유 유물 <b>${entry.duplicates} / ${cost.duplicates}</b> · 별조각 <b>${playerProgress.starShards.toLocaleString()} / ${cost.starShards.toLocaleString()}</b></p>${nebulaProgress}<button type="button" data-upgrade-relic="${relic.id}" ${ready ? "" : "disabled"}>${ready ? "업그레이드 가능" : "업그레이드"}</button>` : owned ? `<button type="button" disabled>최대 레벨</button>` : `<p>운석파편 뽑기에서 획득할 수 있습니다.</p>`}</div></article>`;
-    }).join("");
-    collection.querySelectorAll("[data-upgrade-relic]").forEach((button)=>button.onclick=()=>{ if(upgradeRelic(button.dataset.upgradeRelic)){ updateMetaCurrency(); renderRelics(); } });
-  };
+  const openRelicDetail = (id) => { playerProgress.seenRelics[id]=true;savePlayerProgress();const d=RELIC_DEFINITIONS[id],e=playerProgress.relicProgress[id],cost=RELIC_UPGRADE_COSTS[e.level],ready=relicCanUpgrade(id);openDetail({kind:"relic",id,icon:d.icon,name:d.name,subtitle:e.owned?`Lv.${e.level}`:"미획득",body:`<section><h3>현재 효과</h3><p>${relicEffectText(id,e.level||1)}</p></section>${e.owned&&cost?`<section><h3>다음 Lv 효과</h3><p>${relicEffectText(id,e.level+1)}</p></section><section><h3>보유 재료</h3><p>중복 유물 ${e.duplicates} / ${cost.duplicates}<br>별조각 ${playerProgress.starShards} / ${cost.starShards}</p></section>`:""}`,footer:e.owned&&cost?`<button type="button" data-modal-upgrade-relic="${id}" ${ready?"":"disabled"}>업그레이드</button>`:""});detailModal.querySelector("[data-modal-upgrade-relic]")?.addEventListener("click",()=>{if(upgradeRelic(id)){updateMetaCurrency();renderRelics();openRelicDetail(id);}});updateNotifications();};
+  const renderRelics = () => {const collection=getRequiredElement("relic-collection");collection.innerHTML=Object.values(RELIC_DEFINITIONS).map((d)=>{const e=playerProgress.relicProgress[d.id],notice=e.owned&&(!playerProgress.seenRelics[d.id]||relicCanUpgrade(d.id));return `<button type="button" class="relic-card compact-relic ${e.owned?"owned":"locked"} ${notice?"has-notification":""}" data-relic-detail="${d.id}"><i>${e.owned?d.icon:"🔒"}</i><span><h2>${d.name}</h2><b>${e.owned?`Lv.${e.level}`:"미획득"}</b><small>중복 ${e.duplicates}</small></span></button>`}).join("");collection.querySelectorAll("[data-relic-detail]").forEach((b)=>b.onclick=()=>openRelicDetail(b.dataset.relicDetail));updateNotifications();};
   const showMainMenu = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.MAIN_MENU); };
   let modeSelectionLocked = false;
-  let battleMenuOpenedAt = 0;
   const showBattleMenu = () => {
     modeSelectionLocked = false;
-    battleMenuOpenedAt = typeof performance === "undefined" ? Date.now() : performance.now();
     document.querySelectorAll?.("[data-battle-mode]").forEach((card) => card.classList.remove("mode-selected"));
     showScreen(SCREEN_STATES.BATTLE_MENU);
   };
   const showGacha = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.GACHA); };
   const showCollection = () => { renderCollection(); showScreen(SCREEN_STATES.COLLECTION); };
   const showRelics = () => { renderRelics(); showScreen(SCREEN_STATES.RELICS); };
-  const renderMonsterCodex = (selectedId = MONSTER_CODEX_IDS[0]) => {
+  const renderMonsterCodex = () => {
     const list = getRequiredElement("monster-codex-list");
     const detail = getRequiredElement("monster-codex-detail");
-    list.innerHTML = MONSTER_CODEX_IDS.map((id) => { const monster = CONFIG.monsters[id]; return `<button type="button" class="monster-card ${id}${id === selectedId ? " selected" : ""}" data-monster-id="${id}"><span class="monster-portrait"><i></i></span><span><small>${monster.boss ? "BOSS / SPECIAL" : monster.role}</small><b>${monster.name}</b><em>HP ${monster.hp.toLocaleString("ko-KR")} · SPD ${monster.speed}</em></span></button>`; }).join("");
-    const monster = CONFIG.monsters[selectedId];
-    detail.className = `monster-codex-detail ${selectedId}`;
-    detail.innerHTML = `<div class="monster-detail-portrait"><i></i></div><small>${monster.boss ? "BOSS / SPECIAL" : monster.role}</small><h2>${monster.name}</h2><dl><div><dt>기본 체력</dt><dd>${monster.hp.toLocaleString("ko-KR")}</dd></div><div><dt>이동속도</dt><dd>${monster.speed}</dd></div><div><dt>역할 / 등급</dt><dd>${monster.role}</dd></div></dl><section><b>능력 · ${monster.abilityName}</b><p>${monster.abilityText}</p></section><section><b>설명</b><p>${monster.description}</p></section>`;
-    list.querySelectorAll("[data-monster-id]").forEach((button) => button.onclick = () => renderMonsterCodex(button.dataset.monsterId));
+    detail.hidden = true;
+    list.innerHTML = MONSTER_CODEX_IDS.map((id) => { const monster = CONFIG.monsters[id], notice=!playerProgress.seenMonsters[id]; return `<button type="button" class="monster-card ${id} ${notice?"has-notification":""}" data-monster-id="${id}"><span class="monster-portrait"><i></i></span><span><small>${monster.boss ? "보스" : "특수"}</small><b>${monster.name}</b></span></button>`; }).join("");
+    list.querySelectorAll("[data-monster-id]").forEach((button) => button.onclick = () => { const id=button.dataset.monsterId, monster=CONFIG.monsters[id]; playerProgress.seenMonsters[id]=true; savePlayerProgress(); openDetail({kind:"monster",id,icon:`<span class="monster-detail-portrait ${id}"><i></i></span>`,name:monster.name,subtitle:monster.boss?"보스":"특수 몬스터",body:`<dl class="detail-stats"><div><dt>기본 체력</dt><dd>${monster.hp.toLocaleString("ko-KR")}</dd></div><div><dt>이동속도</dt><dd>${monster.speed}</dd></div><div><dt>분류</dt><dd>${monster.role}</dd></div></dl><section><h3>능력 · ${monster.abilityName}</h3><p>${monster.abilityText}</p></section><section><h3>설명</h3><p>${monster.description}</p></section>`}); renderMonsterCodex(); updateNotifications(); });
   };
   const showMonsterCodex = () => { renderMonsterCodex(); showScreen(SCREEN_STATES.MONSTER_CODEX); };
   const startBattle = (mode = GAME_MODES.NORMAL) => {
@@ -3457,8 +3479,7 @@ function bootstrapGame() {
   };
   document.querySelectorAll?.("[data-battle-mode]").forEach((card) => {
     bindPointerTap(card, () => activateModeCard(card, card.dataset.battleMode === "normal" ? GAME_MODES.NORMAL : GAME_MODES.EXPERIMENTAL_VERTICAL), () => {
-      const now = typeof performance === "undefined" ? Date.now() : performance.now();
-      return currentScreen === SCREEN_STATES.BATTLE_MENU && !modeSelectionLocked && now - battleMenuOpenedAt > 80;
+      return currentScreen === SCREEN_STATES.BATTLE_MENU && !modeSelectionLocked;
     });
   });
   getRequiredElement("battle-exit").onclick = () => { exitDialog.hidden = false; };
@@ -3507,10 +3528,10 @@ function bootstrapGame() {
       const resultSequence = getRequiredElement("draw-sequence");
       resultSequence.innerHTML = relicDraw ? relicSummonPreview() : summonSequencePreview(results);
       getRequiredElement("draw-result-grid").innerHTML = results.map((result, index) => result.kind === "relic"
-        ? `<article class="draw-result relic-result" style="--result-order:${index}"><em>${result.isNew ? "NEW" : "중복 +1"}</em><i>${RELIC_DEFINITIONS[result.id].icon}</i><b>${RELIC_DEFINITIONS[result.id].name}</b><small>${relicEffectText(result.id,relicLevel(result.id))}</small></article>`
+        ? `<article class="draw-result relic-result" style="--result-order:${index}"><em>${result.isNew ? "NEW" : "+1"}</em><i>${RELIC_DEFINITIONS[result.id].icon}</i><b>${RELIC_DEFINITIONS[result.id].name}</b></article>`
         : result.kind === "star"
-        ? `<article class="draw-result star-result" style="--star-color:${STAR_TYPES[result.id].color};--result-order:${index}"><small>일반 별 획득</small><i>✦</i><b>${STAR_TYPES[result.id].name} 별</b><span>${STAR_TYPES[result.id].name} · Stage 1</span></article>`
-        : `<article class="draw-result constellation-result constellation-${result.id.toLowerCase()}" style="--result-order:${index};--identity:${CONSTELLATION_SUMMON_COLORS[result.id][0]}">${result.isNew ? "<em>NEW</em>" : "<em>보유 중</em>"}<small>별자리 획득</small>${constellationPreview(CONSTELLATION_DEFINITIONS[result.id])}<b>${CONSTELLATION_DEFINITIONS[result.id].name}</b><span>조합 · ${Object.entries(CONSTELLATION_DEFINITIONS[result.id].recipe).map(([type,count])=>`${STAR_TYPES[type.toUpperCase()].name}×${count}`).join(" · ")}</span><span>핵심 능력 · ${CONSTELLATION_DEFINITIONS[result.id].specialDescriptions[0]}</span>${result.guaranteed ? "<strong>확정 소환</strong>" : ""}</article>`).join("");
+        ? `<article class="draw-result star-result" style="--star-color:${STAR_TYPES[result.id].color};--result-order:${index}"><em>${result.isNew ? "NEW" : "+1"}</em><small>일반 별</small><i>✦</i><b>${STAR_TYPES[result.id].name} 별</b></article>`
+        : `<article class="draw-result constellation-result constellation-${result.id.toLowerCase()}" style="--result-order:${index};--identity:${CONSTELLATION_SUMMON_COLORS[result.id][0]}"><em>${result.isNew ? "NEW" : "+1"}</em><small>별자리</small>${constellationPreview(CONSTELLATION_DEFINITIONS[result.id])}<b>${CONSTELLATION_DEFINITIONS[result.id].name}</b></article>`).join("");
       summonController.begin(results);
       updateMetaCurrency(); renderCollection(); renderRelics();
     };
@@ -3569,7 +3590,7 @@ function bootstrapGame() {
   const specialCodeForm = settingsDialog.querySelector("[data-special-code-form]");
   if (specialCodeForm) specialCodeForm.onsubmit=(event)=>{ event.preventDefault(); const input=settingsDialog.querySelector("[data-special-code-input]"); const result=redeemSpecialCode(input.value); settingsDialog.querySelector("[data-special-code-result]").textContent=result.message; if(result.ok) input.value=""; updateMetaCurrency(); };
   document.querySelectorAll?.("[data-close-utility]").forEach((button)=>button.onclick=()=>setModalOpen(button.closest(".utility-dialog"),false));
-  refreshSettings(); refreshMail(); refreshNews();
+  refreshSettings(); refreshMail(); refreshNews(); updateNotifications();
   window.addEventListener("resize", () => {
     RangeSystem.refresh();
     game?.markDirty();
