@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=40" />
+    <link rel="stylesheet" href="styles.css?v=41" />
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
@@ -68,7 +68,7 @@
       </div>
     </section>
 
-    <section class="draw-result-dialog" id="draw-results" role="dialog" aria-modal="true" aria-labelledby="draw-results-title" hidden><div><header><small>CELESTIAL SUMMON</small><h2 id="draw-results-title"><span class="summoning-title">별자리를 잇는 중…</span><span class="result-title">뽑기 결과</span></h2></header><div class="draw-sequence" id="draw-sequence"></div><div id="draw-result-grid" class="draw-result-grid"></div><button type="button" id="close-draw-results">확인</button></div></section>
+    <section class="draw-result-dialog" id="draw-results" role="dialog" aria-modal="true" aria-labelledby="draw-results-title" hidden><button type="button" class="skip-summon" id="skip-summon">SKIP</button><div class="summon-nebula" aria-hidden="true"></div><div class="summon-dust" aria-hidden="true"></div><i class="summon-meteor meteor-one" aria-hidden="true"></i><i class="summon-meteor meteor-two" aria-hidden="true"></i><div class="summon-shockwave" aria-hidden="true"></div><div class="summon-core" aria-hidden="true">✦</div><div class="summon-content"><header><small>CELESTIAL SUMMON</small><h2 id="draw-results-title"><span class="summoning-title">별자리를 잇는 중…</span><span class="result-title">뽑기 결과</span></h2></header><div class="draw-sequence" id="draw-sequence"></div><div id="draw-result-grid" class="draw-result-grid"></div><button type="button" id="close-draw-results">확인</button></div></section>
 
     <section class="lobby-screen battle-menu-screen" id="battle-menu" hidden aria-labelledby="battle-menu-title">
       <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -228,6 +228,6 @@
     <section class="confirm-dialog" id="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" hidden>
       <div><small>LEAVE BATTLE</small><h2 id="exit-dialog-title">전투 종료</h2><p>전투를 종료하고 메인 메뉴로 돌아가시겠습니까?</p><footer><button type="button" id="exit-cancel">취소</button><button type="button" class="danger" id="exit-confirm">나가기</button></footer></div>
     </section>
-    <script src="game.js?v=40" defer></script>
+    <script src="game.js?v=41" defer></script>
   </body>
 </html>
