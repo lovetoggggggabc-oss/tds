@@ -71,7 +71,7 @@ assert.match(
   "the visual range overlay must never intercept controls",
 );
 assert.match(css, /\.battle-bottom-area\s*\{[\s\S]*?flex:\s*0 0 auto/, "the control bar occupies a dedicated shell-local flow area");
-assert.match(js, /this\.stars = Array\(MAX_STARS_PER_PLAYER\)\.fill\(null\)/);
+assert.match(js, /this\.stars = Array\(maxStars\)\.fill\(null\)/);
 assert.match(js, /startStarlight:\s*300/);
 assert.match(js, /startDivinity:\s*1/);
 assert.match(js, /waveSeconds:\s*10/);
@@ -193,11 +193,11 @@ assert.match(
   /let dt = realDt \* this\.speed/,
   "global simulation delta must use speed multiplier",
 );
-assert.match(js, /p\.resources\.starlight \+= e\.reward/);
+assert.match(js, /p\.resources\.starlight \+= Math\.floor\(e\.reward \* relicMultiplier\("STARLIGHT_CRYSTAL"\)\)/);
 assert.match(js, /if \(e\.boss\) p\.resources\.divinity\+\+/);
 assert.match(js, /const BASE_MAX_HP = 400/);
 assert.match(js, /this\.base = \{ hp: initialBaseHp, maxHp: initialBaseHp \}/);
-assert.match(js, /this\.base\.hp = Math\.max\(0, this\.base\.hp - damageToBase\)/);
+assert.match(js, /this\.damageBase\(damageToBase\)/);
 for (const [type, damage] of [["slime", 100], ["bug", 150]])
   assert.match(js, new RegExp(`${type}: \\{[^}]*baseDamage: ${damage}`));
 for (const [name, damage] of [["코어 드론", 500], ["운석 괴물", 1000]])

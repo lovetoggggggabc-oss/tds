@@ -14,5 +14,6 @@ assert.match(html, /data-open-news/);
 assert.match(html, /세로 대전장 플레이/);
 assert.match(html, /class="news-scroll-body"/);
 assert.match(css, /\.news-scroll-body\{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden/);
-assert.equal((js.match(/Object\.freeze\(\[\{x:/g) || []).length >= 8, true);
+assert.match(js, /const VERTICAL_BETA_WAYPOINTS/);
+assert.equal((js.slice(js.indexOf("const VERTICAL_BETA_WAYPOINTS"), js.indexOf("const EXPERIMENTAL_VERTICAL_MAP")).match(/\{x:/g) || []).length, 12);
 console.log("Vertical BETA/news regression passed: isolated balance, rewards, bosses, distance route, news persistence, and UI verified.");
