@@ -40,15 +40,14 @@ const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), r
 const GACHA_RULES = Object.freeze({ starChance: .9, constellationChance: .1, pityLimit: 20 });
 const MAX_EQUIPPED_CONSTELLATIONS = 6;
 const LEGACY_STAR_IDS = Object.freeze({ SKY: "YELLOW", SKYBLUE: "YELLOW", LIGHT_BLUE: "YELLOW", sky: "YELLOW", skyblue: "YELLOW", light_blue: "YELLOW" });
-const PLACEHOLDER_STAR_COMBAT_STATS = Object.freeze({ damage: 100, rate: 2, range: 5, target: "nearest" }); // TODO: 보라색/초록색의 정식 전투 밸런스를 확정한다.
 const STAR_TYPES = Object.freeze({
   BLUE: Object.freeze({ id: "BLUE", key: "blue", name: "청색", color: "#4d83ff", damage: 50, rate: 4, range: 5, target: "lock" }),
   WHITE: Object.freeze({ id: "WHITE", key: "white", name: "백색", color: "#ffffff", damage: 100, rate: 3.5, range: 6, target: "burst" }),
   YELLOW: Object.freeze({ id: "YELLOW", key: "yellow", name: "황색", color: "#ffd84d", damage: 75, rate: 2, range: 7, target: "random" }),
   ORANGE: Object.freeze({ id: "ORANGE", key: "orange", name: "주황색", color: "#ffad45", damage: 125, rate: 1.5, range: 4, target: "nearest" }),
   RED: Object.freeze({ id: "RED", key: "red", name: "적색", color: "#ff5064", damage: 200, rate: 1, range: 5, target: "highest" }),
-  PURPLE: Object.freeze({ id: "PURPLE", key: "purple", name: "보라색", color: "#b16cff", ...PLACEHOLDER_STAR_COMBAT_STATS }),
-  GREEN: Object.freeze({ id: "GREEN", key: "green", name: "초록색", color: "#55db85", ...PLACEHOLDER_STAR_COMBAT_STATS }),
+  PURPLE: Object.freeze({ id: "PURPLE", key: "purple", name: "보라색", color: "#b16cff", damage: 100, rate: 1, range: 4.5, target: "lowest" }),
+  GREEN: Object.freeze({ id: "GREEN", key: "green", name: "초록색", color: "#55db85", damage: 0, rate: 0, range: 0, target: "none", support: "alliedAttackSpeed" }),
 });
 const STARTER_COLLECTION = Object.freeze({
   ownedStars: Object.freeze({ BLUE: 1, WHITE: 1, YELLOW: 1, ORANGE: 1, RED: 1 }),
@@ -70,7 +69,7 @@ function loadPlayerProgress() {
     const equippedConstellations = [...new Set(saved?.equippedConstellations ?? STARTER_COLLECTION.equippedConstellations)]
       .filter((id) => ownedConstellations.includes(id)).slice(0, MAX_EQUIPPED_CONSTELLATIONS);
     return {
-      starFragments: Math.max(0, Number.isFinite(saved?.starFragments) ? Math.floor(saved.starFragments) : 0),
+      starFragments: Math.max(0, Number.isFinite(saved?.starFragments) ? Math.floor(saved.starFragments) : 5000),
       meteorFragments: Math.max(0, Number.isFinite(saved?.meteorFragments) ? Math.floor(saved.meteorFragments) : 0),
       ownedStars,
       ownedConstellations,
@@ -78,7 +77,7 @@ function loadPlayerProgress() {
       constellationPity: Math.min(GACHA_RULES.pityLimit - 1, Math.max(0, Number.isFinite(saved?.constellationPity) ? Math.floor(saved.constellationPity) : 0)),
     };
   } catch (_error) {
-    return { starFragments: 0, meteorFragments: 0, ownedStars: { ...STARTER_COLLECTION.ownedStars }, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0 };
+    return { starFragments: 5000, meteorFragments: 0, ownedStars: { ...STARTER_COLLECTION.ownedStars }, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0 };
   }
 }
 const playerProgress = loadPlayerProgress();
@@ -218,7 +217,7 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     }),
     specialDescriptions: Object.freeze([
       "공격 성공 시 별빛 1 + 현재 활성화된 완성 별자리 수 획득",
-      "별빛 점술 30: 50% 확률로 +60, 실패 시 추가 -15 (별빛은 0 미만이 되지 않음)",
+      "별빛 점술 30: 별빛 30을 사용하여 50% 확률로 별빛 60, 50% 확률로 별빛 15를 획득합니다.",
     ]),
   }),
   [CONSTELLATION_IDS.GUARDIAN]: Object.freeze({
@@ -261,9 +260,8 @@ const CONFIG = {
   summonCost: 30,
   swapCost: 10,
   divinationCost: 30,
-  divinationFailureCost: 15,
   guardianLightCost: 50,
-  startStarlight: 5000,
+  startStarlight: 500,
   startDivinity: 50,
   baseMaxHP: BASE_MAX_HP,
   guardianUnit: {
@@ -349,6 +347,8 @@ const STAR_KEYS = Object.keys(CONFIG.stars),
     burst: "3연속 공격 → 2초 대기",
     nearest: "가장 가까운 적",
     highest: "체력이 가장 높은 적",
+    lowest: "현재 체력이 가장 낮은 적",
+    none: "공격하지 않음 · 모든 아군 공격속도 +3%",
   };
 class PlayerResources {
   constructor() {
@@ -650,6 +650,10 @@ class Targeting {
         !best || Targeting.dist(pos, enemy.position()) < Targeting.dist(pos, best.position()) ? enemy : best, null);
     if (star.data().target === "highest")
       return targets.reduce((best, enemy) => !best || enemy.hp > best.hp ? enemy : best, null);
+    if (star.data().target === "lowest")
+      // SpatialGrid preserves the game's enemy ordering; strict comparison
+      // therefore keeps the first enemy as the stable tie-breaker.
+      return targets.reduce((best, enemy) => !best || enemy.hp < best.hp ? enemy : best, null);
     return targets.reduce((best, enemy) => !best || enemy.progress > best.progress ? enemy : best, null);
   }
   static dist(a, b) {
@@ -856,13 +860,11 @@ class Constellation {
     const position = this.owner.pos(this.center);
     if (this.target && (this.target.dead || !RangeSystem.contains(position, this.target.position(), this.effectiveRange())))
       this.resetTarget();
-    if (this.definitionId === CONSTELLATION_IDS.TWILIGHT) {
-      const nextSpeed = this.effectiveAttackSpeed(this.target);
-      const previousSpeed = this.runtime.currentAttackSpeed || this.definition.attackSpeed;
-      if (nextSpeed !== previousSpeed && this.cooldown > 0)
-        this.cooldown *= previousSpeed / nextSpeed;
-      this.runtime.currentAttackSpeed = nextSpeed;
-    }
+    const nextSpeed = this.effectiveAttackSpeed(this.target);
+    const previousSpeed = this.runtime.currentAttackSpeed || this.definition.attackSpeed;
+    if (nextSpeed !== previousSpeed && this.cooldown > 0)
+      this.cooldown *= previousSpeed / nextSpeed;
+    this.runtime.currentAttackSpeed = nextSpeed;
     if (this.cooldown > 0) return;
     const target = this.target || Targeting.choose({ data: () => ({
       range: this.effectiveRange(), target: this.definition.targeting,
@@ -921,9 +923,10 @@ class Constellation {
     return this.definition.range;
   }
   effectiveAttackSpeed(target = this.target) {
+    const globalModifier = this.owner.alliedAttackSpeedModifier?.() || 1;
     if (this.definitionId === CONSTELLATION_IDS.TWILIGHT && target && !target.dead && target.hp <= target.maxHp * 0.50)
-      return this.definition.attackSpeed * 2;
-    return this.definition.attackSpeed;
+      return this.definition.attackSpeed * globalModifier * 2;
+    return this.definition.attackSpeed * globalModifier;
   }
   startTwilightTranscendence() {
     if (this.definitionId !== CONSTELLATION_IDS.TWILIGHT || this.runtime.transcendenceUntil > game.gameTime) return;
@@ -1030,6 +1033,13 @@ class StarManager {
       return constellations;
     }, []);
   }
+  greenStarCount() {
+    return this.stars.filter((star) => star?.type === "green" && !star.support && !star.constellation).length;
+  }
+  alliedAttackSpeedModifier() {
+    const count = game?.players?.reduce((total, player) => total + player.manager.greenStarCount(), 0) || 0;
+    return 1 + count * 0.03;
+  }
   clearOthers() {
     game.players.forEach((p) => {
       if (p.manager !== this) p.manager.exitModes();
@@ -1105,12 +1115,18 @@ class StarManager {
     this.selected = [];
   }
   update(dt) {
+    const attackSpeedModifier = this.alliedAttackSpeedModifier();
     this.stars.forEach((s, i) => {
       if (!s || s.support) return;
       if (s.constellation) {
         s.constellation.attack(dt);
         return;
       }
+      if (s.data().target === "none") return;
+      const previousModifier = s.attackSpeedModifier || 1;
+      if (previousModifier !== attackSpeedModifier && s.cooldown > 0)
+        s.cooldown *= previousModifier / attackSpeedModifier;
+      s.attackSpeedModifier = attackSpeedModifier;
       s.cooldown -= dt;
       if (s.cooldown > 0) return;
       const position = this.pos(i);
@@ -1125,12 +1141,12 @@ class StarManager {
         t.hit(damage, position);
         if (s.data().target === "burst") {
           s.burstLeft--;
-          if (s.burstLeft > 0) s.cooldown = CONFIG.whiteBurstInterval;
+          if (s.burstLeft > 0) s.cooldown = CONFIG.whiteBurstInterval / attackSpeedModifier;
           else {
             s.burstLeft = 3;
-            s.cooldown = CONFIG.whiteBurstRest;
+            s.cooldown = CONFIG.whiteBurstRest / attackSpeedModifier;
           }
-        } else s.cooldown = 1 / s.data().rate;
+        } else s.cooldown = 1 / (s.data().rate * attackSpeedModifier);
         if (t.dead || s.data().target === "random") s.lock = null;
       }
     });
@@ -1154,6 +1170,7 @@ class StarManager {
         (picked && this.zodiacMode ? " zodiac-picked" : "") +
         (s && s.support ? " support" : "") +
         (s && s.constellation ? " constellation" : "") +
+        (s?.constellation ? ` constellation-${s.constellation.definitionId.toLowerCase()}` : "") +
         (selectedConstellation?.members.includes(i)
           ? " constellation-linked"
           : "");
@@ -1291,7 +1308,7 @@ class ZodiacSystem {
     new Constellation(m, center, [...picks], definitionId, connectionOrder);
     game.discoverConstellation(definitionId);
     m.exitModes();
-    UIManager.zodiacComplete(points);
+    UIManager.zodiacComplete(points, definitionId);
     if (CONSTELLATION_DEFINITIONS[definitionId].completionEffect === "dawnMoon") UIManager.showDawnMoon();
     UIManager.hint(`✨ ${CONSTELLATION_DEFINITIONS[definitionId].name} 완성!`);
     game.render();
@@ -1331,14 +1348,10 @@ class DivinationSystem {
     if (!resources.spend(CONFIG.divinationCost))
       return UIManager.hint("별빛이 부족합니다.");
     const success = Math.random() < 0.5;
-    if (success) resources.starlight += 60;
-    else resources.starlight = Math.max(
-      0,
-      resources.starlight - CONFIG.divinationFailureCost,
-    );
+    resources.starlight += success ? 60 : 15;
     UIManager.divinationEffect(manager.pos(index), success);
     star.constellation.runtime.lastDivinationResult = success ? "success" : "failure";
-    UIManager.hint(success ? "점술 성공! +60" : "점술 실패... -15");
+    UIManager.hint(success ? "점술 결과: 별빛 +60" : "점술 결과: 별빛 +15");
     game.markDirty();
   }
 }
@@ -1454,7 +1467,7 @@ class UIManager {
     effect.className = `divination-effect ${success ? "success" : "failure"}`;
     effect.style.left = `${position.x}%`;
     effect.style.top = `${position.y}%`;
-    effect.textContent = success ? "점술 성공! +60" : "점술 실패... -15";
+    effect.textContent = success ? "운명의 카드 ✦ +60" : "별빛 카드 ✦ +15";
     effect.setAttribute("aria-hidden", "true");
     this.addTransient(effect, arena, 900);
   }
@@ -1491,18 +1504,19 @@ class UIManager {
       })
       .join("");
   }
-  static zodiacComplete(points) {
+  static zodiacComplete(points, definitionId) {
+    const accentClass = ` constellation-effect-${String(definitionId || "dawn").toLowerCase()}`;
     points.slice(0, -1).forEach((from, i) => {
       const to = points[i + 1];
       game.simulationTimeout(() => {
         effects.insertAdjacentHTML(
           "beforeend",
-          `<line class="link-form" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/>`,
+          `<line class="link-form${accentClass}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/>`,
         );
         for (let n = 0; n < 4; n++)
           effects.insertAdjacentHTML(
             "beforeend",
-            `<circle class="spark" cx="${from.x + ((to.x - from.x) * (n + 1)) / 5}" cy="${from.y + ((to.y - from.y) * (n + 1)) / 5}" r="${0.35 + n * 0.06}"/>`,
+            `<circle class="spark${accentClass}" cx="${from.x + ((to.x - from.x) * (n + 1)) / 5}" cy="${from.y + ((to.y - from.y) * (n + 1)) / 5}" r="${0.35 + n * 0.06}"/>`,
           );
       }, i * 90);
     });
@@ -1510,7 +1524,7 @@ class UIManager {
       () =>
         effects.insertAdjacentHTML(
           "beforeend",
-          `<circle class="complete-wave" cx="${points[0].x}" cy="${points[0].y}" r="2.5"/>`,
+          `<circle class="complete-wave${accentClass}" cx="${points[0].x}" cy="${points[0].y}" r="2.5"/>`,
         ),
       380,
     );
@@ -1681,7 +1695,7 @@ class UIManager {
               const b = c.owner.pos(c.connectionOrder[index + 1]);
               let selected = c.owner.selected[0] === c.center;
               lines.push(
-                `<line class="link${selected ? " selected" : ""}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`,
+                `<line class="link constellation-link-${c.definitionId.toLowerCase()}${selected ? " selected" : ""}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`,
               );
             });
         }

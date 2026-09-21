@@ -104,7 +104,7 @@ body:before {
 #play-battle { width:100%; min-height:60px; border-radius:17px; background:linear-gradient(100deg,#6a58dc,#8d50bd); box-shadow:0 8px 25px #6f43c066,inset 0 1px #fff5; font-weight:900; }#play-battle span,#play-battle small{display:block}#play-battle span{font-size:17px}#play-battle small{margin-top:2px;font-size:8px;letter-spacing:.22em;color:#d8dbff}
 .game-toast { position:fixed; z-index:10000; left:50%; bottom:max(28px,calc(env(safe-area-inset-bottom) + 18px)); transform:translateX(-50%); width:max-content; max-width:calc(100% - 40px); padding:12px 20px; border:1px solid #a9baff66; border-radius:22px; background:#171d4cf2; box-shadow:0 10px 30px #0009; font-size:13px; font-weight:800; }
 .confirm-dialog { position:fixed; z-index:10001; inset:0; display:grid; place-items:center; padding:24px; background:#03051dcc; backdrop-filter:blur(7px); }.confirm-dialog>div{width:min(100%,360px);padding:26px;border:1px solid #9eaaff66;border-radius:24px;background:linear-gradient(145deg,#242a67,#150e38);box-shadow:0 20px 60px #000}.confirm-dialog small{color:#ff9db4;font-size:9px;letter-spacing:.2em}.confirm-dialog h2{margin:6px 0 10px}.confirm-dialog p{color:#c5cbe3;line-height:1.55}.confirm-dialog footer{display:flex;gap:9px;margin-top:22px}.confirm-dialog button{flex:1;padding:12px;border-radius:12px;background:#343b70;font-weight:800}.confirm-dialog button.danger{background:#a74367}
-.battle-exit { position:absolute; z-index:190; top:max(14px,env(safe-area-inset-top)); right:17px; display:flex; align-items:center; gap:3px; padding:5px 8px; border:1px solid #9aaee066; border-radius:10px; background:#111638e6; color:#cdd8f8; font-size:13px; box-shadow:0 4px 12px #0007; }.battle-exit span{font-size:9px;font-weight:800}
+.battle-exit { position:absolute; z-index:190; top:calc(max(8px,env(safe-area-inset-top)) + 104px); right:14px; display:flex; align-items:center; gap:3px; min-height:30px; padding:5px 8px; border:1px solid #9aaee066; border-radius:10px; background:#111638e6; color:#cdd8f8; font-size:13px; box-shadow:0 4px 12px #0007; }.battle-exit span{font-size:9px;font-weight:800}
 button {
   font: inherit;
   color: inherit;
@@ -723,6 +723,12 @@ header {
   stroke-width: 1.15;
   filter: drop-shadow(0 0 4px #ffd85c);
 }
+.constellation-link-dawn { stroke:#c9bcff; }
+.constellation-link-radiance { stroke:#ffe68a; stroke-dasharray:.4 1.3; }
+.constellation-link-sagittarius { stroke:#64bfff; stroke-dasharray:2 .65; }
+.constellation-link-astrologer { stroke:#c58cff; stroke-dasharray:.5 .7; }
+.constellation-link-guardian { stroke:#a8f0ff; stroke-width:.7; }
+.constellation-link-twilight { stroke:#ee668f; stroke-dasharray:1.7 .7; }
 .link-form {
   stroke: #fff0a3;
   stroke-width: 1.25;
@@ -744,6 +750,20 @@ header {
   transform-origin: center;
   animation: completeWave 0.75s ease-out forwards;
 }
+.constellation-effect-dawn { stroke:#c9bcff; fill:#eee9ff; }
+.constellation-effect-radiance { stroke:#ffe174; fill:#fff1a8; }
+.constellation-effect-sagittarius { stroke:#63c5ff; fill:#ffe264; }
+.constellation-effect-astrologer { stroke:#c887ff; fill:#ffd976; }
+.constellation-effect-guardian { stroke:#a8f5ff; fill:#d9fbff; }
+.constellation-effect-twilight { stroke:#ef527d; fill:#ba69dd; }
+.star-node.constellation:before { position:absolute; z-index:6; left:50%; top:-10px; transform:translateX(-50%); font-size:11px; text-shadow:0 0 7px currentColor; }
+.constellation-dawn:before { content:"☾"; color:#d8c8ff; }
+.constellation-radiance:before { content:"☀"; color:#ffe586; }
+.constellation-sagittarius:before { content:"➶"; color:#7ec9ff; }
+.constellation-astrologer:before { content:"✧"; color:#cf8cff; animation:astrologerTurn 3s linear infinite; }
+.constellation-guardian:before { content:"⬡"; color:#a9f3ff; }
+.constellation-twilight:before { content:"◐"; color:#ef6c91; }
+@keyframes astrologerTurn { to { transform:translateX(-50%) rotate(360deg); } }
 .arena.speed-2 .beam {
   animation-duration: 0.08s;
 }
