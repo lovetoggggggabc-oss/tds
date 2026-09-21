@@ -3201,6 +3201,12 @@ function bootstrapGame() {
     monsterCodexScreen.hidden = screen !== SCREEN_STATES.MONSTER_CODEX;
     mapRandomScreen.hidden = screen !== SCREEN_STATES.MAP_RANDOM;
     exitDialog.hidden = true;
+    // A newly opened menu always starts at its heading. Battle camera movement
+    // remains arena-local and never participates in this menu scroll reset.
+    const activeMenu = [mainMenu, battleMenu, gachaScreen, collectionScreen, relicScreen, monsterCodexScreen]
+      .find((candidate) => !candidate.hidden);
+    activeMenu?.querySelectorAll?.(".screen-scroll-content, .battle-mode-grid, .collection-scroll, .relic-collection, .monster-codex-content")
+      .forEach((content) => { content.scrollTop = 0; });
   };
   const updateMetaCurrency = () => {
     document.querySelectorAll?.("[data-star-dust]").forEach((node) => {

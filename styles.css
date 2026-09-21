@@ -13,6 +13,8 @@
   --layer-modal-backdrop: 1000;
   --layer-modal-panel: 1001;
   --layer-toast: 1100;
+  --bottom-nav-height: 78px;
+  --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
   /* One width contract is shared by every screen and utility overlay.  The
      height is the limiting dimension in landscape, so the playable surface
      remains a centered 9:16 column instead of expanding toward the viewport. */
@@ -2065,6 +2067,7 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 .battle-menu-screen>.subscreen-header{flex:0 0 auto}
 .battle-mode-grid{display:grid;justify-items:center;gap:12px;width:min(calc(100% - 32px),430px);flex:1;min-height:0;margin-inline:auto;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 0 calc(32px + env(safe-area-inset-bottom))}
 .battle-mode-grid .stage-card{width:100%;margin:0;min-height:230px}
+.battle-mode-grid .mode-body{position:relative;display:flex;flex-direction:column;gap:0}
 .battle-mode-grid .stage-card .mode-play-button{display:flex;align-items:center;justify-content:center;width:calc(100% - 32px);min-height:48px;margin-inline:auto;text-align:center}
 .experimental-mode{border-color:#bb77ff88!important;background:radial-gradient(circle at 85% 20%,#9d4cff42,transparent 30%),linear-gradient(145deg,#17134a,#090c2c)!important}
 .experimental-mode .stage-copy small,.experimental-mode strong{color:#d9a7ff!important}.vertical-map{background:linear-gradient(180deg,#694bb8,#12163d)!important}.vertical-map span{height:82%!important;width:18%!important}
@@ -2142,7 +2145,7 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 .menu-tools i{font-style:normal}
 .menu-tools .utility-label{display:none}
 @media (max-width:600px){
-  :root{--game-shell-width:100vw}
+  :root{--game-shell-width:100vw;--bottom-nav-height:72px}
   .lobby-screen{width:100%;height:100dvh;max-height:100dvh;padding-left:14px;padding-right:14px}
   .main-lobby{padding-top:0;padding-bottom:calc(82px + env(safe-area-inset-bottom))}
   .main-top-bar{grid-template-columns:1fr;grid-template-rows:auto auto;gap:3px;width:100%;padding:max(8px,env(safe-area-inset-top)) 0 0}
@@ -2172,6 +2175,28 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
   .collection-scroll,.relic-collection,.battle-mode-grid,.monster-codex-content{min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   .relic-card-copy,.relic-card-copy h2,.relic-card-copy p{min-width:0;writing-mode:horizontal-tb;word-break:keep-all;overflow-wrap:break-word}
   .monster-codex-detail section p{writing-mode:horizontal-tb;word-break:keep-all;overflow-wrap:break-word}
+
+  /* Menu shells own exactly one vertical scroller. The fixed navigation is a
+     sibling, while this clearance lets the final control scroll fully above it. */
+  .gacha-screen{display:flex;flex-direction:column;min-height:0;overflow:hidden;padding-bottom:0}
+  .gacha-screen[hidden]{display:none}
+  .gacha-screen>.subscreen-header{flex:0 0 auto}
+  .screen-scroll-content{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;scroll-padding-bottom:calc(var(--bottom-nav-height) + var(--mobile-safe-bottom) + 20px)}
+  .summon-content-scroll{width:100%;padding:0 0 calc(var(--bottom-nav-height) + var(--mobile-safe-bottom) + 20px)}
+  .summon-content-scroll .gacha-tabs,.summon-content-scroll .summon-card{width:min(calc(100% - 4px),400px)}
+  .summon-card{height:auto;padding:15px 16px}
+  .summon-orbit{width:clamp(76px,23vw,92px);height:clamp(76px,23vw,92px)}
+  .gacha-rates span{display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .gacha-rates b{display:inline;margin:0}
+  .draw-actions button{min-width:0;min-height:58px;padding-inline:5px;white-space:nowrap}
+
+  .battle-mode-grid{padding-bottom:calc(var(--mobile-safe-bottom) + 24px);touch-action:pan-y;scroll-padding-bottom:calc(var(--mobile-safe-bottom) + 24px)}
+  .battle-mode-grid .stage-card{height:auto;min-height:0;padding:0 0 16px;overflow:hidden}
+  .battle-mode-grid .mode-visual{position:relative;height:auto;aspect-ratio:16 / 7;margin:0 0 0;flex:none}
+  .battle-mode-grid .mode-body{position:static;padding:15px 16px 0;background:linear-gradient(180deg,#1b2055,#130e38)}
+  .battle-mode-grid .stage-copy h2{margin:5px 0 6px;font-size:clamp(24px,7vw,30px)}
+  .battle-mode-grid .stage-copy strong{margin:10px 0 12px}
+  .battle-mode-grid .stage-card .mode-play-button{width:100%;min-height:48px;margin:0}
 }
 @media (max-width:600px) and (max-height:700px){
   .main-top-bar{gap:1px}
