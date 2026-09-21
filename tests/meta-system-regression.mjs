@@ -28,7 +28,7 @@ assert.deepEqual(Object.keys(STAR_TYPES), ["BLUE", "WHITE", "YELLOW", "ORANGE", 
 assert.equal(Object.keys(CONFIG.stars).length, 7);
 assert.equal(CONFIG.stars.yellow.name, "황색");
 assert.equal(CONFIG.stars.sky, undefined);
-assert.deepEqual(JSON.parse(JSON.stringify(CONFIG.stars.purple)), { name: "보라색", color: "#b16cff", damage: 100, rate: 1, range: 4.5, target: "lowest" });
+assert.deepEqual(JSON.parse(JSON.stringify(CONFIG.stars.purple)), { name: "자색", color: "#b16cff", damage: 100, rate: 1, range: 4.5, target: "lowest" });
 assert.equal(CONFIG.stars.green.target, "none");
 assert.equal(CONFIG.stars.green.support, "alliedAttackSpeed");
 assert.equal(CONFIG.startStarlight, 300);
