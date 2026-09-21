@@ -39,7 +39,7 @@ const EXPERIMENTAL_WORLD_HEIGHT = 2.8;
 const EXPERIMENTAL_INITIAL_CAMERA = "destination";
 let activeGameMode = GAME_MODES.NORMAL;
 
-const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", MAP_VOTE: "MAP_VOTE", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS" });
+const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", MAP_RANDOM: "MAP_RANDOM", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS", NEWS: "NEWS" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
 const PROGRESS_SCHEMA_VERSION = 7;
 const UPDATE_REWARD_ID = "balance_update_stardust_3000_v1";
@@ -54,12 +54,22 @@ const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), r
 const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong" });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
+  id: "battle_system_update_random_map_v1", date: "2026.09.21", title: "✦ 전투 시스템 개선 업데이트",
+  sections: Object.freeze([
+    Object.freeze({ title: "신규 별자리 개선", bullets: Object.freeze(["심판의 자리가 도감에 정상적으로 표시되도록 수정했습니다.", "심판 대상 추가 피해: 현재 체력 10% → 3.5%"]) }),
+    Object.freeze({ title: "일반 모드 난이도", paragraphs: Object.freeze(["몬스터 성장률을 추가 조정했습니다."]), bullets: Object.freeze(["Wave 1~10: +5%", "Wave 11~20: +6%", "Wave 21~40: +7%", "Wave 41 이상: +8%"]) }),
+    Object.freeze({ title: "맵 선택 개편", paragraphs: Object.freeze(["기존 맵 투표 시스템이 랜덤 맵 선택으로 변경되었습니다.", "일반 모드를 시작하면 3개의 전장 중 하나가 랜덤으로 결정됩니다.", "새로운 랜덤 선택 연출도 추가되었습니다."]) }),
+    Object.freeze({ title: "보상 개선", bullets: Object.freeze(["일반 모드에서 획득하는 별가루: 웨이브당 8개"]) }),
+    Object.freeze({ title: "모바일 개선", bullets: Object.freeze(["모바일에서 세로 대전장 카드까지 스크롤할 수 없어 플레이하지 못하던 문제를 수정했습니다."]) }),
+    Object.freeze({ title: "버그 수정", bullets: Object.freeze(["뉴스를 모두 읽어도 알림 숫자가 사라지지 않던 문제 수정", "다른 메뉴에서 전투 탭을 눌렀을 때 실제 전투가 바로 시작되던 문제 수정", "심판의 자리가 도감에서 누락되던 문제 수정"]) }),
+  ]), footer: "개선된 전투와 새로운 랜덤 전장 연출을 만나보세요.",
+}), Object.freeze({
   id: "constellation_balance_judgement_v1", date: "2026.09.21", title: "✦ 별자리 & 전투 밸런스 업데이트",
   sections: Object.freeze([
-    Object.freeze({ title: "신규 별자리", paragraphs: Object.freeze(["⚖ 심판의 자리", "백색 별 2개로 완성하는 새로운 공격형 별자리입니다. 매 웨이브 적 1명을 심판 대상으로 지정하고, 사거리 안에서는 집중 공격합니다."]), bullets: Object.freeze(["심판 대상을 공격할 때마다 공격 직전 현재 체력의 10% 추가 피해"]) }),
+    Object.freeze({ title: "신규 별자리", paragraphs: Object.freeze(["⚖ 심판의 자리", "백색 별 2개로 완성하는 새로운 공격형 별자리입니다. 매 웨이브 적 1명을 심판 대상으로 지정하고, 사거리 안에서는 집중 공격합니다."]), bullets: Object.freeze(["심판 대상을 공격할 때마다 공격 직전 현재 체력의 3.5% 추가 피해"]) }),
     Object.freeze({ title: "수호자의 자리 조정", bullets: Object.freeze(["수호의 빛 비용: 별빛 200 → 350", "풀피 최대 체력 증가: 1 + (구성 별 Stage 합 ÷ 4)%", "기지 최대 체력 상한: 500,000"]) }),
     Object.freeze({ title: "광휘의 별자리 개선", bullets: Object.freeze(["공격 대상이 체력이 가장 높은 적에서 가장 앞에 있는 적으로 변경되었습니다.", "연쇄 공격 효과를 간소화하여 전투 성능을 개선했습니다."]) }),
-    Object.freeze({ title: "일반 모드", bullets: Object.freeze(["Wave 1~10: +4.5%", "Wave 11~20: +5.5%", "Wave 21~40: +6.5%", "Wave 41 이상: +7.5%", "전투 별가루 보상: 웨이브당 8개"]) }),
+    Object.freeze({ title: "일반 모드", bullets: Object.freeze(["Wave 1~10: +5%", "Wave 11~20: +6%", "Wave 21~40: +7%", "Wave 41 이상: +8%", "전투 별가루 보상: 웨이브당 8개"]) }),
     Object.freeze({ title: "세로 대전장 BETA", bullets: Object.freeze(["적이 세로 방향의 길에서 비정상적으로 빠르게 이동하던 문제를 수정했습니다."]) }),
     Object.freeze({ title: "업데이트 보상", paragraphs: Object.freeze(["별가루 ×3,000", "우편함에서 수령할 수 있습니다."]) }),
   ]), footer: "새로운 심판의 별과 개선된 전투를 만나보세요.",
@@ -273,6 +283,14 @@ function loadPlayerProgress() {
     // starFragments was the historical summon balance. It must never seed the
     // new level-up shard balance; starDust takes ownership of it exactly once.
     const legacyDust = Number.isFinite(saved?.starDust) ? saved.starDust : saved?.starFragments;
+    const lastReadNewsVersion = typeof saved?.lastReadNewsVersion === "string" ? saved.lastReadNewsVersion : "";
+    const readNewsIds = { ...(saved?.readNewsIds || {}) };
+    // Older saves stored only the newest id that had been seen. Preserve that
+    // meaning by marking it and every older item read; newly prepended news
+    // remains unread without resetting anybody's existing history.
+    const legacyNewsIndex = NEWS_ITEMS.findIndex((item) => item.id === lastReadNewsVersion);
+    if (legacyNewsIndex >= 0)
+      NEWS_ITEMS.slice(legacyNewsIndex).forEach((item) => { readNewsIds[item.id] = true; });
     const progress = {
       schemaVersion: PROGRESS_SCHEMA_VERSION,
       starDust: Math.max(0, Math.floor(Number(legacyDust) || 0)) + (dustGranted ? 0 : STAR_DUST_GRANT_AMOUNT),
@@ -291,8 +309,8 @@ function loadPlayerProgress() {
       claimedMail: { ...(saved?.claimedMail || {}) },
       redeemedSpecialCodes: { ...(saved?.redeemedSpecialCodes || {}) },
       oneTimeGrants: grants,
-      lastReadNewsVersion: typeof saved?.lastReadNewsVersion === "string" ? saved.lastReadNewsVersion : "",
-      readNewsIds: { ...(saved?.readNewsIds || {}) },
+      lastReadNewsVersion,
+      readNewsIds,
     };
     progress.ownedRelics = Object.entries(progress.relicProgress).filter(([,entry])=>entry.owned).map(([id])=>id);
     syncOwnedStars(progress);
@@ -617,7 +635,7 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     previewLayout: Object.freeze({ nodes: Object.freeze([[25, 58], [75, 58]]), edges: Object.freeze([[0, 1]]) }),
     specialDescriptions: Object.freeze([
       "특수능력 — 심판 대상: 매 웨이브 적 1명을 심판 대상으로 지정합니다. 대상이 사정거리 안에 있다면 최우선으로 공격합니다.",
-      "특수능력 — 처단: 심판 대상을 공격할 때마다 대상의 공격 직전 현재 체력의 10%만큼 추가 피해를 입힙니다.",
+      "특수능력 — 처단: 심판 대상을 공격할 때마다 대상의 공격 직전 현재 체력의 3.5%만큼 추가 피해를 입힙니다.",
     ]),
   }),
 });
@@ -688,10 +706,10 @@ const MODE_CONFIG = Object.freeze({
 
 function getNormalWaveHpMultiplier(wave) {
   const n = Math.max(1, Math.floor(Number(wave) || 1));
-  const multiplier = Math.pow(1.045, Math.min(n - 1, 9))
-    * Math.pow(1.055, Math.min(Math.max(n - 10, 0), 10))
-    * Math.pow(1.065, Math.min(Math.max(n - 20, 0), 20))
-    * Math.pow(1.075, Math.max(n - 40, 0));
+  const multiplier = Math.pow(1.05, Math.min(n - 1, 9))
+    * Math.pow(1.06, Math.min(Math.max(n - 10, 0), 10))
+    * Math.pow(1.07, Math.min(Math.max(n - 20, 0), 20))
+    * Math.pow(1.08, Math.max(n - 40, 0));
   return Number.isFinite(multiplier) ? Math.min(multiplier, 1e300) : 1e300;
 }
 
@@ -1375,7 +1393,9 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
   [CONSTELLATION_IDS.JUDGEMENT]: Object.freeze({
     createRuntime: (constellation) => ({ componentStageSum: constellation.componentStageSum }),
     attack(constellation, target, origin) {
-      const judgementDamage = target.judgementTarget ? target.hp * 0.10 : 0;
+      // Snapshot immediately before the base hit: execution damage always
+      // follows current HP (including bosses), never maximum HP.
+      const judgementDamage = target.judgementTarget ? target.hp * 0.035 : 0;
       target.hit(constellation.currentDamage(), origin, constellation);
       // Additional judgement damage is deliberately source-less: it cannot
       // recursively trigger constellation on-hit or kill abilities.
@@ -3025,28 +3045,10 @@ function toggleEquippedConstellation(id) {
   return { ok: true };
 }
 
-class MapVoteController {
-  constructor(playerIds = ["local"], random = Math.random) {
-    this.eligiblePlayerIds = [...playerIds]; this.mapVotes = {}; this.remainingVoteTime = 10;
-    this.selectedMapId = null; this.closed = false; this.random = random;
-  }
-  vote(playerId, mapId) {
-    if (this.closed || !this.eligiblePlayerIds.includes(playerId) || !MAP_DEFINITIONS[mapId]) return false;
-    this.mapVotes[playerId] = mapId; this.shortenIfComplete(); return true;
-  }
-  setEligiblePlayers(playerIds) { this.eligiblePlayerIds = [...new Set(playerIds)]; this.shortenIfComplete(); }
-  shortenIfComplete() {
-    if (this.eligiblePlayerIds.length && this.eligiblePlayerIds.every((id) => this.mapVotes[id]) && this.remainingVoteTime > 2)
-      this.remainingVoteTime = 2;
-  }
-  tick(seconds) { if (this.closed) return this.selectedMapId; this.remainingVoteTime = Math.max(0, this.remainingVoteTime - seconds); if (!this.remainingVoteTime) return this.finalize(); return null; }
-  finalize() {
-    if (this.closed) return this.selectedMapId;
-    const counts = Object.fromEntries(Object.keys(MAP_DEFINITIONS).map((id) => [id, 0]));
-    this.eligiblePlayerIds.forEach((id) => { if (counts[this.mapVotes[id]] !== undefined) counts[this.mapVotes[id]]++; });
-    const best = Math.max(...Object.values(counts)); const tied = Object.keys(counts).filter((id) => counts[id] === best);
-    this.selectedMapId = tied[Math.min(tied.length - 1, Math.floor(this.random() * tied.length))]; this.closed = true;
-    return this.selectedMapId;
+class RandomMapSelector {
+  constructor(random = Math.random) {
+    const ids = Object.keys(MAP_DEFINITIONS);
+    this.selectedMapId = ids[Math.min(ids.length - 1, Math.floor(random() * ids.length))];
   }
 }
 
@@ -3096,7 +3098,7 @@ function bootstrapGame() {
   const gachaScreen = getRequiredElement("gacha-screen");
   const collectionScreen = getRequiredElement("collection-screen");
   const relicScreen = getRequiredElement("relic-screen");
-  const mapVoteScreen = getRequiredElement("map-vote");
+  const mapRandomScreen = getRequiredElement("map-random");
   const gameShell = getRequiredElement("game-shell");
   const exitDialog = getRequiredElement("exit-dialog");
   const toast = getRequiredElement("game-toast");
@@ -3110,7 +3112,7 @@ function bootstrapGame() {
     gachaScreen.hidden = screen !== SCREEN_STATES.GACHA;
     collectionScreen.hidden = screen !== SCREEN_STATES.COLLECTION;
     relicScreen.hidden = screen !== SCREEN_STATES.RELICS;
-    mapVoteScreen.hidden = screen !== SCREEN_STATES.MAP_VOTE;
+    mapRandomScreen.hidden = screen !== SCREEN_STATES.MAP_RANDOM;
     exitDialog.hidden = true;
   };
   const updateMetaCurrency = () => {
@@ -3210,7 +3212,7 @@ function bootstrapGame() {
   const showCollection = () => { renderCollection(); showScreen(SCREEN_STATES.COLLECTION); };
   const showRelics = () => { renderRelics(); showScreen(SCREEN_STATES.RELICS); };
   const startBattle = (mode = GAME_MODES.NORMAL) => {
-    if (![SCREEN_STATES.MAP_VOTE, SCREEN_STATES.BATTLE_MENU].includes(currentScreen)) return false;
+    if (![SCREEN_STATES.MAP_RANDOM, SCREEN_STATES.BATTLE_MENU].includes(currentScreen)) return false;
     activeGameMode = mode;
     if (mode === GAME_MODES.EXPERIMENTAL_VERTICAL) setActiveMap(EXPERIMENTAL_VERTICAL_MAP.id);
     if (game) game.destroy();
@@ -3229,17 +3231,27 @@ function bootstrapGame() {
     game.start();
     return true;
   };
-  let mapVote = null, mapVoteRaf = 0;
-  const beginMapVote = () => {
+  let mapRandomTimers = [];
+  const beginMapRandom = (random = Math.random) => {
     if (currentScreen !== SCREEN_STATES.BATTLE_MENU) return false;
-    mapVote = new MapVoteController(["local"]); showScreen(SCREEN_STATES.MAP_VOTE);
-    const cards = getRequiredElement("map-vote-cards"), result = getRequiredElement("map-vote-result"); result.hidden = true;
-    cards.innerHTML = Object.values(MAP_DEFINITIONS).map((map) => `<button type="button" data-map-vote="${map.id}"><svg viewBox="0 0 100 100" aria-label="${map.name} 실제 경로"><defs><linearGradient id="route-${map.id}" x1="0" x2="1"><stop stop-color="#8c7dff"/><stop offset="1" stop-color="#73edff"/></linearGradient></defs><g class="mini-stars"><circle cx="16" cy="16" r="1"/><circle cx="83" cy="24" r=".7"/><circle cx="76" cy="82" r="1.1"/></g><path style="stroke:url(#route-${map.id})" d="${routePathData(map)}"/></svg><span class="map-card-copy"><small>CELESTIAL FIELD</small><strong>${map.name}</strong><em>실제 전장 경로</em></span><b>✦ <span data-votes>0</span>표</b><i aria-label="내가 선택한 맵">✓</i></button>`).join("");
-    const refreshVotes = () => { cards.querySelectorAll("[data-map-vote]").forEach((card) => { const id=card.dataset.mapVote; card.classList.toggle("selected",mapVote.mapVotes.local===id); card.querySelector("[data-votes]").textContent=Object.values(mapVote.mapVotes).filter((v)=>v===id).length; }); };
-    cards.querySelectorAll("[data-map-vote]").forEach((card) => card.onclick = () => { mapVote.vote("local", card.dataset.mapVote); refreshVotes(); });
-    let previous = performance.now(); const frame = (now) => { const selected = mapVote.tick((now-previous)/1000); previous=now; getRequiredElement("map-vote-time").textContent=mapVote.remainingVoteTime.toFixed(1); if (!selected) return void(mapVoteRaf=requestAnimationFrame(frame));
-      setActiveMap(selected); cards.querySelectorAll("[data-map-vote]").forEach((card)=>{card.classList.toggle("winner",card.dataset.mapVote===selected);card.classList.toggle("faded",card.dataset.mapVote!==selected);}); result.querySelector("strong").textContent=activeMap.name; result.hidden=false; setTimeout(() => startBattle(GAME_MODES.NORMAL),2000);
-    }; mapVoteRaf=requestAnimationFrame(frame); return true;
+    const selector = new RandomMapSelector(random); // authoritative choice: exactly one random call
+    mapRandomTimers.forEach(clearTimeout); mapRandomTimers = [];
+    showScreen(SCREEN_STATES.MAP_RANDOM);
+    const maps = Object.values(MAP_DEFINITIONS), cards = getRequiredElement("map-random-cards"), result = getRequiredElement("map-random-result");
+    result.hidden = true; cards.classList.remove("decided");
+    getRequiredElement("map-random-title").textContent = "전장 탐색 중...";
+    cards.innerHTML = maps.map((map) => `<article data-random-map="${map.id}"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="${routePathData(map)}"/></svg><strong>${map.name}</strong></article>`).join("");
+    const steps = [0,1,2,0,1,2,0,1,2,0,1,2];
+    const delays = [0,90,180,270,370,480,600,740,900,1090,1320,1600];
+    const highlight = (id) => cards.querySelectorAll("[data-random-map]").forEach((card) => card.classList.toggle("active", card.dataset.randomMap === id));
+    steps.forEach((index, step) => mapRandomTimers.push(setTimeout(() => highlight(maps[index].id), delays[step])));
+    mapRandomTimers.push(setTimeout(() => {
+      setActiveMap(selector.selectedMapId); highlight(selector.selectedMapId);
+      cards.classList.add("decided"); result.querySelector("strong").textContent = activeMap.name; result.hidden = false;
+      getRequiredElement("map-random-title").textContent = "전장 결정";
+    }, 1950));
+    mapRandomTimers.push(setTimeout(() => startBattle(GAME_MODES.NORMAL), 2750));
+    return selector.selectedMapId;
   };
   finishBattle = (battle = game) => {
     if (!battle) return 0;
@@ -3301,7 +3313,7 @@ function bootstrapGame() {
     event.preventDefault(); event.stopPropagation();
     const intentionalActivation = event.detail === 0 || playIntentArmed;
     playIntentArmed = false;
-    if (intentionalActivation) beginMapVote();
+    if (intentionalActivation) beginMapRandom();
   };
   const experimentalButton = getRequiredElement("play-experimental");
   bindPointerTap(experimentalButton, () => {
@@ -3378,12 +3390,14 @@ function bootstrapGame() {
   };
   const latestNewsId = NEWS_ITEMS[0]?.id || "";
   const refreshNews = () => {
-    const unread=NEWS_ITEMS.filter((item)=>!playerProgress.readNewsIds[item.id] && playerProgress.lastReadNewsVersion !== item.id).length;
+    const unread=NEWS_ITEMS.filter((item)=>!playerProgress.readNewsIds[item.id]).length;
     document.querySelectorAll?.("[data-news-badge]").forEach((badge) => { badge.hidden = unread===0; badge.textContent=unread; });
     getRequiredElement("news-items").innerHTML = NEWS_ITEMS.map((item) => `<article class="news-item"><header><time>${item.date}${playerProgress.readNewsIds[item.id] ? "" : " · NEW"}</time><h3>${item.title}</h3></header>${item.sections.map((section) => `<section><h4>${section.title}</h4>${(section.paragraphs || []).map((paragraph) => `<p>${paragraph}</p>`).join("")}${section.bullets ? `<ul>${section.bullets.map((bullet) => `<li>${bullet}</li>`).join("")}</ul>` : ""}</section>`).join("")}<footer>${item.footer}</footer></article>`).join("");
   };
   document.querySelectorAll?.("[data-open-news]").forEach((button) => button.onclick = () => {
-    playerProgress.lastReadNewsVersion = latestNewsId; playerProgress.readNewsIds[latestNewsId]=true; savePlayerProgress(); refreshNews(); setModalOpen(newsDialog, true);
+    NEWS_ITEMS.forEach((item) => { playerProgress.readNewsIds[item.id] = true; });
+    playerProgress.lastReadNewsVersion = latestNewsId;
+    savePlayerProgress(); refreshNews(); setModalOpen(newsDialog, true);
   });
   const showSettingsView = (view) => settingsDialog.querySelectorAll("[data-settings-view]").forEach((panel) => { panel.hidden = panel.dataset.settingsView !== view; });
   document.querySelectorAll?.("[data-open-settings]").forEach((button) => button.onclick = (event) => { event.preventDefault(); event.stopPropagation(); refreshSettings(); showSettingsView("main"); setModalOpen(settingsDialog, true); });
@@ -3422,10 +3436,10 @@ function bootstrapGame() {
   showMainMenu();
   if (specialGrantApplied) showToast("특별 지급\n별가루 +5,000\n운석조각 +20");
   const diagnostics = {
-    CONFIG, MODE_CONFIG, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, getNormalWaveHpMultiplier, getWaveHpMultiplier, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, MapVoteController, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, normalStarSpecial, normalStarAbilityText, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
+    CONFIG, MODE_CONFIG, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, getNormalWaveHpMultiplier, getWaveHpMultiplier, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, RandomMapSelector, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, normalStarSpecial, normalStarAbilityText, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
-    showMainMenu, showBattleMenu, showGacha, beginMapVote, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint, worldToScreen, screenToWorld, clampCameraY, getViewportWorldBounds,
+    showMainMenu, showBattleMenu, showGacha, beginMapRandom, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint, worldToScreen, screenToWorld, clampCameraY, getViewportWorldBounds,
     classes: { Enemy, GuardianUnit, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
     performance: () => ({
       activeEnemies: game?.enemies.length || 0,

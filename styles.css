@@ -2060,7 +2060,10 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 @media(prefers-reduced-motion:reduce){.constellation-signature{animation:none!important}}
 
 /* v49: mode selection and a shell-local camera for the experimental world. */
-.battle-mode-grid{display:grid;justify-items:center;gap:12px;width:min(calc(100% - 32px),430px);min-height:0;margin-inline:auto;overflow-y:auto;padding:4px 0 calc(24px + env(safe-area-inset-bottom))}
+.battle-menu-screen{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden}
+.battle-menu-screen[hidden]{display:none}
+.battle-menu-screen>.subscreen-header{flex:0 0 auto}
+.battle-mode-grid{display:grid;justify-items:center;gap:12px;width:min(calc(100% - 32px),430px);flex:1;min-height:0;margin-inline:auto;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 0 calc(32px + env(safe-area-inset-bottom))}
 .battle-mode-grid .stage-card{width:100%;margin:0;min-height:230px}
 .battle-mode-grid .stage-card .mode-play-button{display:flex;align-items:center;justify-content:center;width:calc(100% - 32px);min-height:48px;margin-inline:auto;text-align:center}
 .experimental-mode{border-color:#bb77ff88!important;background:radial-gradient(circle at 85% 20%,#9d4cff42,transparent 30%),linear-gradient(145deg,#17134a,#090c2c)!important}
@@ -2081,6 +2084,15 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 .star.stage-1 .star-glyph,.star.stage-2 .star-glyph,.star.stage-3 .star-glyph,.star.stage-4 .star-glyph{width:100%;height:100%}
 .star .star-halo,.star .star-orbit,.star .star-sparks{display:none!important}
 @media(max-height:700px){.battle-mode-grid .stage-card{min-height:205px}.battle-mode-grid{gap:8px}}
+
+/* The random-map presentation has one authoritative result; these cards only
+   visualize its fast-to-slow reveal without per-frame work or particles. */
+.map-random-screen{padding:max(34px,env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom));background:radial-gradient(circle at 50% 42%,#5644aa66,transparent 42%),linear-gradient(165deg,#05091e,#160a34)}
+.map-random-screen>header{position:relative;z-index:2;text-align:center}.map-random-screen>header small{color:#8eeaff;font-weight:900;letter-spacing:.3em}.map-random-screen h1{margin:9px 0 4px;font-family:Georgia,serif;font-size:31px;text-shadow:0 0 20px #8eeaff99}.map-random-screen header p{color:#aeb9dc;font-size:12px}
+.map-random-cards{position:relative;z-index:2;display:grid;gap:11px;margin:auto 0}.map-random-cards article{display:grid;grid-template-columns:92px 1fr;align-items:center;min-height:112px;padding:9px 16px;border:1px solid #7786c955;border-radius:19px;background:linear-gradient(125deg,#151c48dd,#0b0d2add);opacity:.42;transform:scale(.96);transition:opacity .09s,transform .09s,border-color .09s,box-shadow .09s}.map-random-cards svg{width:80px;height:88px;border-radius:12px;background:#06091f}.map-random-cards path{fill:none;stroke:#75dfff;stroke-width:4;filter:drop-shadow(0 0 3px #5cf)}.map-random-cards strong{font-size:19px}.map-random-cards article.active{opacity:1;transform:scale(1.025);border-color:#c8faff;box-shadow:0 0 24px #65dfff77,inset 0 0 22px #6d6cff33}.map-random-cards.decided article.active{animation:randomMapWinner .65s ease-out both}
+.map-random-result{position:absolute;z-index:8;left:14%;right:14%;bottom:calc(46px + env(safe-area-inset-bottom));padding:15px;border:1px solid #fff0a4;border-radius:18px;background:#090d2bef;text-align:center;box-shadow:0 0 40px #ffe77777;animation:randomMapResult .5s ease-out}.map-random-result strong{display:block;margin-top:5px;color:#fff1aa;font-size:24px}.map-random-screen:has(.map-random-cards.decided){animation:randomScreenPulse .55s ease-out}
+@keyframes randomMapWinner{45%{transform:scale(1.07);filter:brightness(1.7)}100%{transform:scale(1.035)}}@keyframes randomMapResult{from{opacity:0;transform:translateY(12px) scale(.94)}}@keyframes randomScreenPulse{45%{filter:brightness(1.28)}}
+@media(prefers-reduced-motion:reduce){.map-random-cards article,.map-random-cards.decided article.active,.map-random-result,.map-random-screen:has(.map-random-cards.decided){animation:none;transition:none}}
 
 /* v50: readable BETA launch news and explicit mode controls. */
 .menu-tools [data-open-news]{width:auto;min-width:58px;padding:0 10px;border-radius:14px;font-size:13px;font-weight:900}.menu-tools [data-open-news] span{display:block}.menu-tools [data-news-badge]{right:-5px;top:-7px;width:auto;min-width:27px;padding:0 4px;border-radius:7px;font-size:8px}
