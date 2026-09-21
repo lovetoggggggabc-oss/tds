@@ -2066,11 +2066,16 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 .battle-menu-screen[hidden]{display:none}
 .battle-menu-screen>.subscreen-header{flex:0 0 auto}
 .battle-mode-grid{display:grid;justify-items:center;gap:12px;width:min(calc(100% - 32px),430px);flex:1;min-height:0;margin-inline:auto;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 0 calc(32px + env(safe-area-inset-bottom))}
-.battle-mode-grid .stage-card{width:100%;margin:0;min-height:230px}
-.battle-mode-grid .mode-body{position:relative;display:flex;flex-direction:column;gap:0}
-.battle-mode-grid .stage-card .mode-play-button{display:flex;align-items:center;justify-content:center;width:calc(100% - 32px);min-height:48px;margin-inline:auto;text-align:center}
+.battle-mode-grid .stage-card{width:100%;height:auto;margin:0;min-height:230px}
+.battle-mode-grid .mode-visual{overflow:hidden}
+.battle-mode-grid .mode-body{position:relative;z-index:1;display:flex;flex-direction:column;overflow:visible;text-align:center}
+.battle-mode-grid .mode-eyebrow{color:#88e8ff;font-size:clamp(12px,2.8cqw,15px);font-weight:900;letter-spacing:.18em}
+.battle-mode-grid .mode-title{margin:7px 0 8px;font-family:Georgia,serif;font-size:30px}
+.battle-mode-grid .mode-description{margin:0;color:#bdc8e9;font-size:14px;line-height:1.55}
+.battle-mode-grid .mode-meta{align-self:center;display:inline-block;margin:13px 0 0;padding:6px 12px;border:1px solid #b99cff55;border-radius:20px;color:#d8c8ff;font-size:12px}
+.battle-mode-grid .stage-card .mode-play-button{position:relative;z-index:1;display:flex;flex:0 0 auto;align-items:center;justify-content:center;width:calc(100% - 32px);min-height:52px;height:auto;margin:16px auto 0;padding:12px 16px;border:1px solid #d7c2ff;background:linear-gradient(100deg,#6553d8,#9c4fc2);box-shadow:0 8px 25px #6f43c066,inset 0 1px #fff6,0 0 14px #9a6dff44;border-radius:17px;color:#fff;font-size:16px;font-weight:900;line-height:1.25;text-align:center;visibility:visible;opacity:1;pointer-events:auto}
 .experimental-mode{border-color:#bb77ff88!important;background:radial-gradient(circle at 85% 20%,#9d4cff42,transparent 30%),linear-gradient(145deg,#17134a,#090c2c)!important}
-.experimental-mode .stage-copy small,.experimental-mode strong{color:#d9a7ff!important}.vertical-map{background:linear-gradient(180deg,#694bb8,#12163d)!important}.vertical-map span{height:82%!important;width:18%!important}
+.experimental-mode .mode-eyebrow,.experimental-mode .mode-meta{color:#d9a7ff!important}.vertical-map{background:linear-gradient(180deg,#694bb8,#12163d)!important}.vertical-map span{height:82%!important;width:18%!important}
 .battle-world{position:absolute;inset:0;width:100%;height:100%;transform-origin:top center;will-change:transform}
 .arena.experimental-vertical{touch-action:none}.arena.experimental-vertical .battle-world{height:280%;background:radial-gradient(ellipse at 20% 28%,#62308b38,transparent 22%),radial-gradient(ellipse at 78% 70%,#166c9738,transparent 24%),radial-gradient(#d8ecff88 .48px,transparent .7px),linear-gradient(180deg,#0c1235,#090526 52%,#10163b);background-size:auto,auto,29px 33px,auto}
 .experimental-minimap{position:absolute;z-index:90;right:5px;top:22%;width:40px;height:180px;border:1px solid #8de9ff66;border-radius:10px;background:#05091dcc;box-shadow:0 0 14px #4fcfff33;pointer-events:none;overflow:hidden}
@@ -2100,6 +2105,7 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 /* v50: readable BETA launch news and explicit mode controls. */
 .menu-tools [data-open-news]{width:auto;min-width:58px;padding:0 10px;border-radius:14px;font-size:13px;font-weight:900}.menu-tools [data-open-news] span{display:block}.menu-tools [data-news-badge]{right:-5px;top:-7px;width:auto;min-width:27px;padding:0 4px;border-radius:7px;font-size:8px}
 .news-dialog .news-modal{height:min(86dvh,720px);max-height:calc(100dvh - max(24px,env(safe-area-inset-top)) - max(24px,env(safe-area-inset-bottom)))!important;overflow:hidden!important}.news-scroll-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:16px 18px calc(22px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}.news-item{display:block!important}.news-item>header{padding-bottom:13px;border-bottom:1px solid #85dfff44}.news-item time{color:#8fdfff;font-size:11px}.news-item h3{margin:5px 0 0;color:#fff3ad;font-size:23px}.news-item section{margin:18px 0}.news-item h4{margin:0 0 9px;color:#8fe9ff;font-size:15px}.news-item p,.news-item li{color:#e7ebff;font-size:14px;line-height:1.7}.news-item p{margin:5px 0}.news-item ul{display:grid;gap:6px;margin:0;padding-left:20px}.news-item footer{margin-top:20px;padding:14px;border:1px solid #b690ff55;border-radius:12px;background:#936cff18;color:#e8dcff;font-size:13px;line-height:1.6}.news-modal .modal-title small{color:#8fe9ff;letter-spacing:.14em}
+.news-version{display:block;margin-bottom:5px;color:#dcb8ff;font-size:12px;letter-spacing:.14em}.game-version{display:block;margin-top:6px;color:#aab4d3;font-size:11px;font-weight:700;letter-spacing:.12em}
 .experimental-mode #play-experimental{min-height:58px;border:1px solid #d9b7ff;background:linear-gradient(100deg,#8054e8,#b04bc8);box-shadow:0 0 20px #ae66ff77;font-size:16px}.experimental-mode #play-experimental span{font-weight:900}.experimental-mode #play-experimental small{color:#f0dcff}
 .relic-card{grid-template-columns:58px minmax(0,1fr);align-items:start}.relic-card-copy h2{display:flex;justify-content:space-between;gap:8px}.relic-card-copy h2 b{color:#fff0a8;font:900 13px sans-serif;white-space:nowrap}.relic-card-copy p{margin-top:5px}.relic-card-copy button{width:100%;min-height:44px;margin-top:9px;border:1px solid #b99aff88;border-radius:11px;background:linear-gradient(100deg,#6652d7,#a04eb8);font-weight:900}.relic-card-copy button:disabled{opacity:.45;filter:grayscale(.6)}.relic-card.upgrade-ready{border-color:#ffe78e;box-shadow:inset 0 1px #fff5,0 0 15px #ffe16d44}.relic-card.upgrade-ready h2:after{content:"UP";padding:2px 5px;border-radius:6px;background:#ffe57a;color:#2a1740;font:900 9px sans-serif}.relic-growth{padding:6px 8px;border-radius:8px;background:#80dfff18;color:#a9ecff!important}.game-hud .hp em{display:block;color:#bcecff;font-style:normal;font-size:10px}.game-hud .hp em[hidden]{display:none}
 .constellation-collection-card{display:flex;flex-direction:column;min-height:0;max-height:70dvh}.constellation-collection-card .collection-ability{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:4px}
@@ -2190,13 +2196,13 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
   .gacha-rates b{display:inline;margin:0}
   .draw-actions button{min-width:0;min-height:58px;padding-inline:5px;white-space:nowrap}
 
-  .battle-mode-grid{padding-bottom:calc(var(--mobile-safe-bottom) + 24px);touch-action:pan-y;scroll-padding-bottom:calc(var(--mobile-safe-bottom) + 24px)}
+  .battle-mode-grid{padding-bottom:calc(var(--mobile-safe-bottom) + 40px);touch-action:pan-y;scroll-padding-bottom:calc(var(--mobile-safe-bottom) + 40px)}
   .battle-mode-grid .stage-card{height:auto;min-height:0;padding:0 0 16px;overflow:hidden}
   .battle-mode-grid .mode-visual{position:relative;height:auto;aspect-ratio:16 / 7;margin:0 0 0;flex:none}
-  .battle-mode-grid .mode-body{position:static;padding:15px 16px 0;background:linear-gradient(180deg,#1b2055,#130e38)}
-  .battle-mode-grid .stage-copy h2{margin:5px 0 6px;font-size:clamp(24px,7vw,30px)}
-  .battle-mode-grid .stage-copy strong{margin:10px 0 12px}
-  .battle-mode-grid .stage-card .mode-play-button{width:100%;min-height:48px;margin:0}
+  .battle-mode-grid .mode-body{position:relative;padding:15px 16px 0;overflow:visible;background:linear-gradient(180deg,#1b2055,#130e38)}
+  .battle-mode-grid .mode-title{margin:5px 0 6px;font-size:clamp(24px,7vw,30px)}
+  .battle-mode-grid .mode-meta{margin-top:10px}
+  .battle-mode-grid .stage-card .mode-play-button{width:100%;min-height:52px;margin:16px 0 0}
 }
 @media (max-width:600px) and (max-height:700px){
   .main-top-bar{gap:1px}

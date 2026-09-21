@@ -29,7 +29,7 @@ assert.match(mobile, /\.screen-scroll-content\s*\{[^}]*flex:1 1 auto[^}]*min-hei
 assert.match(mobile, /\.summon-content-scroll\s*\{[^}]*padding:[^}]*var\(--bottom-nav-height\)[^}]*var\(--mobile-safe-bottom\)/s);
 assert.match(mobile, /\.battle-mode-grid \.stage-card\s*\{[^}]*height:auto[^}]*min-height:0/s);
 assert.match(mobile, /\.battle-mode-grid \.mode-visual\s*\{[^}]*position:relative[^}]*aspect-ratio:16 \/ 7/s);
-assert.match(mobile, /\.battle-mode-grid \.mode-body\s*\{[^}]*position:static/s);
+assert.match(mobile, /\.battle-mode-grid \.mode-body\s*\{[^}]*position:relative[^}]*overflow:visible/s);
 assert.match(game, /\.screen-scroll-content, \.battle-mode-grid, \.collection-scroll, \.relic-collection, \.monster-codex-content/);
 
 console.log("Mobile two-row menu and narrow-screen readability checks passed.");

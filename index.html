@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=51" />
+    <link rel="stylesheet" href="styles.css?v=52" />
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
@@ -24,6 +24,7 @@
         <div class="celestial-emblem" aria-hidden="true"><i>✦</i></div>
         <h1 id="main-menu-title">별자리 디펜스</h1>
         <p>ZODIAC DEFENSE</p>
+        <small class="game-version" data-game-version aria-label="현재 게임 버전"></small>
       </header>
       <button type="button" class="hero-play" id="open-battle-menu"><i>✦</i><b>플레이</b><small>별이 지키는 전장을 향해</small></button>
       <button type="button" class="monster-codex-entry" data-open-monster-codex><i aria-hidden="true">◉</i><span>몬스터 도감</span><small>MONSTER CODEX</small></button>
@@ -103,12 +104,12 @@
       <div class="battle-mode-grid" aria-label="게임 모드 선택">
         <article class="stage-card mode-card normal-mode">
           <div class="stage-map mode-visual" aria-hidden="true"><span></span><i>✦</i><b>∞</b></div>
-          <div class="mode-body"><div class="stage-copy"><small class="mode-eyebrow">NORMAL · ENDLESS</small><h2 class="mode-title">일반 모드</h2><p class="mode-description">기존 일반 전장에서 플레이합니다.</p><strong class="mode-meta">랜덤 전장 · 무한 웨이브</strong></div>
+          <div class="mode-body"><small class="mode-eyebrow">NORMAL · ENDLESS</small><h2 class="mode-title">일반 모드</h2><p class="mode-description">기존 일반 전장에서 플레이합니다.</p><strong class="mode-meta">랜덤 전장 · 무한 웨이브</strong>
           <button type="button" class="mode-play-button" id="play-battle"><span>일반 모드 플레이</span></button></div>
         </article>
         <article class="stage-card mode-card experimental-mode">
           <div class="stage-map mode-visual vertical-map" aria-hidden="true"><span></span><i>↕</i><b>β</b></div>
-          <div class="mode-body"><div class="stage-copy"><small class="mode-eyebrow">VERTICAL · BETA</small><h2 class="mode-title">세로 대전장 BETA</h2><p class="mode-description">스크롤 가능한 거대한 세로형 전장에서 플레이합니다.</p><strong class="mode-meta">거대 성운 항로 · BETA</strong></div>
+          <div class="mode-body"><small class="mode-eyebrow">VERTICAL · BETA</small><h2 class="mode-title">세로 대전장 BETA</h2><p class="mode-description">스크롤 가능한 거대한 세로형 전장에서 플레이합니다.</p><strong class="mode-meta">거대 성운 항로 · BETA</strong>
           <button type="button" class="mode-play-button" id="play-experimental"><span>세로 대전장 플레이</span></button></div>
         </article>
       </div>
@@ -247,6 +248,6 @@
     <section class="confirm-dialog" id="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" hidden>
       <div><small>LEAVE BATTLE</small><h2 id="exit-dialog-title">전투 종료</h2><p>전투를 종료하고 메인 메뉴로 돌아가시겠습니까?</p><footer><button type="button" id="exit-cancel">취소</button><button type="button" class="danger" id="exit-confirm">나가기</button></footer></div>
     </section>
-    <script src="game.js?v=49" defer></script>
+    <script src="game.js?v=52" defer></script>
   </body>
 </html>
