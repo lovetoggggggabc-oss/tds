@@ -394,6 +394,14 @@ header {
   /* Paint containment clipped the bar because it sits above the enemy box. */
   contain: layout style;
 }
+.enemy.bound:after { content:""; position:absolute; inset:-5px; border:2px solid #effff4; border-left-color:#55db85; border-right-color:#55db85; border-radius:50%; box-shadow:0 0 6px #fff,0 0 11px #55db85; animation:bondHoldPulse .7s ease-in-out infinite alternate; pointer-events:none; }
+.enemy.bound .enemy-body { filter:drop-shadow(0 0 5px #fff) drop-shadow(0 0 8px #55db85); }
+.bond-strike,.bond-applied { position:absolute; z-index:35; width:28px; height:28px; margin:-14px; border-radius:50%; pointer-events:none; }
+.bond-strike { border:2px solid #dffff0; box-shadow:0 0 8px #fff,0 0 13px #55db85; animation:bondStrike .26s ease-out forwards; }
+.bond-applied { border:2px dashed #55db85; box-shadow:inset 0 0 7px #fff,0 0 11px #55db85; animation:bondApplied .42s ease-out forwards; }
+@keyframes bondHoldPulse { to { scale:1.12; opacity:.65; } }
+@keyframes bondStrike { to { scale:1.7; opacity:0; } }
+@keyframes bondApplied { from { scale:1.5; opacity:0; } 45% { opacity:1; } to { scale:1; transform:rotate(90deg); } }
 .enemy-health {
   position: absolute;
   left: 50%;
@@ -729,6 +737,8 @@ header {
 .constellation-link-astrologer { stroke:#c58cff; stroke-dasharray:.5 .7; }
 .constellation-link-guardian { stroke:#a8f0ff; stroke-width:.7; }
 .constellation-link-twilight { stroke:#ee668f; stroke-dasharray:1.7 .7; }
+.constellation-link-bond { stroke:#aaffca; stroke-width:.75; stroke-dasharray:.45 .55; filter:drop-shadow(0 0 2px #fff); }
+.constellation-link-link { stroke:#cf7cff; stroke-width:.65; stroke-dasharray:1.4 .5; filter:drop-shadow(0 0 2px #55db85); }
 .link-form {
   stroke: #fff0a3;
   stroke-width: 1.25;
@@ -756,6 +766,8 @@ header {
 .constellation-effect-astrologer { stroke:#c887ff; fill:#ffd976; }
 .constellation-effect-guardian { stroke:#a8f5ff; fill:#d9fbff; }
 .constellation-effect-twilight { stroke:#ef527d; fill:#ba69dd; }
+.constellation-effect-bond { stroke:#ecfff3; fill:#55db85; }
+.constellation-effect-link { stroke:#c879ff; fill:#ff6679; }
 .star-node.constellation:before { position:absolute; z-index:6; left:50%; top:-10px; transform:translateX(-50%); font-size:11px; text-shadow:0 0 7px currentColor; }
 .constellation-dawn:before { content:"☾"; color:#d8c8ff; }
 .constellation-radiance:before { content:"☀"; color:#ffe586; }
@@ -763,7 +775,16 @@ header {
 .constellation-astrologer:before { content:"✧"; color:#cf8cff; animation:astrologerTurn 3s linear infinite; }
 .constellation-guardian:before { content:"⬡"; color:#a9f3ff; }
 .constellation-twilight:before { content:"◐"; color:#ef6c91; }
+.constellation-bond:before { content:"⛓"; color:#baffd0; }
+.constellation-link:before { content:"⌁"; color:#cf86ff; }
+.constellation-link:after { inset:5%; border:1px solid #b16cff88; box-shadow:0 0 8px #55db8588; animation:linkOrbit 2.4s linear infinite; }
+.constellation-link.link-tier-10:after { inset:0; border-width:2px; box-shadow:0 0 9px #b16cff,0 0 14px #55db8588; }
+.constellation-link.link-tier-20 { box-shadow:0 0 12px #b16cff99,0 0 22px #55db8566; }
+.constellation-link.link-tier-30 .star { filter:drop-shadow(0 0 7px #fff) drop-shadow(0 0 15px #ff5064); }
+.constellation-link.link-updated { animation:linkPowerPulse .42s ease-out; }
 @keyframes astrologerTurn { to { transform:translateX(-50%) rotate(360deg); } }
+@keyframes linkOrbit { to { transform:rotate(360deg); } }
+@keyframes linkPowerPulse { 50% { scale:1.18; filter:brightness(1.7); } }
 .arena.speed-2 .beam {
   animation-duration: 0.08s;
 }

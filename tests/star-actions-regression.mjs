@@ -33,15 +33,15 @@ context.arena = {
 };
 vm.createContext(context);
 vm.runInContext(
-  `${definitions}\nthis.testApi = { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, StarManager, Targeting, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem };`,
+  `${definitions}\nthis.testApi = { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, StarManager, Targeting, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem, BondOfferingSystem };`,
   context,
 );
 
-const { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, StarManager, Targeting, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem } =
+const { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, StarManager, Targeting, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem, BondOfferingSystem } =
   context.testApi;
 playerProgress.ownedConstellations = Object.keys(CONSTELLATION_DEFINITIONS);
 playerProgress.equippedConstellations = Object.keys(CONSTELLATION_DEFINITIONS);
-assert.deepEqual(Object.keys(CONSTELLATION_DEFINITIONS), ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER", "GUARDIAN", "TWILIGHT"]);
+assert.deepEqual(Object.keys(CONSTELLATION_DEFINITIONS), ["DAWN", "RADIANCE", "SAGITTARIUS", "ASTROLOGER", "GUARDIAN", "TWILIGHT", "BOND", "LINK"]);
 for (const [id, definition] of Object.entries(CONSTELLATION_DEFINITIONS))
   assert.equal(definition.id, id, `${id} must carry its stable definition id`);
 assert.deepEqual(JSON.parse(JSON.stringify(CONSTELLATION_DEFINITIONS.TWILIGHT.recipe)), { red: 2, white: 1, blue: 1 });
@@ -60,7 +60,7 @@ const makeManager = () => {
   };
   return {
     player: { resources },
-    stars: Array(15).fill(null),
+    stars: Array(21).fill(null),
     selected: [],
     zodiacMode: false,
     swapMode: false,
@@ -81,7 +81,7 @@ const makeManager = () => {
       this.selected = [];
     },
     field: {
-      children: Array.from({ length: 15 }, () => ({
+      children: Array.from({ length: 21 }, () => ({
         classList: { add() {}, remove() {} },
       })),
     },
@@ -388,6 +388,49 @@ for (const [definitionId, definition] of Object.entries(CONSTELLATION_DEFINITION
   assert.deepEqual([...constellation.connectionOrder], picks,
     `${definitionId}: creation must preserve selection order`);
 }
+
+// BOND is order-independent, scales its base damage once, refreshes a
+// game-time bind deadline, and keeps offerings on the individual instance.
+const bondManager = makeManager();
+[[8, "green", 3], [2, "white", 4], [10, "white", 2], [4, "white", 3]]
+  .forEach(([slot, type, tier]) => { bondManager.stars[slot] = new Star(type, tier); });
+bondManager.selected = [8, 2, 10, 4];
+bondManager.zodiacMode = true;
+ZodiacSystem.create(bondManager);
+const bond = bondManager.stars[8].constellation;
+assert.equal(bond.definitionId, "BOND");
+assert.equal(bond.componentStageSum, 12);
+assert.equal(bond.currentDamage(), 1500);
+assert.equal(bond.definition.attackSpeed, 1.8);
+assert.equal(bond.definition.range, 4);
+assert.equal(bond.definition.targeting, "random");
+bondManager.player.resources.starlight = 1800;
+for (let count = 0; count < 9; count++) BondOfferingSystem.execute(bondManager, 8);
+assert.equal(bond.runtime.bindChance, 1);
+assert.equal(bondManager.player.resources.starlight, 200);
+BondOfferingSystem.execute(bondManager, 8);
+assert.equal(bondManager.player.resources.starlight, 200, "a capped offering spends nothing");
+
+// LINK reads only component sums from every other active instance, including
+// another LINK, and recomputes rather than storing final damage.
+const linkManager = makeManager();
+[[0, "purple", 1], [2, "green", 1], [4, "purple", 1], [6, "red", 1]]
+  .forEach(([slot, type, tier]) => { linkManager.stars[slot] = new Star(type, tier); });
+linkManager.selected = [6, 0, 4, 2];
+linkManager.zodiacMode = true;
+ZodiacSystem.create(linkManager);
+const link = linkManager.stars[6].constellation;
+const linked = { componentStageSum: 7 };
+context.game.players = [{ manager: { activeConstellations: () => [link, linked] } }];
+assert.equal(link.currentDamage(), 700);
+linked.componentStageSum = 10;
+assert.equal(link.currentDamage(), 2000);
+linked.componentStageSum = 20;
+assert.equal(link.currentDamage(), 6000);
+linked.componentStageSum = 30;
+assert.equal(link.currentDamage(), 12000);
+context.game.players = [{ manager: { activeConstellations: () => [link] } }];
+assert.equal(link.currentDamage(), 100, "no linked constellation keeps a minimum x1 inheritance multiplier");
 
 // The reported Twilight case uses tiers 4 + 2 + 3 + 1, for a stage sum of
 // ten and therefore 800 * (10 / 4) = 2,000 base stage damage.

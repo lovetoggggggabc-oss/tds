@@ -15,6 +15,11 @@ const context = {
       const element = {
         style: {},
         removed: false,
+        classes: new Set(),
+        classList: {
+          add(name) { element.classes.add(name); },
+          toggle(name, enabled) { enabled ? element.classes.add(name) : element.classes.delete(name); },
+        },
         querySelector(selector) {
           if (selector === ".bar i") return fill;
           if (selector === ".enemy-hp") return hpText;
@@ -32,7 +37,9 @@ const context = {
   },
   UIManager: { beam() {} },
   RangeSystem: { metrics: () => ({ width: 430, height: 700 }) },
+  routePoint: (progress) => ({ x: 50, y: 94 - progress * 88 }),
   game: {
+    gameTime: 0,
     kill(enemy) { this.killed = enemy; },
     leak(enemy) { this.leaked = enemy; },
   },
@@ -55,6 +62,19 @@ assert.equal(created[0].hpText.textContent, "250 / 500", "movement rendering mus
 enemy.updateHealthBar();
 assert.equal(created[0].fill.style.width, "25%", "the event-driven updater reflects the exact ratio");
 assert.equal(created[0].hpText.textContent, "125 / 500", "the event-driven updater reflects rounded current HP");
+
+const progressBeforeBind = enemy.progress;
+enemy.applyBind(2);
+enemy.update(1);
+assert.equal(enemy.progress, progressBeforeBind, "bind stops movement without rewinding path progress");
+assert.equal(enemy.el.classes.has("bound"), true);
+context.game.gameTime = 1;
+enemy.applyBind(2);
+assert.equal(enemy.statusEffects.bindUntil, 3, "reapplying bind refreshes one simulation-time deadline");
+context.game.gameTime = 3;
+enemy.update(1);
+assert.ok(enemy.progress > progressBeforeBind, "movement resumes from the same position after bind expires");
+assert.equal(enemy.el.classes.has("bound"), false);
 
 enemy.hit(enemy.maxHp, { x: 0, y: 0 });
 assert.equal(enemy.el.removed, true, "death removes the enemy and its nested bar together");

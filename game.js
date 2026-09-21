@@ -138,9 +138,11 @@ const CONSTELLATION_IDS = Object.freeze({
   ASTROLOGER: "ASTROLOGER",
   GUARDIAN: "GUARDIAN",
   TWILIGHT: "TWILIGHT",
+  BOND: "BOND",
+  LINK: "LINK",
 });
 const BASE_MAX_HP = 400;
-const MAX_STARS_PER_PLAYER = 15;
+const MAX_STARS_PER_PLAYER = 21;
 // Logical, normalized map data is authoritative for drawing, movement and
 // placement. New stages can provide another definition without changing any
 // of those systems.
@@ -256,6 +258,34 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       "50킬을 달성하면 15초간 초월합니다. 초월 중 사정거리가 5로 고정되며 영역 안의 현재 체력이 최대 체력의 10% 이하인 적을 즉시 처형합니다.",
     ]),
   }),
+  [CONSTELLATION_IDS.BOND]: Object.freeze({
+    id: CONSTELLATION_IDS.BOND, name: "결속의 자리",
+    recipe: Object.freeze({ white: 3, green: 1 }), attackDamage: 500,
+    attackSpeed: 1.8, range: 4, targeting: "random", contextualAction: "bondOffering",
+    bindChance: 0.20, bindDuration: 2, offeringCost: 200, offeringChance: 0.10,
+    previewLayout: Object.freeze({
+      nodes: Object.freeze([[18, 50], [40, 24], [62, 50], [82, 76]]),
+      edges: Object.freeze([[0, 1], [1, 2], [2, 3], [3, 0]]),
+      order: Object.freeze([0, 1, 3, 2]),
+    }),
+    specialDescriptions: Object.freeze([
+      "타격 시 20% 확률로 적을 2초간 결속하여 이동을 멈춥니다.",
+      "별빛 헌납 200: 해당 결속의 자리의 결속 확률이 +10%p 증가합니다. 최대 100%.",
+    ]),
+  }),
+  [CONSTELLATION_IDS.LINK]: Object.freeze({
+    id: CONSTELLATION_IDS.LINK, name: "링크의 자리",
+    recipe: Object.freeze({ purple: 2, green: 1, red: 1 }), attackDamage: 100,
+    attackSpeed: 3, range: 6, targeting: "highest",
+    previewLayout: Object.freeze({
+      nodes: Object.freeze([[18, 30], [42, 50], [70, 22], [82, 74]]),
+      edges: Object.freeze([[0, 1], [1, 2], [1, 3]]),
+    }),
+    specialDescriptions: Object.freeze([
+      "다른 활성 별자리들의 재료 단계 합을 계승하며, 합이 0이면 계승 배율은 최소 ×1입니다.",
+      "연결 단계 합 10/20/30마다 공격력이 +100%씩 누적 증가합니다.",
+    ]),
+  }),
 });
 playerProgress.ownedConstellations = playerProgress.ownedConstellations.filter((id) => CONSTELLATION_DEFINITIONS[id]);
 playerProgress.equippedConstellations = playerProgress.equippedConstellations
@@ -269,6 +299,7 @@ const CONFIG = {
   swapCost: 10,
   divinationCost: 30,
   guardianLightCost: 50,
+  bondOfferingCost: 200,
   startStarlight: 500,
   startDivinity: 50,
   baseMaxHP: BASE_MAX_HP,
@@ -385,6 +416,8 @@ class Enemy {
     this.hp = this.maxHp;
     this.dead = false;
     this.engagedAlly = null;
+    // Status effects use simulation time; no per-enemy timers are needed.
+    this.statusEffects = { bindUntil: 0 };
     this.x = MAP_DEFINITION.spawn.x;
     this.y = MAP_DEFINITION.spawn.y;
     this.lastHpPercent = -1;
@@ -409,6 +442,9 @@ class Enemy {
     this.el.style.transform = `translate3d(${(this.x * metrics.width) / 100}px, ${(this.y * metrics.height) / 100}px, 0)`;
   }
   update(dt) {
+    const bound = this.statusEffects.bindUntil > game.gameTime;
+    this.el.classList.toggle("bound", bound);
+    if (bound) return;
     if (this.engagedAlly && !this.engagedAlly.dead) return;
     this.engagedAlly = null;
     this.progress += this.speed * dt;
@@ -430,6 +466,11 @@ class Enemy {
       this.el.remove();
       game.kill(this, sourceConstellation);
     } else this.updateHealthBar();
+  }
+  applyBind(duration) {
+    // Reapplication refreshes the deadline rather than stacking timers.
+    this.statusEffects.bindUntil = game.gameTime + duration;
+    this.el.classList.add("bound");
   }
   execute(sourceConstellation) {
     if (this.dead) return false;
@@ -833,6 +874,28 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
     },
     dispose(constellation) { constellation.endTwilightTranscendence(); },
   }),
+  [CONSTELLATION_IDS.BOND]: Object.freeze({
+    createRuntime: (constellation) => ({
+      componentStageSum: constellation.componentStageSum, bindChance: constellation.definition.bindChance, offerings: 0,
+    }),
+    attack(constellation, target, origin) {
+      target.hit(constellation.currentDamage(), origin, constellation);
+      UIManager.bondStrike?.(target.position());
+      if (!target.dead && Math.random() < constellation.runtime.bindChance) {
+        target.applyBind(constellation.definition.bindDuration);
+        UIManager.bondApplied?.(target.position());
+      }
+    },
+  }),
+  [CONSTELLATION_IDS.LINK]: Object.freeze({
+    createRuntime: (constellation) => ({
+      componentStageSum: constellation.componentStageSum, linkedStageSum: 0, thresholdBonusCount: 0,
+    }),
+    update(constellation) { constellation.refreshLinkState(); },
+    attack(constellation, target, origin) {
+      target.hit(constellation.currentDamage(), origin, constellation);
+    },
+  }),
 });
 class Constellation {
   constructor(owner, center, members, definitionId, connectionOrder = members) {
@@ -883,7 +946,7 @@ class Constellation {
       this.behavior.onTargetChanged?.(this, target);
     }
     this.behavior.attack(this, target, position);
-    if (this.definitionId === CONSTELLATION_IDS.RADIANCE) this.resetTarget();
+    if (this.definition.targeting === "random" || this.definitionId === CONSTELLATION_IDS.RADIANCE) this.resetTarget();
     else if (target.dead) this.resetTarget();
     const attackSpeed = this.effectiveAttackSpeed(target);
     this.cooldown = 1 / attackSpeed;
@@ -893,7 +956,33 @@ class Constellation {
     const killMultiplier = this.definitionId === CONSTELLATION_IDS.RADIANCE
       ? 1 + this.runtime.radianceKillBonus
       : 1;
-    return getStageScaledDamage(this) * killMultiplier * allyMultiplier * localMultiplier;
+    const linkMultiplier = this.definitionId === CONSTELLATION_IDS.LINK ? this.linkDamageMultiplier() : 1;
+    return getStageScaledDamage(this) * linkMultiplier * killMultiplier * allyMultiplier * localMultiplier;
+  }
+  linkedConstellationStageSum() {
+    return (game?.players || []).reduce((sum, player) =>
+      sum + player.manager.activeConstellations().reduce((subtotal, constellation) =>
+        subtotal + (constellation === this ? 0 : constellation.componentStageSum), 0), 0);
+  }
+  linkDamageMultiplier() {
+    const linkedStageSum = this.linkedConstellationStageSum();
+    const thresholdBonusCount = [10, 20, 30].filter((threshold) => linkedStageSum >= threshold).length;
+    return Math.max(1, linkedStageSum) * (1 + thresholdBonusCount);
+  }
+  refreshLinkState() {
+    if (this.definitionId !== CONSTELLATION_IDS.LINK) return;
+    const linkedStageSum = this.linkedConstellationStageSum();
+    const thresholdBonusCount = [10, 20, 30].filter((threshold) => linkedStageSum >= threshold).length;
+    if (linkedStageSum === this.runtime.linkedStageSum && thresholdBonusCount === this.runtime.thresholdBonusCount) return;
+    this.runtime.linkedStageSum = linkedStageSum;
+    this.runtime.thresholdBonusCount = thresholdBonusCount;
+    const element = this.centerElement();
+    element?.classList.toggle("link-tier-10", linkedStageSum >= 10);
+    element?.classList.toggle("link-tier-20", linkedStageSum >= 20);
+    element?.classList.toggle("link-tier-30", linkedStageSum >= 30);
+    element?.classList.add("link-updated");
+    game.simulationTimeout?.(() => element?.classList.remove("link-updated"), 420);
+    game.markDirty?.();
   }
   registerKill() {
     if (this.definitionId === CONSTELLATION_IDS.TWILIGHT) {
@@ -1074,6 +1163,10 @@ class StarManager {
       star && RangeSystem.distance({ x, y }, star) < 46));
   }
   summonAt(x, y) {
+    if (this.emptySlots()[0] === undefined) {
+      UIManager.hint("별을 최대 21개까지 배치할 수 있습니다.");
+      return false;
+    }
     if (this.zodiacMode || !this.isValidPlacement(x, y)) {
       if (!this.zodiacMode) UIManager.hint("길과 다른 별을 피해 배치하세요.");
       return false;
@@ -1387,6 +1480,22 @@ class GuardianLightSystem {
     game.render();
   }
 }
+class BondOfferingSystem {
+  static execute(manager, index) {
+    const constellation = manager.stars[index]?.constellation;
+    if (!constellation || constellation.center !== index || constellation.definitionId !== CONSTELLATION_IDS.BOND)
+      return UIManager.hint("결속의 자리를 선택하세요.");
+    if (constellation.runtime.bindChance >= 1)
+      return UIManager.hint("결속 확률이 이미 100%입니다.");
+    if (!manager.player.resources.spend(CONFIG.bondOfferingCost))
+      return UIManager.hint("별빛이 부족합니다.");
+    constellation.runtime.offerings++;
+    constellation.runtime.bindChance = Math.min(1,
+      constellation.definition.bindChance + constellation.runtime.offerings * constellation.definition.offeringChance);
+    UIManager.hint(`결속 확률이 ${Math.round(constellation.runtime.bindChance * 100)}%로 증가했습니다.`);
+    game.markDirty();
+  }
+}
 class UIManager {
   static addTransient(element, parent, milliseconds, limit = 120) {
     this.activeEffects ||= 0;
@@ -1437,6 +1546,22 @@ class UIManager {
       line.setAttribute(key, [a.x, a.y, b.x, b.y][index]),
     );
     this.addTransient(line, effects, 230);
+  }
+  static bondStrike(position) {
+    const strike = document.createElement("i");
+    strike.className = "bond-strike";
+    strike.style.left = `${position.x}%`;
+    strike.style.top = `${position.y}%`;
+    strike.setAttribute("aria-hidden", "true");
+    this.addTransient(strike, arena, 260);
+  }
+  static bondApplied(position) {
+    const pulse = document.createElement("i");
+    pulse.className = "bond-applied";
+    pulse.style.left = `${position.x}%`;
+    pulse.style.top = `${position.y}%`;
+    pulse.setAttribute("aria-hidden", "true");
+    this.addTransient(pulse, arena, 420);
   }
   static dawnSpecial(position, damage) {
     const burst = document.createElement("div");
@@ -1634,8 +1759,16 @@ class UIManager {
     const twilightInfo = constellation?.definitionId === CONSTELLATION_IDS.TWILIGHT
       ? `<span>킬 수: ${constellation.runtime.killCount} / ${constellationStats.transcendenceKills}</span>${twilightActive ? `<span class="twilight-time">초월 중: ${Math.max(0, constellation.runtime.transcendenceUntil - g.gameTime).toFixed(1)}초</span>` : ""}`
       : "";
+    const bondInfo = constellation?.definitionId === CONSTELLATION_IDS.BOND
+      ? `<span>결속 확률: ${Math.round(constellation.runtime.bindChance * 100)}%</span>` : "";
+    const linkInfo = constellation?.definitionId === CONSTELLATION_IDS.LINK
+      ? (() => {
+          const linked = constellation.linkedConstellationStageSum();
+          const thresholds = [10, 20, 30].filter((threshold) => linked >= threshold).length;
+          return `<span>자신의 재료 단계 합: ${constellation.componentStageSum}</span><span>연결된 다른 별자리 단계 합: ${linked}</span><span>계승 배율: ×${Math.max(1, linked)}</span><span>임계치 강화: +${thresholds * 100}%</span>`;
+        })() : "";
     starInfo.innerHTML = constellation
-      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합: ${constellation.componentStageSum}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span><span>현재 공격력: ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellation.definitionId === CONSTELLATION_IDS.TWILIGHT && constellation.target?.hp <= constellation.target?.maxHp * .5 ? constellationStats.attackSpeed * 2 : constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellation.effectiveRange()}</span>${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/3</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : ""}${twilightInfo}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
+      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합: ${constellation.componentStageSum}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span>${linkInfo}<span>현재 공격력: ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellation.definitionId === CONSTELLATION_IDS.TWILIGHT && constellation.target?.hp <= constellation.target?.maxHp * .5 ? constellationStats.attackSpeed * 2 : constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellation.effectiveRange()}</span>${bondInfo}${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/3</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : ""}${twilightInfo}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
       : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · ${s.tier}단계</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span></div><div class="trait">타겟팅 · ${TARGET_LABELS[d.target]}</div>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? constellation.effectiveRange() : d.range,
@@ -1655,19 +1788,24 @@ class UIManager {
       let enabled = pick.m.player.resources.divinity >= 1;
       const isAstrologer = constellation.definitionId === CONSTELLATION_IDS.ASTROLOGER;
       const isGuardian = constellation.definitionId === CONSTELLATION_IDS.GUARDIAN;
+      const isBond = constellation.definitionId === CONSTELLATION_IDS.BOND;
       const canDivine = isAstrologer && pick.m.player.resources.can(CONFIG.divinationCost);
       const canUseGuardianLight = isGuardian && pick.m.player.resources.can(CONFIG.guardianLightCost);
+      const canOfferBond = isBond && constellation.runtime.bindChance < 1 && pick.m.player.resources.can(CONFIG.bondOfferingCost);
       // definitionId is deliberately part of the cache key: actions from a
       // previous tower type must never survive a selection/type change.
-      let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}:${canUseGuardianLight}`;
+      let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}:${canUseGuardianLight}:${canOfferBond}:${constellation.runtime.bindChance}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 50</button>` : ""}<button class="${isAstrologer || isGuardian ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
+        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 50</button>` : ""}${isBond ? `<button class="bond-offering action-above" data-context="bond-offering"${canOfferBond ? "" : " disabled"}>별빛 헌납 200</button>` : ""}<button class="${isAstrologer || isGuardian || isBond ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
         if (isAstrologer)
           contextActions.querySelector('[data-context="divination"]').onclick = () =>
             DivinationSystem.execute(pick.m, pick.index);
         if (isGuardian)
           contextActions.querySelector('[data-context="guardian-light"]').onclick = () =>
             GuardianLightSystem.execute(pick.m, pick.index);
+        if (isBond)
+          contextActions.querySelector('[data-context="bond-offering"]').onclick = () =>
+            BondOfferingSystem.execute(pick.m, pick.index);
         contextActions.querySelector('[data-context="release"]').onclick = () =>
           ZodiacSystem.release(pick.m, pick.index);
         this.actionKey = actionKey;
@@ -1993,6 +2131,7 @@ const SUMMON_STATES = Object.freeze({ START: "SUMMON_START", FORMING: "CONSTELLA
 const CONSTELLATION_SUMMON_COLORS = Object.freeze({
   DAWN: ["#e7e5ff", "#9d75ff"], RADIANCE: ["#fffef0", "#ffd65c"], SAGITTARIUS: ["#65baff", "#ffe06b"],
   ASTROLOGER: ["#bd75ff", "#ffd96b"], GUARDIAN: ["#d9f8ff", "#5dbdff"], TWILIGHT: ["#9a48dc", "#ff4d68"],
+  BOND: ["#f7fff9", "#55db85"], LINK: ["#b16cff", "#ff5064"],
 });
 
 function summonSequencePreview(results) {

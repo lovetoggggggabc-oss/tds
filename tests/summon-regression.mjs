@@ -45,4 +45,12 @@ assert.equal(manager.summonAt(20, 30), false, "insufficient starlight blocks dir
 assert.equal(manager.stars.filter(Boolean).length, 1);
 assert.equal(players[0].resources.starlight, 29, "failed taps never spend starlight");
 
-console.log("Summon regression passed: direct placement, validation, zodiac guard, and exact payment verified.");
+manager.zodiacMode = false;
+players[0].resources.starlight = 500;
+manager.stars.fill({ occupied: true });
+assert.equal(manager.stars.length, 21, "the authoritative board capacity is 21");
+assert.equal(manager.summonAt(20, 30), false, "a 22nd star is rejected");
+assert.equal(players[0].resources.starlight, 500, "a rejected 22nd star costs no starlight");
+assert.equal(hints.at(-1), "별을 최대 21개까지 배치할 수 있습니다.");
+
+console.log("Summon regression passed: direct placement, validation, zodiac guard, 21-star cap, and exact payment verified.");
