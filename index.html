@@ -9,31 +9,30 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=54" />
+    <link rel="stylesheet" href="styles.css?v=55" />
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
-      <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="observatory-backdrop" aria-hidden="true"></div>
       <div class="main-top-bar"><div class="permanent-wallet" aria-label="보유 영구 재화">
-        <span class="currency-item"><i class="fragment-gem">✦</i><small class="currency-label">별가루</small><b class="currency-value" data-star-dust>0</b></span>
-        <span class="currency-item"><i class="shard-gem">◆</i><small class="currency-label">별조각</small><b class="currency-value" data-star-shards>0</b></span>
-        <span class="currency-item"><i class="meteor-gem">☄</i><small class="currency-label">운석조각</small><b class="currency-value" data-meteor-fragments>0</b></span>
+        <span class="currency-item"><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#dust" /></svg><small class="currency-label">별가루</small><b class="currency-value" data-star-dust>0</b></span>
+        <span class="currency-item"><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#shard" /></svg><small class="currency-label">별조각</small><b class="currency-value" data-star-shards>0</b></span>
+        <span class="currency-item"><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#meteor" /></svg><small class="currency-label">운석조각</small><b class="currency-value" data-meteor-fragments>0</b></span>
       </div>
-      <div class="menu-tools"><button type="button" data-open-news aria-label="소식"><span>소식</span><b data-news-badge>NEW</b></button><button type="button" data-open-mail aria-label="우편함"><i aria-hidden="true">✉</i><span class="utility-label">우편함</span><b data-mail-badge>2</b></button><button type="button" data-open-settings aria-label="설정"><i aria-hidden="true">⚙</i><span class="utility-label">설정</span></button></div></div>
+      <div class="menu-tools"><button type="button" data-open-news aria-label="소식"><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#news" /></svg><span>소식</span><b data-news-badge>NEW</b></button><button type="button" data-open-mail aria-label="우편함"><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#mail" /></svg><span class="utility-label">우편함</span><b data-mail-badge>2</b></button><button type="button" data-open-settings aria-label="설정"><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#settings" /></svg><span class="utility-label">설정</span></button></div></div>
       <header class="lobby-title">
-        <div class="celestial-emblem" aria-hidden="true"><i>✦</i></div>
-        <h1 id="main-menu-title">별자리 디펜스</h1>
-        <p>ZODIAC DEFENSE</p>
+        <svg class="main-logo" role="img" aria-labelledby="main-menu-title"><title id="main-menu-title">별자리 디펜스</title><use href="assets/main-menu/03-ui-atlas.svg#logo" /></svg>
         <small class="game-version" data-game-version aria-label="현재 게임 버전"></small>
       </header>
-      <button type="button" class="hero-play" id="open-battle-menu"><i>✦</i><b>플레이</b><small>별이 지키는 전장을 향해</small></button>
+      <div class="mascot-desk" aria-hidden="true"></div>
+      <button type="button" class="hero-play" id="open-battle-menu"><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#play" /></svg><span class="sr-only">플레이</span></button>
       <button type="button" class="monster-codex-entry" data-open-monster-codex><i aria-hidden="true">◉</i><span>몬스터 도감</span><small>MONSTER CODEX</small></button>
       <nav class="bottom-nav" aria-label="메인 메뉴">
-        <button type="button" data-coming-soon><i>▣</i><span>상점</span></button>
-        <button type="button" data-open-collection><i>⌁</i><span>별 &amp; 별자리</span></button>
-        <button type="button" class="active" data-open-battle><i>⚔</i><span>전투</span></button>
-        <button type="button" data-open-relics><i>◇</i><span>유물</span></button>
-        <button type="button" data-open-gacha><i>✦</i><span>뽑기</span></button>
+        <button type="button" data-coming-soon><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#shop" /></svg><span>상점</span></button>
+        <button type="button" data-open-collection><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#stars" /></svg><span>별 &amp; 별자리</span></button>
+        <button type="button" class="active" data-open-battle><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#battle" /></svg><span>전투</span></button>
+        <button type="button" data-open-relics><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#relic" /></svg><span>유물</span></button>
+        <button type="button" data-open-gacha><svg aria-hidden="true"><use href="assets/main-menu/03-ui-atlas.svg#gacha" /></svg><span>뽑기</span></button>
       </nav>
     </section>
 
