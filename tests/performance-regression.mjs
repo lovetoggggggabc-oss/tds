@@ -4,7 +4,7 @@ import { performance } from "node:perf_hooks";
 import { readFile } from "node:fs/promises";
 
 const file = await readFile("game.js", "utf8");
-const source = file.slice(file.indexOf("const CONSTELLATION_IDS"));
+const source = file.slice(file.indexOf("const SCREEN_STATES"));
 const definitions = source.slice(0, source.indexOf("class UIManager"));
 const context = {
   Math,

@@ -33,19 +33,52 @@ let game = null;
 let finishBattle = null;
 let controlsBound = false;
 let toastTimer = 0;
-const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA" });
+const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([10, 100]) });
+const GACHA_RULES = Object.freeze({ starChance: .9, constellationChance: .1, pityLimit: 20 });
+const MAX_EQUIPPED_CONSTELLATIONS = 6;
+const LEGACY_STAR_IDS = Object.freeze({ SKY: "YELLOW", SKYBLUE: "YELLOW", LIGHT_BLUE: "YELLOW", sky: "YELLOW", skyblue: "YELLOW", light_blue: "YELLOW" });
+const PLACEHOLDER_STAR_COMBAT_STATS = Object.freeze({ damage: 100, rate: 2, range: 5, target: "nearest" }); // TODO: 보라색/초록색의 정식 전투 밸런스를 확정한다.
+const STAR_TYPES = Object.freeze({
+  BLUE: Object.freeze({ id: "BLUE", key: "blue", name: "청색", color: "#4d83ff", damage: 50, rate: 4, range: 5, target: "lock" }),
+  WHITE: Object.freeze({ id: "WHITE", key: "white", name: "백색", color: "#ffffff", damage: 100, rate: 3.5, range: 6, target: "burst" }),
+  YELLOW: Object.freeze({ id: "YELLOW", key: "yellow", name: "황색", color: "#ffd84d", damage: 75, rate: 2, range: 7, target: "random" }),
+  ORANGE: Object.freeze({ id: "ORANGE", key: "orange", name: "주황색", color: "#ffad45", damage: 125, rate: 1.5, range: 4, target: "nearest" }),
+  RED: Object.freeze({ id: "RED", key: "red", name: "적색", color: "#ff5064", damage: 200, rate: 1, range: 5, target: "highest" }),
+  PURPLE: Object.freeze({ id: "PURPLE", key: "purple", name: "보라색", color: "#b16cff", ...PLACEHOLDER_STAR_COMBAT_STATS }),
+  GREEN: Object.freeze({ id: "GREEN", key: "green", name: "초록색", color: "#55db85", ...PLACEHOLDER_STAR_COMBAT_STATS }),
+});
+const STARTER_COLLECTION = Object.freeze({
+  ownedStars: Object.freeze({ BLUE: 1, WHITE: 1, YELLOW: 1, ORANGE: 1, RED: 1 }),
+  ownedConstellations: Object.freeze(["DAWN"]),
+  equippedConstellations: Object.freeze(["DAWN"]),
+});
+function normalizeStarId(value) {
+  const raw = String(value || "");
+  return LEGACY_STAR_IDS[raw] || LEGACY_STAR_IDS[raw.toUpperCase()] || raw.toUpperCase();
+}
 function loadPlayerProgress() {
   try {
     const saved = typeof localStorage === "undefined" ? null : JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY));
+    const sourceStars = saved?.ownedStars ?? STARTER_COLLECTION.ownedStars;
+    const ownedStars = {};
+    if (Array.isArray(sourceStars)) sourceStars.forEach((id) => { const normalized = normalizeStarId(id); ownedStars[normalized] = (ownedStars[normalized] || 0) + 1; });
+    else Object.entries(sourceStars || {}).forEach(([id, count]) => { const normalized = normalizeStarId(id); ownedStars[normalized] = (ownedStars[normalized] || 0) + Math.max(0, Math.floor(Number(count) || 0)); });
+    const ownedConstellations = [...new Set(saved?.ownedConstellations ?? STARTER_COLLECTION.ownedConstellations)];
+    const equippedConstellations = [...new Set(saved?.equippedConstellations ?? STARTER_COLLECTION.equippedConstellations)]
+      .filter((id) => ownedConstellations.includes(id)).slice(0, MAX_EQUIPPED_CONSTELLATIONS);
     return {
       starFragments: Math.max(0, Number.isFinite(saved?.starFragments) ? Math.floor(saved.starFragments) : 0),
       meteorFragments: Math.max(0, Number.isFinite(saved?.meteorFragments) ? Math.floor(saved.meteorFragments) : 0),
+      ownedStars,
+      ownedConstellations,
+      equippedConstellations,
+      constellationPity: Math.min(GACHA_RULES.pityLimit - 1, Math.max(0, Number.isFinite(saved?.constellationPity) ? Math.floor(saved.constellationPity) : 0)),
     };
   } catch (_error) {
-    return { starFragments: 0, meteorFragments: 0 };
+    return { starFragments: 0, meteorFragments: 0, ownedStars: { ...STARTER_COLLECTION.ownedStars }, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0 };
   }
 }
 const playerProgress = loadPlayerProgress();
@@ -55,6 +88,41 @@ function savePlayerProgress() {
   } catch (_error) {
     // The game remains playable when storage is blocked by private-browser settings.
   }
+}
+savePlayerProgress();
+function performConstellationDraws(count, random = Math.random) {
+  const cost = count === 10 ? GACHA_COSTS.constellation[1] : GACHA_COSTS.constellation[0];
+  if (![1, 10].includes(count) || playerProgress.starFragments < cost) return null;
+  const next = {
+    pity: playerProgress.constellationPity,
+    stars: { ...playerProgress.ownedStars },
+    constellations: [...playerProgress.ownedConstellations],
+  };
+  const constellationIds = Object.keys(CONSTELLATION_DEFINITIONS);
+  const starIds = Object.keys(STAR_TYPES);
+  const results = [];
+  for (let index = 0; index < count; index++) {
+    const guaranteed = next.pity >= GACHA_RULES.pityLimit - 1;
+    if (guaranteed || random() < GACHA_RULES.constellationChance) {
+      const id = constellationIds[Math.min(constellationIds.length - 1, Math.floor(random() * constellationIds.length))];
+      const isNew = !next.constellations.includes(id);
+      if (isNew) next.constellations.push(id);
+      next.pity = 0;
+      results.push({ kind: "constellation", id, isNew, guaranteed });
+    } else {
+      const id = starIds[Math.min(starIds.length - 1, Math.floor(random() * starIds.length))];
+      next.stars[id] = (next.stars[id] || 0) + 1;
+      next.pity++;
+      results.push({ kind: "star", id });
+    }
+  }
+  // Commit only after every result was generated, keeping currency and collection atomic.
+  playerProgress.starFragments -= cost;
+  playerProgress.constellationPity = next.pity;
+  playerProgress.ownedStars = next.stars;
+  playerProgress.ownedConstellations = next.constellations;
+  savePlayerProgress();
+  return results;
 }
 const CONSTELLATION_IDS = Object.freeze({
   DAWN: "DAWN",
@@ -130,7 +198,7 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
   }),
   [CONSTELLATION_IDS.SAGITTARIUS]: Object.freeze({
     id: CONSTELLATION_IDS.SAGITTARIUS, name: "궁수자리",
-    recipe: Object.freeze({ sky: 2, blue: 2 }), attackDamage: 400,
+    recipe: Object.freeze({ yellow: 2, blue: 2 }), attackDamage: 400,
     attackSpeed: 6, range: 6, targeting: "highest",
     previewLayout: Object.freeze({
       nodes: Object.freeze([[18, 68], [43, 48], [67, 25], [58, 76]]),
@@ -182,6 +250,11 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     ]),
   }),
 });
+playerProgress.ownedConstellations = playerProgress.ownedConstellations.filter((id) => CONSTELLATION_DEFINITIONS[id]);
+playerProgress.equippedConstellations = playerProgress.equippedConstellations
+  .filter((id) => playerProgress.ownedConstellations.includes(id) && CONSTELLATION_DEFINITIONS[id])
+  .slice(0, MAX_EQUIPPED_CONSTELLATIONS);
+savePlayerProgress();
 const CONFIG = {
   waveSeconds: 10,
   bossWaveSeconds: 20,
@@ -230,48 +303,7 @@ const CONFIG = {
       boss: true,
     },
   },
-  stars: {
-    blue: {
-      name: "청색",
-      color: "#4d83ff",
-      damage: 50,
-      rate: 4,
-      range: 5,
-      target: "lock",
-    },
-    sky: {
-      name: "하늘색",
-      color: "#74e8ff",
-      damage: 75,
-      rate: 2,
-      range: 7,
-      target: "random",
-    },
-    white: {
-      name: "백색",
-      color: "#fff",
-      damage: 100,
-      rate: 3.5,
-      range: 6,
-      target: "burst",
-    },
-    orange: {
-      name: "주황색",
-      color: "#ffad45",
-      damage: 125,
-      rate: 1.5,
-      range: 4,
-      target: "nearest",
-    },
-    red: {
-      name: "적색",
-      color: "#ff5064",
-      damage: 200,
-      rate: 1,
-      range: 5,
-      target: "highest",
-    },
-  },
+  stars: Object.freeze(Object.fromEntries(Object.values(STAR_TYPES).map(({ id: _id, key, ...definition }) => [key, Object.freeze(definition)]))),
 };
 
 // Pointer Events avoid Safari's synthetic touch/click pair. A small movement
@@ -1212,12 +1244,13 @@ class ZodiacSystem {
     }, {});
   }
   static exactMatch(counts) {
-    return Object.keys(RECIPE_COUNTS).find((kind) =>
-      recipeCountsMatch(counts, RECIPE_COUNTS[kind]),
+    return playerProgress.equippedConstellations.find((kind) =>
+      RECIPE_COUNTS[kind] && playerProgress.ownedConstellations.includes(kind) && recipeCountsMatch(counts, RECIPE_COUNTS[kind]),
     );
   }
   static possibleMatches(counts) {
-    return Object.keys(ZODIAC_RECIPES).filter((kind) =>
+    return playerProgress.equippedConstellations.filter((kind) =>
+      playerProgress.ownedConstellations.includes(kind) && RECIPE_COUNTS[kind] &&
       Object.entries(counts).every(
         ([type, amount]) => (RECIPE_COUNTS[kind][type] || 0) >= amount,
       ),
@@ -1426,7 +1459,9 @@ class UIManager {
     this.addTransient(effect, arena, 900);
   }
   static renderCodex() {
-    zodiacCodexList.innerHTML = Object.entries(ZODIAC_RECIPES)
+    zodiacCodexList.innerHTML = playerProgress.equippedConstellations.slice(0, MAX_EQUIPPED_CONSTELLATIONS)
+      .filter((id) => playerProgress.ownedConstellations.includes(id) && ZODIAC_RECIPES[id])
+      .map((id) => [id, ZODIAC_RECIPES[id]])
       .map(([definitionId, zodiac]) => {
         const recipeEntries = Object.entries(zodiac.recipe);
         // Types always come from the recipe registry. previewLayout only
@@ -1924,6 +1959,25 @@ function getRequiredElement(id) {
   return element;
 }
 
+function constellationPreview(definition) {
+  const recipeTypes = Object.entries(definition.recipe).flatMap(([type, amount]) => Array(amount).fill(type));
+  const displayTypes = (definition.previewLayout.order || recipeTypes.map((_, index) => index)).map((index) => recipeTypes[index]);
+  const edges = definition.previewLayout.edges.map(([from, to]) => `<line x1="${definition.previewLayout.nodes[from][0]}" y1="${definition.previewLayout.nodes[from][1]}" x2="${definition.previewLayout.nodes[to][0]}" y2="${definition.previewLayout.nodes[to][1]}"/>`).join("");
+  const nodes = definition.previewLayout.nodes.map(([x, y], index) => `<text x="${x}" y="${y}" style="--star-color:${CONFIG.stars[displayTypes[index]].color}">✦</text>`).join("");
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><g>${edges}</g>${nodes}</svg>`;
+}
+
+function toggleEquippedConstellation(id) {
+  if (!playerProgress.ownedConstellations.includes(id)) return { ok: false, message: "아직 획득하지 않은 별자리입니다." };
+  const current = playerProgress.equippedConstellations;
+  const index = current.indexOf(id);
+  if (index >= 0) current.splice(index, 1);
+  else if (current.length >= MAX_EQUIPPED_CONSTELLATIONS) return { ok: false, message: "전투에 가져갈 별자리는 최대 6개입니다." };
+  else current.push(id);
+  savePlayerProgress();
+  return { ok: true };
+}
+
 function bootstrapGame() {
   // This function is the only place where required page elements are bound.
   // Assignments are intentionally explicit so missing IDs identify themselves.
@@ -1975,6 +2029,7 @@ function bootstrapGame() {
   const mainMenu = getRequiredElement("main-menu");
   const battleMenu = getRequiredElement("battle-menu");
   const gachaScreen = getRequiredElement("gacha-screen");
+  const collectionScreen = getRequiredElement("collection-screen");
   const gameShell = getRequiredElement("game-shell");
   const exitDialog = getRequiredElement("exit-dialog");
   const toast = getRequiredElement("game-toast");
@@ -1986,6 +2041,7 @@ function bootstrapGame() {
     battleMenu.hidden = screen !== SCREEN_STATES.BATTLE_MENU;
     gameShell.hidden = screen !== SCREEN_STATES.BATTLE_GAME;
     gachaScreen.hidden = screen !== SCREEN_STATES.GACHA;
+    collectionScreen.hidden = screen !== SCREEN_STATES.COLLECTION;
     exitDialog.hidden = true;
   };
   const updateMetaCurrency = () => {
@@ -1999,10 +2055,29 @@ function bootstrapGame() {
       const balance = button.dataset.draw === "relic" ? playerProgress.meteorFragments : playerProgress.starFragments;
       button.disabled = balance < Number(button.dataset.cost);
     });
+    document.querySelectorAll?.("[data-constellation-pity]").forEach((node) => { node.textContent = `${playerProgress.constellationPity} / ${GACHA_RULES.pityLimit}`; });
+  };
+  const showToast = (message) => {
+    toast.textContent = message; toast.hidden = false; clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 2200);
+  };
+  const renderCollection = () => {
+    getRequiredElement("star-collection").innerHTML = Object.values(STAR_TYPES).map((star) => {
+      const count = playerProgress.ownedStars[star.id] || 0;
+      return `<article class="collection-card star-collection-card ${count ? "owned" : "locked"}" style="--star-color:${star.color}"><div class="collection-star">✦</div><h3>${star.name}</h3><small>${count ? `보유 ${count}` : "🔒 미획득"}</small></article>`;
+    }).join("");
+    getRequiredElement("constellation-collection").innerHTML = Object.values(CONSTELLATION_DEFINITIONS).map((definition) => {
+      const owned = playerProgress.ownedConstellations.includes(definition.id);
+      const order = playerProgress.equippedConstellations.indexOf(definition.id);
+      return `<button type="button" class="collection-card constellation-collection-card ${owned ? "owned" : "locked"} ${order >= 0 ? "equipped" : ""}" data-equip-constellation="${definition.id}">${order >= 0 ? `<b class="equip-order">${order + 1}</b>` : ""}${constellationPreview(definition)}<h3>${definition.name}</h3><small>${!owned ? "🔒 미획득" : order >= 0 ? "전투 장착 중" : "전투에 장착"}</small></button>`;
+    }).join("");
+    document.querySelectorAll("[data-deck-count]").forEach((node) => { node.textContent = playerProgress.equippedConstellations.length; });
+    document.querySelectorAll("[data-equip-constellation]").forEach((button) => { button.onclick = () => { const result = toggleEquippedConstellation(button.dataset.equipConstellation); if (!result.ok) showToast(result.message); renderCollection(); }; });
   };
   const showMainMenu = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.MAIN_MENU); };
   const showBattleMenu = () => showScreen(SCREEN_STATES.BATTLE_MENU);
   const showGacha = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.GACHA); };
+  const showCollection = () => { renderCollection(); showScreen(SCREEN_STATES.COLLECTION); };
   const startBattle = () => {
     if (currentScreen !== SCREEN_STATES.BATTLE_MENU) return false;
     if (game) game.destroy();
@@ -2048,6 +2123,7 @@ function bootstrapGame() {
   getRequiredElement("open-battle-menu").onclick = navigateOnce(showBattleMenu);
   document.querySelectorAll?.("[data-open-battle]").forEach((button) => { button.onclick = navigateOnce(showBattleMenu); });
   document.querySelectorAll?.("[data-open-gacha]").forEach((button) => { button.onclick = navigateOnce(showGacha); });
+  document.querySelectorAll?.("[data-open-collection]").forEach((button) => { button.onclick = navigateOnce(showCollection); });
   document.querySelectorAll?.("[data-main-home]").forEach((button) => { button.onclick = navigateOnce(showMainMenu); });
   getRequiredElement("battle-back").onclick = navigateOnce(showMainMenu);
   getRequiredElement("play-battle").onclick = navigateOnce(startBattle);
@@ -2081,15 +2157,26 @@ function bootstrapGame() {
       document.querySelectorAll("[data-gacha-board]").forEach((board) => { board.hidden = board.dataset.gachaBoard !== tab.dataset.gachaTab; });
     };
   });
+  document.querySelectorAll?.("[data-collection-tab]").forEach((tab) => {
+    tab.onclick = () => {
+      document.querySelectorAll("[data-collection-tab]").forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
+      document.querySelectorAll("[data-collection-panel]").forEach((panel) => { panel.hidden = panel.dataset.collectionPanel !== tab.dataset.collectionTab; });
+    };
+  });
   document.querySelectorAll?.("[data-draw]").forEach((button) => {
     button.onclick = () => {
       if (button.disabled) return;
-      toast.textContent = button.dataset.draw === "relic" ? "유물 뽑기 확률 설정 후 이용할 수 있습니다." : "뽑기 확률 설정 후 이용할 수 있습니다.";
-      toast.hidden = false;
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => { toast.hidden = true; }, 2200);
+      if (button.dataset.draw === "relic") return showToast("유물 뽑기 확률 설정 후 이용할 수 있습니다.");
+      const results = performConstellationDraws(Number(button.dataset.cost) === 1000 ? 10 : 1);
+      if (!results) return showToast("별조각이 부족합니다.");
+      getRequiredElement("draw-result-grid").innerHTML = results.map((result) => result.kind === "star"
+        ? `<article class="draw-result star-result" style="--star-color:${STAR_TYPES[result.id].color}"><i>✦</i><b>${STAR_TYPES[result.id].name} 별</b></article>`
+        : `<article class="draw-result constellation-result">${result.isNew ? "<em>NEW</em>" : "<em>보유 중</em>"}${constellationPreview(CONSTELLATION_DEFINITIONS[result.id])}<b>${CONSTELLATION_DEFINITIONS[result.id].name}</b>${result.guaranteed ? "<small>확정 소환</small>" : ""}</article>`).join("");
+      getRequiredElement("draw-results").hidden = false;
+      updateMetaCurrency(); renderCollection();
     };
   });
+  getRequiredElement("close-draw-results").onclick = () => { getRequiredElement("draw-results").hidden = true; };
   window.addEventListener("resize", () => {
     RangeSystem.refresh();
     game?.markDirty();
@@ -2097,7 +2184,7 @@ function bootstrapGame() {
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   showMainMenu();
   const diagnostics = {
-    CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, PREPARATION_SECONDS, GACHA_COSTS, playerProgress,
+    CONFIG, STAR_TYPES, STARTER_COLLECTION, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, PREPARATION_SECONDS, GACHA_COSTS, playerProgress, performConstellationDraws, toggleEquippedConstellation,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
     showMainMenu, showBattleMenu, showGacha, startBattle, leaveBattle, finishBattle,
