@@ -42,7 +42,7 @@ let activeGameMode = GAME_MODES.NORMAL;
 const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", MAP_VOTE: "MAP_VOTE", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
 const PROGRESS_SCHEMA_VERSION = 6;
-const UPDATE_REWARD_ID = "update_reward_3000_v1";
+const UPDATE_REWARD_ID = "difficulty_update_star_shards_3000_v1";
 const METEOR_MAIL_REWARD_ID = "meteor_fragment_mail_30_v1";
 const STAR_DUST_GRANT_ID = "starDust5000_v1";
 const METEOR_GRANT_ID = "meteorFragments20_v2";
@@ -54,6 +54,15 @@ const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), r
 const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong" });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
+  id: "difficulty_rebalance_2026_09_v1", date: "2026.09.21", title: "✦ 전투 난이도 개편 업데이트",
+  sections: Object.freeze([
+    Object.freeze({ title: "전투 난이도 개편", paragraphs: Object.freeze(["일반 모드의 몬스터 성장 곡선을 개편했습니다.", "초반은 보다 안정적으로 성장할 수 있고, 후반으로 갈수록 점차 강한 적이 등장합니다."]) }),
+    Object.freeze({ title: "일반 모드", bullets: Object.freeze(["몬스터 기본 체력: 250", "Wave 1~10 · 웨이브당 체력 +4%", "Wave 11~20 · 웨이브당 체력 +5%", "Wave 21~40 · 웨이브당 체력 +6%", "Wave 41 이상 · 웨이브당 체력 +7%"]) }),
+    Object.freeze({ title: "세로 대전장 BETA", bullets: Object.freeze(["몬스터 기본 체력: 300", "웨이브당 체력 증가율: +1.5% → +4%", "몬스터 등장 수: 일반 모드의 2배 유지"]) }),
+    Object.freeze({ title: "업데이트 보상", paragraphs: Object.freeze(["업데이트를 기념하여 별조각 ×3,000을 지급합니다.", "우편함에서 수령하세요."]) }),
+    Object.freeze({ title: "버그 수정", bullets: Object.freeze(["별 또는 별자리를 선택했을 때 상세 설명이 정상적으로 표시되지 않던 문제를 수정했습니다.", "정보창의 텍스트가 오른쪽으로 밀리거나 잘려 보이던 문제를 수정했습니다."]) }),
+  ]), footer: "새로운 성장 곡선과 함께 더 깊어진 전투를 경험하세요.",
+}), Object.freeze({
   id: "relic_growth_update_v1", date: "2026.09.21", title: "✦ 유물 성장 시스템 업데이트",
   sections: Object.freeze([
     Object.freeze({ title: "유물 레벨 시스템", paragraphs: Object.freeze(["유물을 이제 Lv.4까지 성장시킬 수 있습니다.", "같은 유물과 별조각을 사용해 유물을 업그레이드하세요."]), bullets: Object.freeze(["Lv.1 → Lv.2 · 같은 유물 ×3 · 별조각 ×200", "Lv.2 → Lv.3 · 같은 유물 ×6 · 별조각 ×400", "Lv.3 → Lv.4 · 같은 유물 ×10 · 별조각 ×1,000"]) }),
@@ -646,9 +655,26 @@ const CONFIG = {
 };
 const VERTICAL_BETA = "experimental_vertical";
 const MODE_CONFIG = Object.freeze({
-  normal: Object.freeze({ baseEnemyHp: 250, waveHpGrowth: .008, enemyCountMultiplier: 1, startingStarlight: 300, startingDivinity: 1 }),
-  experimental_vertical: Object.freeze({ baseEnemyHp: 300, waveHpGrowth: .015, enemyCountMultiplier: 2, startingStarlight: 1500, startingDivinity: 30 }),
+  normal: Object.freeze({ baseEnemyHp: 250, enemyCountMultiplier: 1, startingStarlight: 300, startingDivinity: 1 }),
+  experimental_vertical: Object.freeze({ baseEnemyHp: 300, waveHpGrowth: .04, enemyCountMultiplier: 2, startingStarlight: 1500, startingDivinity: 30 }),
 });
+
+function getNormalWaveHpMultiplier(wave) {
+  const n = Math.max(1, Math.floor(Number(wave) || 1));
+  const multiplier = Math.pow(1.04, Math.min(n - 1, 9))
+    * Math.pow(1.05, Math.min(Math.max(n - 10, 0), 10))
+    * Math.pow(1.06, Math.min(Math.max(n - 20, 0), 20))
+    * Math.pow(1.07, Math.max(n - 40, 0));
+  return Number.isFinite(multiplier) ? Math.min(multiplier, 1e300) : 1e300;
+}
+
+function getWaveHpMultiplier(mode, wave) {
+  if (mode === GAME_MODES.EXPERIMENTAL_VERTICAL) {
+    const multiplier = Math.pow(1 + MODE_CONFIG.experimental_vertical.waveHpGrowth, Math.max(0, Math.floor(Number(wave) || 1) - 1));
+    return Number.isFinite(multiplier) ? Math.min(multiplier, 1e300) : 1e300;
+  }
+  return getNormalWaveHpMultiplier(wave);
+}
 
 // Pointer Events avoid Safari's synthetic touch/click pair. A small movement
 // allowance keeps a deliberate tap responsive while rejecting drags.
@@ -741,8 +767,11 @@ class Enemy {
     const mode = MODE_CONFIG[runtimeMode] || MODE_CONFIG.normal;
     const legacyHarness = !game?.mode;
     const baseHp = this.boss || legacyHarness ? this.hp : mode.baseEnemyHp * (this.hp / CONFIG.monsters.slime.hp);
-    // Compatibility formula was Math.pow(1 + CONFIG.waveHpGrowth, wave - 1); runtime balance is mode-scoped.
-    this.maxHp = baseHp * Math.pow(1 + (legacyHarness ? CONFIG.waveHpGrowth : mode.waveHpGrowth), wave - 1);
+    // Old test harnesses retain their historic CONFIG curve; live modes share
+    // one authoritative multiplier so every enemy spawn follows the same curve.
+    this.maxHp = baseHp * (legacyHarness
+      ? Math.pow(1 + CONFIG.waveHpGrowth, wave - 1)
+      : getWaveHpMultiplier(runtimeMode, wave));
     this.hp = this.maxHp;
     this.dead = false;
     this.isBoss = this.boss === true;
@@ -2348,9 +2377,11 @@ class UIManager {
         })() : "";
     const strikeInfo = constellation?.definitionId === CONSTELLATION_IDS.STRIKE ? `<span>일격 스택: ${constellation.runtime.strikeStacks}</span>` : "";
     const horizonInfo = constellation?.definitionId === CONSTELLATION_IDS.HORIZON ? `<span>계승 대상: ${constellation.runtime.inheritedDefinitionId ? CONSTELLATION_DEFINITIONS[constellation.runtime.inheritedDefinitionId].name : "없음"}</span>` : "";
+    const constellationLevel = constellation ? (playerProgress.constellationCollection[constellation.definitionId]?.level || 1) : 1;
+    const recipe = constellation ? Object.entries(constellationStats.recipe).map(([type, count]) => `${STAR_TYPES[type.toUpperCase()].name} ×${count}`).join(" + ") : "";
     starInfo.innerHTML = constellation
-      ? `<strong>✦ ${constellationStats.name}</strong><div class="stats"><span>${pick.player + 1}P · 중심 별</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합: ${constellation.componentStageSum}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span>${linkInfo}${strikeInfo}${horizonInfo}<span>현재 공격력: ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellation.definitionId === CONSTELLATION_IDS.TWILIGHT && constellation.target?.hp <= constellation.target?.maxHp * .5 ? constellationStats.attackSpeed * 2 : constellationStats.attackSpeed}회/초</span><span>사정거리 ${constellation.effectiveRange()}</span>${bondInfo}${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/5</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : ""}${twilightInfo}</div><div class="trait">${constellationStats.specialDescriptions.join(" · ")}</div>`
-      : `<strong>✦ ${d.name} 별</strong><div class="stats"><span>${pick.player + 1}P · Stage ${s.tier}</span><span>Lv.${playerProgress.starCollection[s.type.toUpperCase()]?.level || 1}</span><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사거리 ${d.range}</span><span>타겟 방식 ${TARGET_LABELS[d.target]}</span><span class="normal-star-special">특수능력 · ${normalStarAbilityText(s.type, s.tier, permanentLevel, g.normalStarStageSums)}</span></div>`;
+      ? `<strong>✦ ${constellationStats.name} · Lv.${constellationLevel}</strong><section class="info-section"><b>조합</b><p>${recipe}</p></section><section class="info-section"><b>기본 능력치</b><div class="stats"><span>공격력 ${Math.round(constellation.currentDamage()).toLocaleString()}</span><span>공격속도 ${constellation.definitionId === CONSTELLATION_IDS.TWILIGHT && constellation.target?.hp <= constellation.target?.maxHp * .5 ? constellationStats.attackSpeed * 2 : constellationStats.attackSpeed}회/초</span><span>사거리 ${constellation.effectiveRange()}</span><span>연결 별 ${constellation.members.length}개</span><span>재료 단계 합: ${constellation.componentStageSum}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span>${linkInfo}${strikeInfo}${horizonInfo}${bondInfo}${constellation.definitionId === CONSTELLATION_IDS.DAWN ? `<span>직접 처치 진행 ${constellation.runtime.dawnKillProgress}/5</span>` : ""}${constellation.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>최대 연쇄 대상 ${constellation.componentStageSum}</span><span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : ""}${twilightInfo}</div></section>${constellationStats.specialDescriptions.map((description, index) => `<section class="info-section ability"><b>특수능력 ${index + 1}</b><p>${description}</p></section>`).join("")}`
+      : `<strong>✦ ${d.name} 별 · Stage ${s.tier} · Lv.${permanentLevel}</strong><section class="info-section"><b>기본 능력치</b><div class="stats"><span>공격력 ${damage}</span><span>${d.target === "burst" ? "특수 주기" : "공격속도"} ${rate}</span><span>사정거리 ${d.range}</span><span>타겟 방식 ${TARGET_LABELS[d.target]}</span></div></section><section class="info-section ability normal-star-special"><b>특수능력</b><p>${normalStarAbilityText(s.type, s.tier, permanentLevel, g.normalStarStageSums)}</p></section>`;
     ranges.innerHTML = "";
     let shownRange = constellation ? constellation.effectiveRange() : d.range,
       diameter = RangeSystem.radius(shownRange) * 2;
@@ -3288,13 +3319,14 @@ function bootstrapGame() {
       const unread = Number(!updateClaimed) + Number(!meteorClaimed);
       node.hidden = unread === 0; node.textContent = unread;
     });
-    const updateButton=getRequiredElement("claim-update-reward"); updateButton.disabled=updateClaimed; updateButton.textContent=updateClaimed?"✓ 수령 완료":"받기";
+    const updateButton=getRequiredElement("claim-update-reward"); updateButton.disabled=updateClaimed; updateButton.textContent=updateClaimed?"✓ 수령 완료":"보상 수령";
     const updateCard=getRequiredElement("update-mail-card"); updateCard.classList.toggle("claimed",updateClaimed); updateCard.querySelector("i")?.replaceChildren(updateClaimed?"✓":"NEW");
     const meteorCard=getRequiredElement("meteor-mail-card"); meteorCard.classList.toggle("claimed",meteorClaimed); meteorCard.querySelector("i")?.replaceChildren(meteorClaimed?"✓":"NEW");
     const meteorButton=getRequiredElement("claim-meteor-mail"); meteorButton.disabled=meteorClaimed; meteorButton.textContent=meteorClaimed?"✓ 수령 완료":"받기";
   };
   document.querySelectorAll?.("[data-open-mail]").forEach((button)=>button.onclick=()=>{refreshMail();setModalOpen(mailDialog,true);});
-  const claimUpdateReward = getRequiredElement("claim-update-reward"); claimUpdateReward.onclick=()=>{ if(playerProgress.claimedMail[UPDATE_REWARD_ID]) return; playerProgress.claimedMail[UPDATE_REWARD_ID]=true; playerProgress.starDust+=3000; savePlayerProgress(); refreshMail(); updateMetaCurrency(); };
+  let updateRewardClaiming = false;
+  const claimUpdateReward = getRequiredElement("claim-update-reward"); claimUpdateReward.onclick=()=>{ if(updateRewardClaiming || playerProgress.claimedMail[UPDATE_REWARD_ID]) return; updateRewardClaiming=true; claimUpdateReward.disabled=true; playerProgress.claimedMail[UPDATE_REWARD_ID]=true; playerProgress.starShards+=3000; savePlayerProgress(); refreshMail(); updateMetaCurrency(); updateRewardClaiming=false; };
   const claimMeteorReward = getRequiredElement("claim-meteor-mail"); claimMeteorReward.onclick=()=>{ if(playerProgress.claimedMail[METEOR_MAIL_REWARD_ID]) return; playerProgress.claimedMail[METEOR_MAIL_REWARD_ID]=true; playerProgress.meteorFragments+=30; savePlayerProgress(); refreshMail(); updateMetaCurrency(); };
   document.querySelectorAll?.("[data-open-rates]").forEach((button)=>button.onclick=()=>{ const stars=Object.values(STAR_TYPES), zodiacs=Object.values(CONSTELLATION_DEFINITIONS); getRequiredElement("rate-details").innerHTML=`<h3>일반 별 개별 확률</h3>${stars.map((x)=>`<div><span>${x.name}</span><b>${(GACHA_RULES.starChance/stars.length*100).toFixed(2)}%</b></div>`).join("")}<h3>별자리 개별 확률</h3>${zodiacs.map((x)=>`<div><span>${x.name}</span><b>${(GACHA_RULES.constellationChance/zodiacs.length*100).toFixed(2)}%</b></div>`).join("")}`; settingsDialog.querySelector("[data-star-rate-total]").textContent=`${GACHA_RULES.starChance*100}%`; settingsDialog.querySelector("[data-zodiac-rate-total]").textContent=`${GACHA_RULES.constellationChance*100}%`; showSettingsView("rates"); });
   settingsDialog.querySelectorAll("[data-settings-back]").forEach((button) => button.onclick=()=>showSettingsView("main"));
@@ -3312,7 +3344,7 @@ function bootstrapGame() {
   showMainMenu();
   if (specialGrantApplied) showToast("특별 지급\n별가루 +5,000\n운석조각 +20");
   const diagnostics = {
-    CONFIG, MODE_CONFIG, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, MapVoteController, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, normalStarSpecial, normalStarAbilityText, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
+    CONFIG, MODE_CONFIG, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, getNormalWaveHpMultiplier, getWaveHpMultiplier, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, MapVoteController, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, normalStarSpecial, normalStarAbilityText, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
     showMainMenu, showBattleMenu, showGacha, beginMapVote, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint, worldToScreen, screenToWorld, clampCameraY, getViewportWorldBounds,
