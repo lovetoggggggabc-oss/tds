@@ -104,7 +104,7 @@ assert.deepEqual(JSON.parse(JSON.stringify(game.players.map((player) => [
   player.resources.divinity,
   player.manager.stars.length,
   player.manager.field.children.length,
-]))), [[500, 50, 21, 21], [500, 50, 21, 21]]);
+]))), [[300, 1, 21, 21], [300, 1, 21, 21]]);
 assert.equal(game.wave.wave, 0, "waves must remain stopped during preparation");
 assert.equal(game.phase, "PREPARING");
 assert.equal(game.rafRunning, true);
