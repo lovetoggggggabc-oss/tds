@@ -7,8 +7,8 @@ const [html, css, js] = await Promise.all([
   readFile("game.js", "utf8"),
 ]);
 
-assert.match(html, /href="styles\.css\?v=43"/);
-assert.match(html, /<script src="game\.js\?v=43" defer><\/script>/);
+assert.match(html, /href="styles\.css\?v=44"/);
+assert.match(html, /<script src="game\.js\?v=44" defer><\/script>/);
 assert.equal((html.match(/data-act="summon"/g) || []).length, 0);
 assert.match(html, /data-player="0"/);
 assert.doesNotMatch(html, /data-player="1"/, "2P's direct controls must not be rendered");
@@ -21,7 +21,11 @@ assert.match(css, /\.codex-panel\s*\{[\s\S]*?display:\s*flex;[\s\S]*?overflow:\s
 assert.match(css, /\.codex-list\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto/);
 assert.match(css, /-webkit-overflow-scrolling:\s*touch/);
 assert.match(css, /\.codex-panel\s*\{[\s\S]*?height:\s*min\(90dvh,\s*900px\)/);
-assert.match(css, /#game-shell\s*\{[\s\S]*?max-width:\s*600px;[\s\S]*?margin:\s*0 auto/);
+assert.match(css, /--game-shell-width:\s*min\(100%,\s*600px,\s*56\.25dvh\)/,
+  "landscape screens must retain a shell-local 9:16 width");
+assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*var\(--game-shell-width\);[\s\S]*?max-width:\s*600px;[\s\S]*?margin:\s*0 auto/);
+assert.match(css, /\.utility-dialog\s*\{[^}]*width:var\(--game-shell-width\);[^}]*container-type:size/,
+  "utility modals must use the same size container as the visible game shell");
 assert.match(css, /\.codex-preview-wrap\s*\{[\s\S]*?height:\s*180px/);
 assert.match(js, /preserveAspectRatio="xMidYMid meet"/);
 assert.match(css, /body\.codex-open\s*\{[\s\S]*?overflow:\s*hidden/);
@@ -201,9 +205,11 @@ for (const [name, damage] of [["코어 드론", 500], ["운석 괴물", 1000]])
 assert.match(css, /\.star-node\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?aspect-ratio:\s*1\s*\/\s*1/);
 assert.match(js, /function bindPointerTap/);
 assert.match(html, /<main class="app battle-screen" id="game-shell" hidden>/);
-assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*600px\);[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
-assert.match(html, /styles\.css\?v=43/, "the deployed stylesheet URL must change when its layout changes");
-assert.match(html, /game\.js\?v=43/, "the deployed script URL must not reuse the pre-layout cache entry");
+assert.match(css, /#game-shell\s*\{[\s\S]*?width:\s*var\(--game-shell-width\);[\s\S]*?max-width:\s*600px;[\s\S]*?height:\s*100dvh/);
+assert.match(html, /styles\.css\?v=44/, "the deployed stylesheet URL must change when its layout changes");
+assert.match(html, /game\.js\?v=44/, "the deployed script URL must not reuse the pre-layout cache entry");
+assert.match(js, /const actionEdgeInset = 66;[\s\S]*?arenaRect\.height - actionEdgeInset/,
+  "context actions reserve a complete touch target above and below edge stars");
 assert.match(css, /\.star-info\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?z-index:\s*160/);
 
 const isBoss = (n) =>
