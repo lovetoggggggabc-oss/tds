@@ -43,7 +43,7 @@ assert.doesNotMatch(css, /\.battle-countdown|\.battle-transition/,
 assert.match(css, /\.wave\s*\{[\s\S]*?pointer-events:\s*none/,
   "the HUD preparation timer must never intercept field input");
 assert.match(js, /const PREPARATION_SECONDS = 15/);
-assert.match(js, /Math\.floor\(reachedWave \/ 20\)/);
+assert.match(js, /Math\.floor\(reachedWave \/ 5\)/);
 assert.match(js, /meteorFragments: Math\.max\(0,/);
 assert.match(css, /\.dawn-moon\s*\{[\s\S]*?pointer-events:\s*none/);
 assert.match(css, /\.dawn-special\s*\{[\s\S]*?pointer-events:\s*none/);

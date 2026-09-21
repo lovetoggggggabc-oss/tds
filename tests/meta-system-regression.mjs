@@ -36,7 +36,7 @@ assert.equal(playerProgress.ownedStars.YELLOW, 2, "legacy SKY inventory migrates
 assert.equal(playerProgress.ownedStars.BLUE, 3);
 assert.equal(playerProgress.meteorFragments, 97, "migration preserves unrelated currency");
 assert.equal(playerProgress.starDust, 7500, "all existing players receive the one-time 5,000 star-dust grant");
-assert.equal(playerProgress.schemaVersion, 3, "the grant is versioned so it cannot repeat on reload");
+assert.equal(playerProgress.schemaVersion, 4, "the grant is versioned so it cannot repeat on reload");
 assert.deepEqual(JSON.parse(JSON.stringify(CONSTELLATION_DEFINITIONS.SAGITTARIUS.recipe)), { yellow: 2, blue: 2 });
 assert.deepEqual(JSON.parse(JSON.stringify(CONSTELLATION_DEFINITIONS.TWILIGHT.recipe)), { red: 2, white: 1, blue: 1 });
 

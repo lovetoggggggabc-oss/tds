@@ -28,5 +28,5 @@ assert.equal(effectiveMaxStars(), 22);
 assert.match(file, /dawnKillProgress < 5/);
 assert.doesNotMatch(file, /dawnKillProgress < 3/);
 assert.match(file, /Math\.floor\(reachedWave \* 4 \* rewardMultiplier\)/);
-assert.match(file, /Math\.floor\(Math\.floor\(reachedWave \/ 20\) \* rewardMultiplier\)/);
+assert.match(file, /Math\.floor\(reachedWave \/ 5\)/);
 console.log("Relic regression passed: registry, migration, equal-pool draws, duplicate handling, costs, cap bonus, Dawn threshold, and reward flooring verified.");

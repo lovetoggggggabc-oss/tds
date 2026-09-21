@@ -69,6 +69,7 @@
     <section class="lobby-screen collection-screen" id="collection-screen" hidden aria-labelledby="collection-title">
       <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
       <header class="subscreen-header"><button type="button" data-main-home aria-label="메인 메뉴로 돌아가기">←</button><div><small>CELESTIAL COLLECTION</small><h1 id="collection-title">별 &amp; 별자리</h1></div></header>
+      <div class="galaxy-wallet"><i>✧</i> 은하파편 <b data-galaxy-fragments>0</b></div>
       <div class="collection-tabs" role="tablist" aria-label="수집 종류"><button type="button" role="tab" aria-selected="true" data-collection-tab="stars">별</button><button type="button" role="tab" aria-selected="false" data-collection-tab="constellations">별자리</button></div>
       <div class="collection-scroll">
         <div id="star-collection" class="collection-grid" data-collection-panel="stars"></div>
@@ -194,11 +195,12 @@
             />
           </svg>
         </div>
-        <div class="overlay" id="gameover" hidden>
+        <div class="overlay battle-result-overlay" id="gameover" hidden>
+          <div class="result-sigil" aria-hidden="true">✦</div>
           <div class="card">
             <small>BATTLE RESULT</small><h1>전투 종료</h1>
             <p>도달 웨이브 <b id="finalWave">0</b></p>
-            <div class="result-rewards"><small>획득 보상</small><p>✦ 별가루 <b>+<span id="dustReward">0</span></b></p><p>◆ 별조각 <b>+<span id="shardReward">0</span></b></p><p class="meteor-result">☄ 운석조각 <b>+<span id="meteorFragmentReward">0</span></b></p></div>
+            <div class="result-rewards"><small>획득 보상</small><p>✦ 별가루 <b>+<span id="dustReward">0</span></b></p><p>◆ 별조각 <b>+<span id="shardReward">0</span></b></p><p class="meteor-result">☄ 운석조각 <b>+<span id="meteorFragmentReward">0</span></b></p><p class="galaxy-result" id="galaxyRewardRow">✧ 은하파편 <b>+<span id="galaxyFragmentReward">0</span></b></p></div>
             <button id="restart">메인으로</button>
           </div>
         </div>
