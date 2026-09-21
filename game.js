@@ -39,7 +39,7 @@ const EXPERIMENTAL_WORLD_HEIGHT = 2.8;
 const EXPERIMENTAL_INITIAL_CAMERA = "destination";
 let activeGameMode = GAME_MODES.NORMAL;
 
-const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", MAP_RANDOM: "MAP_RANDOM", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS", NEWS: "NEWS" });
+const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", MAP_RANDOM: "MAP_RANDOM", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS", MONSTER_CODEX: "MONSTER_CODEX", NEWS: "NEWS" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
 const PROGRESS_SCHEMA_VERSION = 7;
 const UPDATE_REWARD_ID = "balance_update_stardust_3000_v1";
@@ -670,6 +670,12 @@ const CONFIG = {
   whiteBurstInterval: 0.16,
   whiteBurstRest: 2,
   monsters: {
+    darkSlime: { name: "암흑 슬라임", hp: 800, speed: 4.5, reward: 5, role: "기본형", abilityName: "없음", abilityText: "특수 능력이 없습니다.", description: "어둠으로 이루어진 가장 기본적인 몬스터. 작고 단순하지만, 끊임없이 몰려온다." },
+    shadowRunner: { name: "그림자 러너", hp: 450, speed: 7, reward: 7, role: "저체력 / 고속", abilityName: "질주", abilityText: "별도의 가속 없이 기본 이동속도 7로 빠르게 전진합니다.", description: "빛을 피하는 그림자. 빠른 속도로 별들을 향해 달려온다." },
+    voidGolem: { name: "공허 골렘", hp: 2000, speed: 2.2, reward: 12, role: "피해감소 탱커", damageTakenMultiplier: .8, abilityName: "암흑화", abilityText: "받는 모든 피해가 20% 감소합니다.", description: "무너진 별의 조각으로 만들어진 골렘. 묵직한 몸으로 별빛을 짓밟는다." },
+    abyssEye: { name: "심연의 눈", hp: 1000, speed: 3, reward: 15, role: "원거리 방해", abilityName: "암흑탄", abilityText: "10초 후 가장 가까운 일반 별에 암흑탄을 발사하고, 이후 5초마다 공격속도를 1초간 2 감소시킵니다.", description: "공허 속에서 떠도는 거대한 눈. 모든 별빛을 노려본다." },
+    voidGuide: { name: "공허의 인도자", hp: 20000, speed: 2.5, reward: 45, boss: true, role: "특수 보스", abilityName: "행진 준비 · 암흑 행진", abilityText: "러너 2기와 골렘 1기를 앞세웁니다. 2초 후부터 8초마다 거리 3 안의 몬스터 이동속도를 3초간 1.8 증가시킵니다.", description: "다가오는 어둠을 인도하는 존재. 그가 나타나면, 모든 몬스터가 더 빠르게 움직인다." },
+    voidPriest: { name: "공허의 사제", hp: 25000, speed: 2.7, reward: 55, boss: true, role: "치유 보스", abilityName: "의식 준비 · 재생의 의식", abilityText: "슬라임 2기와 골렘 1기를 앞세웁니다. 2초 후부터 6초마다 모든 살아 있는 몬스터의 최대 체력 5%를 회복합니다.", description: "공허의 힘으로 동료들을 치유하는 사제. 그가 있는 한, 어둠은 쉽게 무너지지 않는다." },
     slime: { name: "어둠 슬라임", hp: 500, speed: 4.6, reward: 5, baseDamage: 100, allyCombatDamage: 35 },
     bug: { name: "암흑 벌레", hp: 800, speed: 7, reward: 7, baseDamage: 150, allyCombatDamage: 55 },
     drone: {
@@ -699,6 +705,18 @@ const CONFIG = {
   stars: Object.freeze(Object.fromEntries(Object.values(STAR_TYPES).map(({ id: _id, key, ...definition }) => [key, Object.freeze(definition)]))),
 };
 const VERTICAL_BETA = "experimental_vertical";
+const EARLY_WAVE_COMPOSITIONS = Object.freeze([
+  null,
+  { darkSlime: 8 }, { darkSlime: 10 }, { darkSlime: 10, shadowRunner: 2 },
+  { darkSlime: 8, shadowRunner: 3, voidGolem: 1 }, { darkSlime: 6, shadowRunner: 6, voidGolem: 1 },
+  { shadowRunner: 12 }, { voidGolem: 4, shadowRunner: 4 }, { voidGolem: 8 },
+  { darkSlime: 4, voidGolem: 2, shadowRunner: 2, abyssEye: 1 }, { voidGuide: 1 },
+  { darkSlime: 8 }, { darkSlime: 10 }, { darkSlime: 10, shadowRunner: 2 },
+  { darkSlime: 8, shadowRunner: 3, voidGolem: 1 }, { darkSlime: 6, shadowRunner: 6, voidGolem: 1 },
+  { shadowRunner: 12 }, { voidGolem: 4, shadowRunner: 4 }, { voidGolem: 8 },
+  { darkSlime: 4, voidGolem: 2, shadowRunner: 2, abyssEye: 1 }, { voidPriest: 1 },
+].map((entry) => entry && Object.freeze(entry)));
+const MONSTER_CODEX_IDS = Object.freeze(["darkSlime", "shadowRunner", "voidGolem", "abyssEye", "voidGuide", "voidPriest"]);
 const MODE_CONFIG = Object.freeze({
   normal: Object.freeze({ baseEnemyHp: 250, enemyCountMultiplier: 1, startingStarlight: 300, startingDivinity: 1 }),
   experimental_vertical: Object.freeze({ baseEnemyHp: 300, waveHpGrowth: .04, enemyCountMultiplier: 2, startingStarlight: 1500, startingDivinity: 30 }),
@@ -809,19 +827,19 @@ class Enemy {
     this.pathProgress = 0;
     this.distanceTravelled = 0;
     const runtimeMode = game?.mode || (typeof activeGameMode === "string" ? activeGameMode : "normal");
-    const mode = MODE_CONFIG[runtimeMode] || MODE_CONFIG.normal;
     const legacyHarness = !game?.mode;
-    const baseHp = this.boss || legacyHarness ? this.hp : mode.baseEnemyHp * (this.hp / CONFIG.monsters.slime.hp);
-    // Old test harnesses retain their historic CONFIG curve; live modes share
-    // one authoritative multiplier so every enemy spawn follows the same curve.
-    this.maxHp = baseHp * (legacyHarness
-      ? Math.pow(1 + CONFIG.waveHpGrowth, wave - 1)
-      : getWaveHpMultiplier(runtimeMode, wave));
+    // Every new monster's listed base HP is authoritative; current-wave
+    // scaling is still applied, including when waves 11–19 repeat layouts.
+    this.maxHp = this.hp * (legacyHarness ? Math.pow(1 + CONFIG.waveHpGrowth, wave - 1) : getWaveHpMultiplier(runtimeMode, wave));
     this.hp = this.maxHp;
     this.dead = false;
     this.judgementTarget = judgementTarget;
     this.isBoss = this.boss === true;
     this.spawnTime = game?.gameTime || 0;
+    this.nextAbilityAt = this.type === "abyssEye" ? this.spawnTime + 10
+      : (this.type === "voidGuide" || this.type === "voidPriest") ? this.spawnTime + 2 : Infinity;
+    this.marchBuffs = new Map();
+    this.healFlashUntil = 0;
     this.abilityTriggered = false;
     this.speedBoostUntil = 0;
     this.bossRewardClaimed = false;
@@ -874,6 +892,9 @@ class Enemy {
     this.el.classList.toggle("slowed", status.slowUntil > game.gameTime);
     this.el.classList.toggle("lit", status.lightUntil > game.gameTime);
     this.el.classList.toggle("burning", status.burnUntil > game.gameTime);
+    this.el.classList.toggle("ritual-healed", this.healFlashUntil > game.gameTime);
+    this.updateAbility();
+    if (this.dead) return;
     if (this.bossAbility && !this.abilityTriggered && game.gameTime - this.spawnTime >= (this.abilityDelay || 0)) {
       this.abilityTriggered = true;
       if (this.bossAbility === "summonSlimes") {
@@ -900,7 +921,9 @@ class Enemy {
     this.engagedAlly = null;
     const routeLength = typeof activeRouteCache === "object" && activeRouteCache ? activeRouteCache.length : 100;
     const slowMultiplier = status.slowUntil > game.gameTime ? 1 - status.slowPercent / 100 : 1;
-    this.distanceTravelled += this.speed * slowMultiplier * routeLength / 100 * (this.speedBoostUntil > game.gameTime ? this.speedMultiplier : 1) * dt;
+    for (const [source, until] of this.marchBuffs) if (until <= game.gameTime) this.marchBuffs.delete(source);
+    const marchBonus = this.marchBuffs.size ? 1.8 : 0;
+    this.distanceTravelled += (this.speed + marchBonus) * slowMultiplier * routeLength / 100 * (this.speedBoostUntil > game.gameTime ? this.speedMultiplier : 1) * dt;
     // Legacy percentage equivalent: this.pathProgress = Math.min(1, this.progress / 100);
     this.pathProgress = Math.min(1, this.distanceTravelled / routeLength);
     this.progress = this.pathProgress * 100;
@@ -917,7 +940,7 @@ class Enemy {
   hit(n, from, sourceConstellation = null, isStatusDamage = false) {
     if (this.dead || n <= 0) return false;
     const lightMultiplier = this.statusEffects.lightUntil > game.gameTime ? 1 + this.statusEffects.lightPercent / 100 : 1;
-    this.hp -= n * lightMultiplier;
+    this.hp -= n * lightMultiplier * (this.damageTakenMultiplier || 1);
     if (!isStatusDamage) UIManager.beam(from, this.position());
     if (this.hp <= 0 && !this.dead) {
       this.dead = true;
@@ -925,6 +948,34 @@ class Enemy {
       game.kill(this, sourceConstellation);
     } else this.updateHealthBar();
     return true;
+  }
+  updateAbility() {
+    if (this.dead || game.gameTime < this.nextAbilityAt) return;
+    if (this.type === "abyssEye") {
+      const stars = game.players.flatMap((player) => player.manager.stars.filter((star) => star && !star.support && !star.constellation).map((star) => ({ star, position: player.manager.pos(player.manager.stars.indexOf(star)) })));
+      let target = null, closest = Infinity;
+      stars.forEach((candidate) => { const distance = RangeSystem.distance(this.position(), candidate.position); if (distance < closest) { closest = distance; target = candidate; } });
+      if (target) {
+        target.star.darkShotUntil = Math.max(target.star.darkShotUntil || 0, game.gameTime + 1);
+        UIManager.darkShot(this.position(), target.position);
+      }
+      this.nextAbilityAt += 5;
+    } else if (this.type === "voidGuide") {
+      game.enemies.forEach((enemy) => {
+        if (!enemy.dead && RangeSystem.contains(this.position(), enemy.position(), 3)) enemy.marchBuffs.set(this, game.gameTime + 3);
+      });
+      this.el.classList.remove("ability-pulse"); void this.el.offsetWidth; this.el.classList.add("ability-pulse");
+      this.nextAbilityAt += 8;
+    } else if (this.type === "voidPriest") {
+      game.enemies.forEach((enemy) => {
+        if (enemy.dead) return;
+        enemy.hp = Math.min(enemy.maxHp, enemy.hp + enemy.maxHp * .05);
+        enemy.healFlashUntil = game.gameTime + .45;
+        enemy.updateHealthBar();
+      });
+      this.el.classList.remove("ability-pulse"); void this.el.offsetWidth; this.el.classList.add("ability-pulse");
+      this.nextAbilityAt += 6;
+    }
   }
   applySlow(percent, duration = 1) {
     this.statusEffects.slowPercent = percent;
@@ -1034,10 +1085,23 @@ class EnemySpawner {
     this.queue = [];
   }
   wave(n) {
-    let boss = WaveManager.isBoss(n, this.game.mode);
-    if (boss) {
-      let type = bossTypeForWave(n);
-      this.queue.push({ at: 0, type, lane: 0, judgementTarget: true });
+    const early = EARLY_WAVE_COMPOSITIONS[n];
+    if (early) {
+      const bossType = early.voidGuide ? "voidGuide" : early.voidPriest ? "voidPriest" : null;
+      if (bossType) {
+        const preparation = bossType === "voidGuide" ? ["shadowRunner", "shadowRunner", "voidGolem"] : ["darkSlime", "darkSlime", "voidGolem"];
+        preparation.forEach((type, index) => this.queue.push({ at: index * .12, type, lane: 0, bossPreparation: true }));
+        this.queue.push({ at: .74, type: bossType, lane: 0, judgementTarget: true });
+        return;
+      }
+      const multiplier = MODE_CONFIG[this.game.mode]?.enemyCountMultiplier || 1;
+      const remaining = Object.fromEntries(Object.entries(early).map(([type, count]) => [type, count * multiplier]));
+      const order = [];
+      while (Object.values(remaining).some(Boolean)) Object.keys(remaining).forEach((type) => { if (remaining[type] > 0) { order.push(type); remaining[type]--; } });
+      const judgementIndex = Math.floor(Math.random() * order.length);
+      order.forEach((type, index) => this.queue.push({ at: index * .7, type, lane: 0, judgementTarget: index === judgementIndex }));
+    } else if (WaveManager.isBoss(n, this.game.mode)) {
+      this.queue.push({ at: 0, type: bossTypeForWave(n), lane: 0, judgementTarget: true });
     } else {
       const normalCount = Math.min(4 + Math.floor(n * 1.2), 25);
       let count = normalCount * (MODE_CONFIG[this.game.mode]?.enemyCountMultiplier || 1);
@@ -1060,6 +1124,8 @@ class EnemySpawner {
   }
 }
 function bossTypeForWave(n) {
+  // Legacy 21+ boss rotation remains intact; early-wave spawning is handled
+  // authoritatively by EARLY_WAVE_COMPOSITIONS before this fallback is used.
   const landmark = ({ 10: "kingSlime", 20: "timeRunner", 30: "meteor", 40: "galaxySlayer" })[n];
   if (landmark) return landmark;
   return ["kingSlime", "timeRunner", "meteor", "galaxySlayer"][Math.floor(n / 5 - 2) % 4] || "drone";
@@ -1071,7 +1137,10 @@ class WaveManager {
     this.left = 0;
   }
   static isBoss(n, mode = game?.mode || activeGameMode) {
-    if (mode === VERTICAL_BETA) return n === 10 || (n >= 15 && n % 5 === 0);
+    // Previous vertical schedule: n === 10 || (n >= 15 && n % 5 === 0).
+    // Waves 1–20 now deliberately defer to the shared authoritative schedule.
+    if (n <= 20) return n === 10 || n === 20;
+    if (mode === VERTICAL_BETA) return n >= 25 && n % 5 === 0;
     return (
       (n <= 40 && n % 10 === 0) ||
       (n >= 45 && n <= 60 && n % 5 === 0) ||
@@ -1094,6 +1163,10 @@ class WaveManager {
 
 function nextWaveSummary(currentWave, mode = game?.mode || activeGameMode) {
   const n = currentWave + 1;
+  if (EARLY_WAVE_COMPOSITIONS[n]) {
+    const multiplier = MODE_CONFIG[mode]?.enemyCountMultiplier || 1;
+    return Object.entries(EARLY_WAVE_COMPOSITIONS[n]).map(([type, count]) => ({ type, count: CONFIG.monsters[type].boss ? count : count * multiplier }));
+  }
   if (WaveManager.isBoss(n, mode))
     return [{ type: bossTypeForWave(n), count: 1 }];
   const count = Math.min(4 + Math.floor(n * 1.2), 25) * (MODE_CONFIG[mode]?.enemyCountMultiplier || 1);
@@ -1112,6 +1185,7 @@ class Star {
     this.support = false;
     this.x = x;
     this.y = y;
+    this.darkShotUntil = 0;
   }
   data() {
     return CONFIG.stars[this.type];
@@ -1804,10 +1878,12 @@ class StarManager {
       const permanentLevel = playerProgress.starCollection[s.type.toUpperCase()]?.level || 1;
       const purpleBonus = s.type === "purple" ? (game?.purpleStageSum || 0) / 10 : 0;
       const levelSpeedMultiplier = (s.data().rate + starLevelAttackSpeedBonus(permanentLevel) + purpleBonus) / s.data().rate;
-      const attackSpeedModifier = this.alliedAttackSpeedModifier() * relicMultiplier("SONG_OF_STARS") * levelSpeedMultiplier;
+      const baseModifier = this.alliedAttackSpeedModifier() * relicMultiplier("SONG_OF_STARS") * levelSpeedMultiplier;
+      const unmodifiedRate = s.data().rate * baseModifier;
+      const effectiveRate = Math.max(.1, unmodifiedRate - (s.darkShotUntil > game.gameTime ? 2 : 0));
+      const attackSpeedModifier = effectiveRate / s.data().rate;
       const previousModifier = s.attackSpeedModifier || 1;
-      if (previousModifier !== attackSpeedModifier && s.cooldown > 0)
-        s.cooldown *= previousModifier / attackSpeedModifier;
+      if (previousModifier !== attackSpeedModifier && s.cooldown > 0) s.cooldown *= previousModifier / attackSpeedModifier;
       s.attackSpeedModifier = attackSpeedModifier;
       s.cooldown -= dt;
       if (s.cooldown > 0) return;
@@ -2213,6 +2289,15 @@ class UIManager {
       line.setAttribute(key, [a.x, a.y, b.x, b.y][index]),
     );
     this.addTransient(line, effects, 230);
+  }
+  static darkShot(a, b) {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("class", "dark-shot");
+    [["x1", a.x], ["y1", a.y], ["x2", b.x], ["y2", b.y]].forEach(([key, value]) => line.setAttribute(key, value));
+    this.addTransient(line, effects, 280, 120);
+    const impact = document.createElement("i");
+    impact.className = "dark-shot-impact"; impact.style.left = `${b.x}%`; impact.style.top = `${b.y}%`;
+    this.addTransient(impact, battleWorld || arena, 1000, 120);
   }
   static chainPath(points) {
     if (!points || points.length < 2) return;
@@ -3098,6 +3183,7 @@ function bootstrapGame() {
   const gachaScreen = getRequiredElement("gacha-screen");
   const collectionScreen = getRequiredElement("collection-screen");
   const relicScreen = getRequiredElement("relic-screen");
+  const monsterCodexScreen = getRequiredElement("monster-codex-screen");
   const mapRandomScreen = getRequiredElement("map-random");
   const gameShell = getRequiredElement("game-shell");
   const exitDialog = getRequiredElement("exit-dialog");
@@ -3112,6 +3198,7 @@ function bootstrapGame() {
     gachaScreen.hidden = screen !== SCREEN_STATES.GACHA;
     collectionScreen.hidden = screen !== SCREEN_STATES.COLLECTION;
     relicScreen.hidden = screen !== SCREEN_STATES.RELICS;
+    monsterCodexScreen.hidden = screen !== SCREEN_STATES.MONSTER_CODEX;
     mapRandomScreen.hidden = screen !== SCREEN_STATES.MAP_RANDOM;
     exitDialog.hidden = true;
   };
@@ -3211,6 +3298,16 @@ function bootstrapGame() {
   const showGacha = () => { updateMetaCurrency(); showScreen(SCREEN_STATES.GACHA); };
   const showCollection = () => { renderCollection(); showScreen(SCREEN_STATES.COLLECTION); };
   const showRelics = () => { renderRelics(); showScreen(SCREEN_STATES.RELICS); };
+  const renderMonsterCodex = (selectedId = MONSTER_CODEX_IDS[0]) => {
+    const list = getRequiredElement("monster-codex-list");
+    const detail = getRequiredElement("monster-codex-detail");
+    list.innerHTML = MONSTER_CODEX_IDS.map((id) => { const monster = CONFIG.monsters[id]; return `<button type="button" class="monster-card ${id}${id === selectedId ? " selected" : ""}" data-monster-id="${id}"><span class="monster-portrait"><i></i></span><span><small>${monster.boss ? "BOSS / SPECIAL" : monster.role}</small><b>${monster.name}</b><em>HP ${monster.hp.toLocaleString("ko-KR")} · SPD ${monster.speed}</em></span></button>`; }).join("");
+    const monster = CONFIG.monsters[selectedId];
+    detail.className = `monster-codex-detail ${selectedId}`;
+    detail.innerHTML = `<div class="monster-detail-portrait"><i></i></div><small>${monster.boss ? "BOSS / SPECIAL" : monster.role}</small><h2>${monster.name}</h2><dl><div><dt>기본 체력</dt><dd>${monster.hp.toLocaleString("ko-KR")}</dd></div><div><dt>이동속도</dt><dd>${monster.speed}</dd></div><div><dt>역할 / 등급</dt><dd>${monster.role}</dd></div></dl><section><b>능력 · ${monster.abilityName}</b><p>${monster.abilityText}</p></section><section><b>설명</b><p>${monster.description}</p></section>`;
+    list.querySelectorAll("[data-monster-id]").forEach((button) => button.onclick = () => renderMonsterCodex(button.dataset.monsterId));
+  };
+  const showMonsterCodex = () => { renderMonsterCodex(); showScreen(SCREEN_STATES.MONSTER_CODEX); };
   const startBattle = (mode = GAME_MODES.NORMAL) => {
     if (![SCREEN_STATES.MAP_RANDOM, SCREEN_STATES.BATTLE_MENU].includes(currentScreen)) return false;
     activeGameMode = mode;
@@ -3300,6 +3397,7 @@ function bootstrapGame() {
   document.querySelectorAll?.("[data-open-gacha]").forEach((button) => { button.onclick = navigateOnce(showGacha); });
   document.querySelectorAll?.("[data-open-collection]").forEach((button) => { button.onclick = navigateOnce(showCollection); });
   document.querySelectorAll?.("[data-open-relics]").forEach((button) => { button.onclick = navigateOnce(showRelics); });
+  document.querySelectorAll?.("[data-open-monster-codex]").forEach((button) => { button.onclick = navigateOnce(showMonsterCodex); });
   document.querySelectorAll?.("[data-main-home]").forEach((button) => { button.onclick = navigateOnce(showMainMenu); });
   getRequiredElement("battle-back").onclick = navigateOnce(showMainMenu);
   // A delayed mobile synthetic click can be retargeted after the bottom-nav
@@ -3436,11 +3534,11 @@ function bootstrapGame() {
   showMainMenu();
   if (specialGrantApplied) showToast("특별 지급\n별가루 +5,000\n운석조각 +20");
   const diagnostics = {
-    CONFIG, MODE_CONFIG, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, getNormalWaveHpMultiplier, getWaveHpMultiplier, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, RandomMapSelector, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, normalStarSpecial, normalStarAbilityText, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
+    CONFIG, MODE_CONFIG, EARLY_WAVE_COMPOSITIONS, MONSTER_CODEX_IDS, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, getNormalWaveHpMultiplier, getWaveHpMultiplier, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, RandomMapSelector, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, normalStarSpecial, normalStarAbilityText, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
-    showMainMenu, showBattleMenu, showGacha, beginMapRandom, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint, worldToScreen, screenToWorld, clampCameraY, getViewportWorldBounds,
-    classes: { Enemy, GuardianUnit, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
+    showMainMenu, showBattleMenu, showGacha, showMonsterCodex, beginMapRandom, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint, worldToScreen, screenToWorld, clampCameraY, getViewportWorldBounds,
+    classes: { Enemy, EnemySpawner, GuardianUnit, WaveManager, Star, Targeting, RangeSystem, SpatialGrid, Constellation },
     performance: () => ({
       activeEnemies: game?.enemies.length || 0,
       activeEffects: UIManager.activeEffects || 0,
