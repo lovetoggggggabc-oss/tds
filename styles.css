@@ -1709,3 +1709,14 @@ body.summon-input-locked>section:not(.draw-result-dialog),body.summon-input-lock
 .relic-result{border-color:#a977df;background:linear-gradient(145deg,#35205a,#0e1633);box-shadow:inset 0 0 18px #8651ba55}.relic-result i{color:#dcbfff}.relic-result small{color:#c4cae4;font-size:8px;line-height:1.35}.relic-result em{position:absolute;right:7px;top:6px;color:#8eeaff;font-size:9px}
 @keyframes summonRingTurn{to{transform:rotate(360deg)}}@keyframes summonInstrumentPulse{50%{opacity:1;scale:1.08}}@keyframes relicShardGather{0%{opacity:0;transform:translate(0,0) rotate(0)}65%{opacity:1}100%{opacity:0;transform:translate(calc((50px - 100%) * .55),calc((50px - 100%) * .55)) rotate(120deg)}}@keyframes relicGlyphWake{from{opacity:0;transform:scale(.4) rotate(-45deg)}to{opacity:1;transform:scale(1) rotate(35deg)}}
 @media (prefers-reduced-motion:reduce){.summon-rings,.relic-shard,.relic-glyph-ring,.relic-rift,.constellation-dawn:after{animation-duration:.01ms!important;animation-delay:0s!important}}
+
+/* Permanent star progression */
+.shard-gem{color:#8fffc7;text-shadow:0 0 5px #fff,0 0 14px #42df9c}
+.star-collection-card{min-height:300px;display:flex;flex-direction:column;align-items:center;gap:5px}
+.star-collection-card.locked{filter:none;opacity:1}
+.star-collection-card .permanent-level{color:#fff1a8;font-size:16px}
+.star-upgrade-details{display:grid;gap:3px;width:100%;padding:7px;border-radius:10px;background:#080b2866;font-size:11px;text-align:left}
+.star-upgrade-details span{display:flex;justify-content:space-between}.star-upgrade-details small{min-height:28px;color:#aeb8dc;text-align:center}
+.star-collection-card [data-upgrade-star]{width:100%;margin-top:auto;padding:8px;border:1px solid #f4dd7d88;border-radius:10px;color:#161333;background:linear-gradient(#fff4a7,#d7a94e);font-weight:900}
+.star-collection-card [data-upgrade-star]:disabled{border-color:#78809c55;color:#7d849e;background:#262b45}
+.game-toast{white-space:pre-line;text-align:center}

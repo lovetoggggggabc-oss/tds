@@ -9,13 +9,14 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=41" />
+    <link rel="stylesheet" href="styles.css?v=42" />
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
       <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="permanent-wallet" aria-label="보유 영구 재화">
-        <span><i class="fragment-gem">✦</i><small>별조각</small><b data-star-fragments>0</b></span>
+        <span><i class="fragment-gem">✦</i><small>별가루</small><b data-star-dust>0</b></span>
+        <span><i class="shard-gem">◆</i><small>별조각</small><b data-star-shards>0</b></span>
         <span><i class="meteor-gem">☄</i><small>운석조각</small><b data-meteor-fragments>0</b></span>
       </div>
       <header class="lobby-title">
@@ -42,9 +43,9 @@
       </div>
       <article class="summon-card constellation-board" data-gacha-board="constellation">
         <div class="summon-orbit" aria-hidden="true"><i>✦</i></div>
-        <h2>별자리 뽑기</h2><p>별조각으로 새로운 별과<br />별자리를 만날 준비를 하세요.</p>
+        <h2>별자리 뽑기</h2><p>별가루로 새로운 별과<br />별자리를 만날 준비를 하세요.</p>
         <div class="gacha-rates"><span>별자리 등장 확률 <b>10%</b></span><span>별자리 확정 <b data-constellation-pity>0 / 20</b></span></div>
-        <div class="summon-balance"><small>현재 별조각</small><strong><span class="fragment-gem">✦</span> <span data-star-fragments>0</span></strong></div>
+        <div class="summon-balance"><small>현재 별가루</small><strong><span class="fragment-gem">✦</span> <span data-star-dust>0</span></strong></div>
         <div class="draw-actions"><button type="button" data-draw="constellation" data-cost="100"><b>1회 뽑기</b><small>✦ 100</small></button><button type="button" data-draw="constellation" data-cost="1000"><b>10회 뽑기</b><small>✦ 1000</small></button></div>
       </article>
       <article class="summon-card relic-board" data-gacha-board="relic" hidden>
@@ -197,7 +198,7 @@
           <div class="card">
             <small>BATTLE RESULT</small><h1>전투 종료</h1>
             <p>도달 웨이브 <b id="finalWave">0</b></p>
-            <div class="result-rewards"><small>획득 보상</small><p>✦ 별조각 <b>+<span id="fragmentReward">0</span></b></p><p class="meteor-result">☄ 운석조각 <b>+<span id="meteorFragmentReward">0</span></b></p></div>
+            <div class="result-rewards"><small>획득 보상</small><p>✦ 별가루 <b>+<span id="dustReward">0</span></b></p><p>◆ 별조각 <b>+<span id="shardReward">0</span></b></p><p class="meteor-result">☄ 운석조각 <b>+<span id="meteorFragmentReward">0</span></b></p></div>
             <button id="restart">메인으로</button>
           </div>
         </div>
@@ -236,6 +237,6 @@
     <section class="confirm-dialog" id="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" hidden>
       <div><small>LEAVE BATTLE</small><h2 id="exit-dialog-title">전투 종료</h2><p>전투를 종료하고 메인 메뉴로 돌아가시겠습니까?</p><footer><button type="button" id="exit-cancel">취소</button><button type="button" class="danger" id="exit-confirm">나가기</button></footer></div>
     </section>
-    <script src="game.js?v=41" defer></script>
+    <script src="game.js?v=42" defer></script>
   </body>
 </html>

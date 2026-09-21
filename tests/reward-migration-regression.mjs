@@ -12,13 +12,17 @@ function load(saved) {
   return { value: JSON.parse(JSON.stringify(context.value)), saved: JSON.parse(storage.get("zodiacDefenseProgress")) };
 }
 for (const startingBalance of [500, 5000]) {
-  const first = load({ starFragments: startingBalance, starFragmentGrantVersion: 0 });
-  assert.equal(first.value.starFragments, startingBalance + 2000, `first load grants 2,000 to ${startingBalance}`);
-  assert.equal(first.saved.starFragmentGrantVersion, 2);
+  const first = load({ starFragments: startingBalance, meteorFragments: 3, ownedStars: { RED: 4 } });
+  assert.equal(first.value.starDust, startingBalance + 5000, "legacy summon currency migrates to dust plus grant");
+  assert.equal(first.value.starShards, 0, "legacy summon currency never becomes level-up shards");
+  assert.equal(first.value.meteorFragments, 23);
+  assert.deepEqual(first.value.starCollection.RED, { count: 4, level: 1 });
   const reload = load(first.saved);
-  assert.equal(reload.value.starFragments, startingBalance + 2000, "reload does not repeat the grant");
+  assert.equal(reload.value.starDust, startingBalance + 5000, "dust grant does not repeat");
+  assert.equal(reload.value.meteorFragments, 23, "meteor grant does not repeat");
 }
-assert.equal(load(null).value.starFragments, 2000, "new progression uses normal zero balance plus the grant, not a test 5,000 balance");
-assert.match(file, /const reward = Math\.floor\(reachedWave \* 4 \* rewardMultiplier\)/);
-assert.match(file, /const meteorReward = Math\.floor\(Math\.floor\(reachedWave \/ 20\) \* rewardMultiplier\)/);
-console.log("Reward migration regression passed: one-time 2,000 grant, clean default, ×4 wave reward, and unchanged meteor formula verified.");
+assert.equal(load(null).value.starDust, 5000);
+assert.equal(load(null).value.starShards, 0);
+assert.match(file, /const shardReward = reachedWave \* 2/);
+assert.match(file, /battle\.battleRewardGranted/);
+console.log("Reward migration regression passed: currencies split, grants are idempotent, inventory migrates, and wave shards are guarded.");
