@@ -196,7 +196,7 @@ assert.match(
 assert.match(js, /p\.resources\.starlight \+= e\.reward/);
 assert.match(js, /if \(e\.boss\) p\.resources\.divinity\+\+/);
 assert.match(js, /const BASE_MAX_HP = 400/);
-assert.match(js, /this\.base = \{ hp: BASE_MAX_HP, maxHp: BASE_MAX_HP \}/);
+assert.match(js, /this\.base = \{ hp: initialBaseHp, maxHp: initialBaseHp \}/);
 assert.match(js, /this\.base\.hp = Math\.max\(0, this\.base\.hp - e\.baseDamage\)/);
 for (const [type, damage] of [["slime", 100], ["bug", 150]])
   assert.match(js, new RegExp(`${type}: \\{[^}]*baseDamage: ${damage}`));

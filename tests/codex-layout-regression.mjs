@@ -47,7 +47,7 @@ assert.match(js, /class="codex-recipe-summary"><span>필요한 별<\/span>\$\{su
 assert.match(js, /<dt>기본 공격력<\/dt><dd>\$\{zodiac\.attackDamage\}<\/dd>/);
 assert.match(js, /단계 효과: 재료 별 단계 합 ÷ 4 × 공격력/);
 assert.match(js, /연결에 사용한 별들의 단계 합을 4로 나눈 값만큼 기본 공격력에 배율이 적용됩니다\./);
-assert.match(js, /새벽의 자리가 몬스터를 3마리 처치할 때마다 모든 적에게 각 적의 현재 체력의 20%만큼 피해를 줍니다\./);
+assert.match(js, /새벽의 자리가 직접 5킬할 때마다 현재 살아있는 모든 적에게 각 적 현재 체력의 20%만큼 피해를 줍니다\./);
 assert.match(js, /광휘의 자리가 몬스터를 직접 처치할 때마다 자신의 공격력이 0\.2%씩 영구적으로 증가합니다\./);
 assert.match(js, /<strong>특수능력\$\{specials\.length > 1/);
 assert.match(js, /광휘 처치 수: \$\{constellation\.runtime\.radianceKills\}/);

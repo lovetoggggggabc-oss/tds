@@ -19,6 +19,6 @@ for (const startingBalance of [500, 5000]) {
   assert.equal(reload.value.starFragments, startingBalance + 2000, "reload does not repeat the grant");
 }
 assert.equal(load(null).value.starFragments, 2000, "new progression uses normal zero balance plus the grant, not a test 5,000 balance");
-assert.match(file, /const reward = reachedWave \* 4/);
-assert.match(file, /const meteorReward = Math\.floor\(reachedWave \/ 20\)/);
+assert.match(file, /const reward = Math\.floor\(reachedWave \* 4 \* rewardMultiplier\)/);
+assert.match(file, /const meteorReward = Math\.floor\(Math\.floor\(reachedWave \/ 20\) \* rewardMultiplier\)/);
 console.log("Reward migration regression passed: one-time 2,000 grant, clean default, ×4 wave reward, and unchanged meteor formula verified.");
