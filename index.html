@@ -19,7 +19,7 @@
         <span><i class="shard-gem">◆</i><small>별조각</small><b data-star-shards>0</b></span>
         <span><i class="meteor-gem">☄</i><small>운석조각</small><b data-meteor-fragments>0</b></span>
       </div>
-      <div class="menu-tools"><button type="button" data-open-mail aria-label="편지함">✉<b data-mail-badge>2</b></button><button type="button" data-open-settings aria-label="설정">⚙</button></div></div>
+      <div class="menu-tools"><button type="button" data-open-news aria-label="뉴스"><span>뉴스</span><b data-news-badge>NEW</b></button><button type="button" data-open-mail aria-label="편지함">✉<b data-mail-badge>2</b></button><button type="button" data-open-settings aria-label="설정">⚙</button></div></div>
       <header class="lobby-title">
         <div class="celestial-emblem" aria-hidden="true"><i>✦</i></div>
         <h1 id="main-menu-title">별자리 디펜스</h1>
@@ -96,8 +96,8 @@
         </article>
         <article class="stage-card mode-card experimental-mode">
           <div class="stage-map vertical-map" aria-hidden="true"><span></span><i>↕</i><b>β</b></div>
-          <div class="stage-copy"><small>EXPERIMENTAL · BETA</small><h2>세로 대전장</h2><p>스크롤 가능한 거대한 세로형 전장에서 플레이합니다.</p><strong>성운 항로 · 실험 모드</strong></div>
-          <button type="button" id="play-experimental"><span>세로 대전장</span><small>EXPERIMENTAL</small></button>
+          <div class="stage-copy"><small>VERTICAL · BETA</small><h2>세로 대전장 BETA</h2><p>스크롤 가능한 거대한 세로형 전장에서 플레이합니다.</p><strong>거대 성운 항로 · BETA</strong></div>
+          <button type="button" id="play-experimental"><span>세로 대전장 플레이</span><small>VERTICAL BETA</small></button>
         </article>
       </div>
     </section>
@@ -106,6 +106,8 @@
 
     <section class="utility-dialog" id="settings-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="settings-title"><div class="modal-panel"><div class="settings-main" data-settings-view="main"><header class="modal-title"><h2 id="settings-title">설정</h2><button type="button" data-close-utility aria-label="설정 닫기">×</button></header><div class="modal-body"><label><span>몬스터 체력 숫자<small>전투 중 몬스터의 현재 체력을 표시합니다.</small></span><button type="button" data-setting-hp>ON</button></label><label><span>조디악 연결 효과<small>별자리 연결 시각 효과의 강도를 조절합니다.</small></span><button type="button" data-setting-vfx>강하게</button></label><button type="button" class="settings-link" data-open-rates>별자리 뽑기 확률 <b>›</b></button><button type="button" class="settings-link" data-open-special-code>특별 코드 <b>›</b></button></div></div><div class="settings-rates" data-settings-view="rates" hidden><header class="modal-title"><button type="button" data-settings-back aria-label="설정으로 돌아가기">←</button><h2>별자리 뽑기 확률</h2></header><div class="rate-summary"><strong>일반 별 <b data-star-rate-total>95%</b></strong><strong>별자리 <b data-zodiac-rate-total>5%</b></strong></div><div id="rate-details" class="modal-body rate-list"></div></div><div class="settings-code" data-settings-view="code" hidden><header class="modal-title"><button type="button" data-settings-back aria-label="설정으로 돌아가기">←</button><h2>특별 코드</h2></header><form class="modal-body special-code-form" data-special-code-form><label for="special-code-input">특별 코드 입력</label><div><input id="special-code-input" data-special-code-input autocomplete="off" spellcheck="false"><button type="submit">입력</button></div><p data-special-code-result role="status" aria-live="polite"></p></form></div></div></section>
     <section class="utility-dialog" id="mail-dialog" hidden role="dialog" aria-modal="true"><div class="mail-panel"><header class="modal-title"><div><small>STARLIGHT COMMUNICATION</small><h2>✉ 우편함</h2></div><button type="button" data-close-utility aria-label="편지함 닫기">×</button></header><div class="modal-body mail-list"><article id="update-mail-card" data-mail-card="update"><i>NEW</i><h3>[보상] 업데이트 지원</h3><p>업데이트 보상이 도착했습니다.</p><strong>✦ 별가루 ×3000</strong><button type="button" id="claim-update-reward">받기</button></article><article id="meteor-mail-card" data-mail-card="meteor"><i>NEW</i><h3>[보상] 운석파편 지원</h3><p>별자리 수호자님께 운석파편 30개를 보내드립니다.</p><strong>☄ 운석파편 ×30</strong><button type="button" id="claim-meteor-mail">받기</button></article></div></div></section>
+
+    <section class="utility-dialog news-dialog" id="news-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="news-title"><div class="news-modal"><header class="modal-title"><div><small>✦ UPDATE NEWS</small><h2 id="news-title">별자리 통신</h2></div><button type="button" data-close-utility aria-label="뉴스 닫기">×</button></header><div class="news-scroll-body" id="news-items"></div></div></section>
 
     <main class="app battle-screen" id="game-shell" hidden>
       <header class="game-hud battle-top-hud">
@@ -187,13 +189,13 @@
             />
           </svg>
         </div>
-        </div><div id="contextActions" class="context-actions" hidden></div><aside id="experimentalMinimap" class="experimental-minimap" hidden aria-label="세로 대전장 미니맵"><canvas width="40" height="180"></canvas><i></i><b aria-hidden="true">◆</b></aside><div class="experimental-badge" id="experimentalBadge" hidden>EXPERIMENTAL · 세로 대전장</div>
+        </div><div id="contextActions" class="context-actions" hidden></div><aside id="experimentalMinimap" class="experimental-minimap" hidden aria-label="세로 대전장 미니맵"><canvas width="40" height="180"></canvas><i></i><b aria-hidden="true">◆</b></aside><div class="experimental-badge" id="experimentalBadge" hidden>BETA · 세로 대전장</div>
         <div class="overlay battle-result-overlay" id="gameover" hidden>
           <div class="result-sigil" aria-hidden="true">✦</div>
           <div class="card">
             <small>BATTLE RESULT</small><h1>전투 종료</h1>
             <p>도달 웨이브 <b id="finalWave">0</b></p>
-            <div class="result-rewards"><small>획득 보상</small><p>✦ 별가루 <b>+<span id="dustReward">0</span></b></p><p>◆ 별조각 <b>+<span id="shardReward">0</span></b></p><p class="meteor-result">☄ 운석조각 <b>+<span id="meteorFragmentReward">0</span></b></p><p class="galaxy-result" id="galaxyRewardRow">✧ 은하파편 <b>+<span id="galaxyFragmentReward">0</span></b></p></div>
+            <div class="result-rewards"><small id="resultModeLabel">획득 보상</small><p>✦ 별가루 <b>+<span id="dustReward">0</span></b></p><p>◆ 별조각 <b>+<span id="shardReward">0</span></b></p><p class="meteor-result">☄ 운석조각 <b>+<span id="meteorFragmentReward">0</span></b></p><p class="galaxy-result" id="galaxyRewardRow">✧ 은하조각 <b>+<span id="galaxyFragmentReward">0</span></b></p></div>
             <button id="restart">메인으로</button>
           </div>
         </div>

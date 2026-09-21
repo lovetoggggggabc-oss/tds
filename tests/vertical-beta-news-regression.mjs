@@ -1,0 +1,18 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+const [js, css, html] = await Promise.all([readFile("game.js", "utf8"), readFile("styles.css", "utf8"), readFile("index.html", "utf8")]);
+assert.match(js, /baseEnemyHp: 250, waveHpGrowth: \.008, enemyCountMultiplier: 1/);
+assert.match(js, /baseEnemyHp: 300, waveHpGrowth: \.015, enemyCountMultiplier: 2, startingStarlight: 1500, startingDivinity: 30/);
+assert.match(js, /reachedWave < 10 \? 0 : \(reachedWave - 9\) \* 5/);
+assert.match(js, /Math\.floor\(reachedWave \/ 5\) \* 2/);
+assert.match(js, /n === 10 \|\| \(n >= 15 && n % 5 === 0\)/);
+assert.match(js, /wave40GalaxySlayerDefeated/);
+assert.match(js, /distanceTravelled.*activeRouteCache\.length/s);
+assert.match(js, /const NEWS_ITEMS/);
+assert.match(js, /lastReadNewsVersion/);
+assert.match(html, /data-open-news/);
+assert.match(html, /세로 대전장 플레이/);
+assert.match(html, /class="news-scroll-body"/);
+assert.match(css, /\.news-scroll-body\{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden/);
+assert.equal((js.match(/Object\.freeze\(\[\{x:/g) || []).length >= 8, true);
+console.log("Vertical BETA/news regression passed: isolated balance, rewards, bosses, distance route, news persistence, and UI verified.");

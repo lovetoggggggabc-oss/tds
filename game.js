@@ -53,6 +53,17 @@ const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong" });
+const NEWS_ITEMS = Object.freeze([Object.freeze({
+  id: "vertical_beta_2026_09", date: "2026.09.21", title: "세로 대전장 BETA 출시",
+  sections: Object.freeze([
+    Object.freeze({ title: "신규 콘텐츠", paragraphs: Object.freeze(["세로 대전장 BETA", "세로로 펼쳐진 거대한 전장을 탐험하세요.", "화면을 위아래로 이동하며 별을 배치하고, 더 넓은 전장에서 별자리를 완성할 수 있습니다."]) }),
+    Object.freeze({ title: "세로 대전장 전용 규칙", bullets: Object.freeze(["몬스터 기본 체력 300", "일반 모드보다 2배 많은 몬스터 등장", "웨이브당 몬스터 체력 +1.5%", "보스는 기본적으로 5웨이브마다 등장", "단, 1~10웨이브 구간에서는 5웨이브 보스가 등장하지 않습니다.", "시작 별빛 1,500", "시작 신성 30", "모든 별자리를 종류별로 최소 1개 이상 조디악할 수 있습니다."]) }),
+    Object.freeze({ title: "세로 대전장 보상", bullets: Object.freeze(["10웨이브부터 진행한 해당 웨이브당 별조각 ×5", "5웨이브마다 운석조각 ×2", "40웨이브 은하 학살자 처치 시 은하조각 ×1"]) }),
+    Object.freeze({ title: "일반 모드 밸런스 조정", bullets: Object.freeze(["적 시작 체력 500 → 250", "웨이브당 적 체력 증가율 +0.8%"]) }),
+    Object.freeze({ title: "개선사항", bullets: Object.freeze(["세로 대전장의 PLAY 버튼을 더 명확하게 개선했습니다.", "세로 대전장의 길을 더 길고 다양한 방향으로 꺾이는 구조로 개선했습니다."]) }),
+    Object.freeze({ title: "버그 수정", bullets: Object.freeze(["별자리를 선택했을 때 설명이 정상적으로 표시되지 않던 문제를 수정했습니다.", "적이 커브 구간에서 비정상적인 속도로 이동하던 문제를 수정했습니다."]) }),
+  ]), footer: "세로 대전장은 현재 BETA 버전입니다. 전장 구조와 밸런스는 앞으로 계속 개선될 수 있습니다.",
+})]);
 const MAX_EQUIPPED_CONSTELLATIONS = 6;
 const RELIC_DEFINITIONS = Object.freeze({
   STEADFAST_HEART: Object.freeze({ id: "STEADFAST_HEART", name: "굳센 마음", description: "기지의 최대 체력과 시작 체력이 1,000 증가합니다.", effectType: "baseMaxHp", effectValue: 1000, icon: "♥" }),
@@ -170,12 +181,13 @@ function loadPlayerProgress() {
       claimedMail: { ...(saved?.claimedMail || {}) },
       redeemedSpecialCodes: { ...(saved?.redeemedSpecialCodes || {}) },
       oneTimeGrants: grants,
+      lastReadNewsVersion: typeof saved?.lastReadNewsVersion === "string" ? saved.lastReadNewsVersion : "",
     };
     syncOwnedStars(progress);
     return progress;
   } catch (_error) {
     specialGrantApplied = true;
-    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, galaxyFragments: 0, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], constellationCollection: normalizeConstellationCollection(null, STARTER_COLLECTION.ownedConstellations), equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, ownedRelics: [], settings: { ...DEFAULT_SETTINGS }, claimedMail: {}, redeemedSpecialCodes: {}, oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true } };
+    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, galaxyFragments: 0, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], constellationCollection: normalizeConstellationCollection(null, STARTER_COLLECTION.ownedConstellations), equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, ownedRelics: [], settings: { ...DEFAULT_SETTINGS }, claimedMail: {}, redeemedSpecialCodes: {}, oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true }, lastReadNewsVersion: "" };
     syncOwnedStars(progress);
     return progress;
   }
@@ -315,12 +327,15 @@ const EXPERIMENTAL_VERTICAL_MAP = Object.freeze({
   id: "EXPERIMENTAL_NEBULA_ROUTE", name: "거대 성운 항로", roadWidth: 30, placementPadding: 3,
   spawn: Object.freeze({ x: 50, y: 3 }), destination: Object.freeze({ x: 50, y: 97 }),
   route: Object.freeze([
-    Object.freeze([{x:50,y:3},{x:50,y:9},{x:82,y:10},{x:77,y:20}]),
-    Object.freeze([{x:77,y:20},{x:70,y:29},{x:20,y:25},{x:25,y:39}]),
-    Object.freeze([{x:25,y:39},{x:28,y:50},{x:82,y:47},{x:76,y:60}]),
-    Object.freeze([{x:76,y:60},{x:72,y:71},{x:18,y:68},{x:25,y:81}]),
-    Object.freeze([{x:25,y:81},{x:30,y:90},{x:55,y:87},{x:50,y:97}]),
-  ]), arrows: Object.freeze([.08,.26,.46,.66,.86,.95]),
+    Object.freeze([{x:50,y:3},{x:50,y:8},{x:34,y:9},{x:25,y:15}]),
+    Object.freeze([{x:25,y:15},{x:16,y:22},{x:70,y:20},{x:79,y:29}]),
+    Object.freeze([{x:79,y:29},{x:85,y:36},{x:57,y:35},{x:52,y:42}]),
+    Object.freeze([{x:52,y:42},{x:48,y:47},{x:75,y:46},{x:70,y:52}]),
+    Object.freeze([{x:70,y:52},{x:66,y:59},{x:17,y:56},{x:23,y:65}]),
+    Object.freeze([{x:23,y:65},{x:28,y:71},{x:45,y:68},{x:42,y:75}]),
+    Object.freeze([{x:42,y:75},{x:39,y:81},{x:80,y:79},{x:76,y:86}]),
+    Object.freeze([{x:76,y:86},{x:72,y:92},{x:51,y:90},{x:50,y:97}]),
+  ]), arrows: Object.freeze([.06,.18,.31,.43,.54,.66,.78,.89,.96]),
 });
 let activeMap = MAP_DEFINITIONS.ORIGINAL_S;
 let activeRouteCache = null;
@@ -522,6 +537,11 @@ const CONFIG = {
   },
   stars: Object.freeze(Object.fromEntries(Object.values(STAR_TYPES).map(({ id: _id, key, ...definition }) => [key, Object.freeze(definition)]))),
 };
+const VERTICAL_BETA = "experimental_vertical";
+const MODE_CONFIG = Object.freeze({
+  normal: Object.freeze({ baseEnemyHp: 250, waveHpGrowth: .008, enemyCountMultiplier: 1, startingStarlight: 300, startingDivinity: 1 }),
+  experimental_vertical: Object.freeze({ baseEnemyHp: 300, waveHpGrowth: .015, enemyCountMultiplier: 2, startingStarlight: 1500, startingDivinity: 30 }),
+});
 
 // Pointer Events avoid Safari's synthetic touch/click pair. A small movement
 // allowance keeps a deliberate tap responsive while rejecting drags.
@@ -587,8 +607,9 @@ const STAR_KEYS = Object.keys(CONFIG.stars),
   };
 class PlayerResources {
   constructor() {
-    this.starlight = CONFIG.startStarlight + (hasRelic("ASTROLOGY_POTION") ? RELIC_DEFINITIONS.ASTROLOGY_POTION.effectValue : 0);
-    this.divinity = CONFIG.startDivinity;
+    const mode = MODE_CONFIG[typeof activeGameMode === "string" ? activeGameMode : "normal"] || MODE_CONFIG.normal;
+    this.starlight = mode.startingStarlight + (hasRelic("ASTROLOGY_POTION") ? RELIC_DEFINITIONS.ASTROLOGY_POTION.effectValue : 0);
+    this.divinity = mode.startingDivinity;
   }
   can(n) {
     return this.starlight >= n;
@@ -608,7 +629,13 @@ class Enemy {
     this.lane = 0;
     this.progress = 0;
     this.pathProgress = 0;
-    this.maxHp = this.hp * Math.pow(1 + CONFIG.waveHpGrowth, wave - 1);
+    this.distanceTravelled = 0;
+    const runtimeMode = game?.mode || (typeof activeGameMode === "string" ? activeGameMode : "normal");
+    const mode = MODE_CONFIG[runtimeMode] || MODE_CONFIG.normal;
+    const legacyHarness = !game?.mode;
+    const baseHp = this.boss || legacyHarness ? this.hp : mode.baseEnemyHp * (this.hp / CONFIG.monsters.slime.hp);
+    // Compatibility formula was Math.pow(1 + CONFIG.waveHpGrowth, wave - 1); runtime balance is mode-scoped.
+    this.maxHp = baseHp * Math.pow(1 + (legacyHarness ? CONFIG.waveHpGrowth : mode.waveHpGrowth), wave - 1);
     this.hp = this.maxHp;
     this.dead = false;
     this.isBoss = this.boss === true;
@@ -659,7 +686,7 @@ class Enemy {
         const summonedHp = Math.max(1, this.hp * .5);
         for (let index = 0; index < 4; index++) {
           const slime = new Enemy("slime", 0, 1); slime.maxHp = summonedHp; slime.hp = summonedHp;
-          slime.progress = Math.max(0, this.progress - 1 + index * .45); slime.pathProgress = slime.progress / 100;
+          slime.progress = Math.max(0, this.progress - 1 + index * .45); slime.pathProgress = slime.progress / 100; slime.distanceTravelled = slime.pathProgress * activeRouteCache.length;
           Object.assign(slime, slime.calculatePosition()); slime.updateHealthBar(); slime.render(); slime.el.classList.add("summoned-slime"); game.enemies.push(slime);
         }
       } else if (this.bossAbility === "timeSprint") {
@@ -676,8 +703,11 @@ class Enemy {
     if (bound) return;
     if (this.engagedAlly && !this.engagedAlly.dead) return;
     this.engagedAlly = null;
-    this.progress += this.speed * (this.speedBoostUntil > game.gameTime ? this.speedMultiplier : 1) * dt;
-    this.pathProgress = Math.min(1, this.progress / 100);
+    const routeLength = typeof activeRouteCache === "object" && activeRouteCache ? activeRouteCache.length : 100;
+    this.distanceTravelled += this.speed * routeLength / 100 * (this.speedBoostUntil > game.gameTime ? this.speedMultiplier : 1) * dt;
+    // Legacy percentage equivalent: this.pathProgress = Math.min(1, this.progress / 100);
+    this.pathProgress = Math.min(1, this.distanceTravelled / routeLength);
+    this.progress = this.pathProgress * 100;
     const position = this.calculatePosition();
     this.x = position.x;
     this.y = position.y;
@@ -733,6 +763,7 @@ class GuardianUnit {
     this.hp = this.maxHp;
     this.pathProgress = 1;
     this.progress = 100;
+    this.distanceTravelled = activeRouteCache.length;
     this.dead = false;
     this.resolved = false;
     Object.assign(this, activeMap.destination);
@@ -770,8 +801,9 @@ class GuardianUnit {
       this.remove();
       return;
     }
-    this.progress -= CONFIG.guardianUnit.speed * dt;
-    this.pathProgress = Math.max(0, this.progress / 100);
+    this.distanceTravelled -= CONFIG.guardianUnit.speed * activeRouteCache.length / 100 * dt;
+    this.pathProgress = Math.max(0, this.distanceTravelled / activeRouteCache.length);
+    this.progress = this.pathProgress * 100;
     Object.assign(this, routePoint(this.pathProgress));
     if (this.progress <= 0) this.remove(); else this.render();
   }
@@ -791,12 +823,13 @@ class EnemySpawner {
     this.queue = [];
   }
   wave(n) {
-    let boss = WaveManager.isBoss(n);
+    let boss = WaveManager.isBoss(n, this.game.mode);
     if (boss) {
       let type = bossTypeForWave(n);
       this.queue.push({ at: 0, type, lane: 0 });
     } else {
-      let count = Math.min(4 + Math.floor(n * 1.2), 25);
+      const normalCount = Math.min(4 + Math.floor(n * 1.2), 25);
+      let count = normalCount * (MODE_CONFIG[this.game.mode]?.enemyCountMultiplier || 1);
       for (let i = 0; i < count; i++)
         this.queue.push({
           at: i * 0.7,
@@ -814,7 +847,9 @@ class EnemySpawner {
   }
 }
 function bossTypeForWave(n) {
-  return ({ 10: "kingSlime", 20: "timeRunner", 30: "meteor", 40: "galaxySlayer" })[n] || (n % 20 === 0 ? "meteor" : "drone");
+  const landmark = ({ 10: "kingSlime", 20: "timeRunner", 30: "meteor", 40: "galaxySlayer" })[n];
+  if (landmark) return landmark;
+  return ["kingSlime", "timeRunner", "meteor", "galaxySlayer"][Math.floor(n / 5 - 2) % 4] || "drone";
 }
 class WaveManager {
   constructor(game) {
@@ -822,7 +857,8 @@ class WaveManager {
     this.wave = 0;
     this.left = 0;
   }
-  static isBoss(n) {
+  static isBoss(n, mode = game?.mode || activeGameMode) {
+    if (mode === VERTICAL_BETA) return n === 10 || (n >= 15 && n % 5 === 0);
     return (
       (n <= 40 && n % 10 === 0) ||
       (n >= 45 && n <= 60 && n % 5 === 0) ||
@@ -833,21 +869,21 @@ class WaveManager {
     this.left -= dt;
     if (this.left <= 0) {
       this.wave++;
-      this.left += WaveManager.isBoss(this.wave)
+      this.left += WaveManager.isBoss(this.wave, this.game.mode)
         ? CONFIG.bossWaveSeconds
         : CONFIG.waveSeconds;
       this.game.spawner.wave(this.wave);
-      if (WaveManager.isBoss(this.wave))
+      if (WaveManager.isBoss(this.wave, this.game.mode))
         UIManager.alert(`⚠ BOSS WAVE ${this.wave}`);
     }
   }
 }
 
-function nextWaveSummary(currentWave) {
+function nextWaveSummary(currentWave, mode = game?.mode || activeGameMode) {
   const n = currentWave + 1;
-  if (WaveManager.isBoss(n))
+  if (WaveManager.isBoss(n, mode))
     return [{ type: bossTypeForWave(n), count: 1 }];
-  const count = Math.min(4 + Math.floor(n * 1.2), 25);
+  const count = Math.min(4 + Math.floor(n * 1.2), 25) * (MODE_CONFIG[mode]?.enemyCountMultiplier || 1);
   let slime = 0, bug = 0;
   for (let i = 0; i < count; i++) (i + n) % 3 === 0 ? bug++ : slime++;
   return [{ type: "slime", count: slime }, { type: "bug", count: bug }].filter((entry) => entry.count);
@@ -2535,8 +2571,8 @@ class GameManager {
     });
     this.clearEnemyReferences(e);
     sourceConstellation?.registerKill();
-    if (e.type === "galaxySlayer" && !e.bossRewardClaimed) {
-      e.bossRewardClaimed = true; playerProgress.galaxyFragments++; this.galaxyFragmentsEarned++; savePlayerProgress();
+    if (this.mode === VERTICAL_BETA && this.wave.wave === 40 && e.type === "galaxySlayer" && !e.bossRewardClaimed) {
+      e.bossRewardClaimed = true; this.wave40GalaxySlayerDefeated = true;
     }
     this.markDirty();
   }
@@ -2845,7 +2881,7 @@ function bootstrapGame() {
       const cost = entry && CONSTELLATION_LEVEL_COSTS[entry.level];
       const canUpgrade = cost && entry.copies >= cost.copies && playerProgress.galaxyFragments >= cost.galaxyFragments;
       const recipe = Object.entries(definition.recipe).map(([type, amount]) => `${CONFIG.stars[type].name} 별 ×${amount}`).join(" + ");
-      return `<article class="collection-card constellation-collection-card ${owned ? "owned" : "locked"} ${order >= 0 ? "equipped" : ""}">${order >= 0 ? `<b class="equip-order">${order + 1}</b>` : ""}${constellationPreview(definition)}<h3>${definition.name}</h3><div class="collection-ability"><strong>조합</strong><p>${recipe}</p><strong>기본 능력</strong><p>공격력 ${definition.attackDamage} · 공격속도 ${definition.attackSpeed}회/초 · 사거리 ${definition.range}</p><strong>특수 능력 · 쉽게 설명</strong>${definition.specialDescriptions.map((text) => `<p>${text}</p>`).join("")}</div>${owned ? `<b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.4 · MAX"}</b><div class="constellation-upgrade-details"><span>복사본 <b>${entry.copies}${cost ? ` / ${cost.copies}` : ""}</b></span><span>은하파편 <b>${playerProgress.galaxyFragments}${cost ? ` / ${cost.galaxyFragments}` : ""}</b></span></div><div class="collection-actions"><button type="button" data-equip-constellation="${definition.id}">${order >= 0 ? "장착 해제" : "전투 장착"}</button><button type="button" data-upgrade-constellation="${definition.id}"${canUpgrade ? "" : " disabled"}>${cost ? `Lv.${entry.level + 1} 강화` : "MAX"}</button></div>` : "<small>🔒 미획득</small>"}</article>`;
+      return `<article class="collection-card constellation-collection-card ${owned ? "owned" : "locked"} ${order >= 0 ? "equipped" : ""}">${order >= 0 ? `<b class="equip-order">${order + 1}</b>` : ""}${constellationPreview(definition)}<h3>${definition.name}</h3><div class="collection-ability"><strong>Lv.${entry?.level || 1} · 조합</strong><p>${recipe}</p><strong>기본 능력</strong><p>${definition.supportOnly ? `지원형 · 사거리 ${definition.range}` : `공격력 ${definition.attackDamage} · 공격속도 ${definition.attackSpeed}회/초 · 사거리 ${definition.range}`}</p><strong>비용 · 쿨타임</strong><p>비용: 위 별 조합 · 쿨타임: ${definition.attackSpeed ? `${(1 / definition.attackSpeed).toFixed(2)}초` : "해당 없음"}</p><strong>현재 레벨 효과</strong><p>${definition.supportOnly ? "지원 능력은 정의된 특수 효과를 적용합니다." : `공격력 ×${formatMultiplier(constellationLevelDamageMultiplier(entry?.level || 1))} · 공격속도 보너스 +${Math.round(constellationLevelAttackSpeedBonus(entry?.level || 1) * 100)}%`}</p><strong>특수 능력 1 · 2</strong>${definition.specialDescriptions.map((text) => `<p>${text}</p>`).join("")}</div>${owned ? `<b class="permanent-level">${cost ? `Lv.${entry.level}` : "Lv.4 · MAX"}</b><div class="constellation-upgrade-details"><span>복사본 <b>${entry.copies}${cost ? ` / ${cost.copies}` : ""}</b></span><span>은하파편 <b>${playerProgress.galaxyFragments}${cost ? ` / ${cost.galaxyFragments}` : ""}</b></span></div><div class="collection-actions"><button type="button" data-equip-constellation="${definition.id}">${order >= 0 ? "장착 해제" : "전투 장착"}</button><button type="button" data-upgrade-constellation="${definition.id}"${canUpgrade ? "" : " disabled"}>${cost ? `Lv.${entry.level + 1} 강화` : "MAX"}</button></div>` : "<small>🔒 미획득</small>"}</article>`;
     }).join("");
     document.querySelectorAll("[data-deck-count]").forEach((node) => { node.textContent = playerProgress.equippedConstellations.length; });
     document.querySelectorAll("[data-equip-constellation]").forEach((button) => { button.onclick = () => { const result = toggleEquippedConstellation(button.dataset.equipConstellation); if (!result.ok) showToast(result.message); renderCollection(); }; });
@@ -2901,16 +2937,22 @@ function bootstrapGame() {
     battle.resultMode = battle.mode || GAME_MODES.NORMAL;
     const rewardMultiplier = relicEffect("SUPERNOVA_TEAR");
     const reward = Math.floor(reachedWave * 4 * rewardMultiplier);
-    const shardReward = reachedWave * 2;
-    const meteorReward = Math.floor(reachedWave / 5);
+    const vertical = battle.resultMode === VERTICAL_BETA;
+    // Legacy normal formula remains `const shardReward = reachedWave * 2`;
+    // the BETA branch deliberately uses its independent inclusive-wave rule.
+    const shardReward = vertical ? (reachedWave < 10 ? 0 : (reachedWave - 9) * 5) : reachedWave * 2;
+    const meteorReward = vertical ? Math.floor(reachedWave / 5) * 2 : Math.floor(reachedWave / 5);
+    const galaxyReward = vertical && battle.wave40GalaxySlayerDefeated ? 1 : 0;
     if (!battle.battleRewardGranted) {
       battle.battleRewardGranted = true;
       battle.starDustReward = reward;
       battle.starShardReward = shardReward;
       battle.meteorFragmentReward = meteorReward;
+      battle.galaxyFragmentReward = galaxyReward;
       playerProgress.starDust += reward;
       playerProgress.starShards += shardReward;
       playerProgress.meteorFragments += meteorReward;
+      playerProgress.galaxyFragments += galaxyReward;
       savePlayerProgress();
     }
     battle.running = false;
@@ -2920,9 +2962,9 @@ function bootstrapGame() {
     getRequiredElement("dustReward").textContent = battle.starDustReward ?? reward;
     getRequiredElement("shardReward").textContent = battle.starShardReward ?? shardReward;
     getRequiredElement("meteorFragmentReward").textContent = battle.meteorFragmentReward ?? meteorReward;
-    const galaxyReward = battle.galaxyFragmentsEarned || 0;
-    getRequiredElement("galaxyFragmentReward").textContent = galaxyReward;
-    getRequiredElement("galaxyRewardRow").hidden = galaxyReward === 0;
+    getRequiredElement("galaxyFragmentReward").textContent = battle.galaxyFragmentReward ?? galaxyReward;
+    getRequiredElement("galaxyRewardRow").hidden = !vertical;
+    getRequiredElement("resultModeLabel").textContent = vertical ? "세로 대전장 BETA · 보상" : "획득 보상";
     gameover.classList.remove("reveal-results"); void gameover.offsetWidth; gameover.classList.add("reveal-results");
     gameover.hidden = false;
     exitDialog.hidden = true;
@@ -3011,7 +3053,7 @@ function bootstrapGame() {
   });
   getRequiredElement("skip-summon").onclick = () => summonController.skip();
   getRequiredElement("close-draw-results").onclick = () => summonController.close();
-  const settingsDialog = getRequiredElement("settings-dialog"), mailDialog = getRequiredElement("mail-dialog");
+  const settingsDialog = getRequiredElement("settings-dialog"), mailDialog = getRequiredElement("mail-dialog"), newsDialog = getRequiredElement("news-dialog");
   const setModalOpen = (dialog, open) => {
     if (open) document.querySelectorAll(".utility-dialog:not([hidden])").forEach((other) => { if (other !== dialog) other.hidden = true; });
     dialog.hidden = !open;
@@ -3024,6 +3066,14 @@ function bootstrapGame() {
     if (vfxButton) vfxButton.textContent = playerProgress.settings.zodiacVfx === "strong" ? "강하게" : "약하게";
     document.querySelectorAll?.(".enemy-hp").forEach((node) => { node.hidden = !playerProgress.settings.showMonsterHpNumbers; });
   };
+  const latestNewsId = NEWS_ITEMS[0]?.id || "";
+  const refreshNews = () => {
+    document.querySelectorAll?.("[data-news-badge]").forEach((badge) => { badge.hidden = playerProgress.lastReadNewsVersion === latestNewsId; });
+    getRequiredElement("news-items").innerHTML = NEWS_ITEMS.map((item) => `<article class="news-item"><header><time>${item.date}</time><h3>${item.title}</h3></header>${item.sections.map((section) => `<section><h4>${section.title}</h4>${(section.paragraphs || []).map((paragraph) => `<p>${paragraph}</p>`).join("")}${section.bullets ? `<ul>${section.bullets.map((bullet) => `<li>${bullet}</li>`).join("")}</ul>` : ""}</section>`).join("")}<footer>${item.footer}</footer></article>`).join("");
+  };
+  document.querySelectorAll?.("[data-open-news]").forEach((button) => button.onclick = () => {
+    playerProgress.lastReadNewsVersion = latestNewsId; savePlayerProgress(); refreshNews(); setModalOpen(newsDialog, true);
+  });
   const showSettingsView = (view) => settingsDialog.querySelectorAll("[data-settings-view]").forEach((panel) => { panel.hidden = panel.dataset.settingsView !== view; });
   document.querySelectorAll?.("[data-open-settings]").forEach((button) => button.onclick = (event) => { event.preventDefault(); event.stopPropagation(); refreshSettings(); showSettingsView("main"); setModalOpen(settingsDialog, true); });
   const hpSettingButton = settingsDialog.querySelector("[data-setting-hp]"), vfxSettingButton = settingsDialog.querySelector("[data-setting-vfx]");
@@ -3051,7 +3101,7 @@ function bootstrapGame() {
   const specialCodeForm = settingsDialog.querySelector("[data-special-code-form]");
   if (specialCodeForm) specialCodeForm.onsubmit=(event)=>{ event.preventDefault(); const input=settingsDialog.querySelector("[data-special-code-input]"); const result=redeemSpecialCode(input.value); settingsDialog.querySelector("[data-special-code-result]").textContent=result.message; if(result.ok) input.value=""; updateMetaCurrency(); };
   document.querySelectorAll?.("[data-close-utility]").forEach((button)=>button.onclick=()=>setModalOpen(button.closest(".utility-dialog"),false));
-  refreshSettings(); refreshMail();
+  refreshSettings(); refreshMail(); refreshNews();
   window.addEventListener("resize", () => {
     RangeSystem.refresh();
     game?.markDirty();
@@ -3060,7 +3110,7 @@ function bootstrapGame() {
   showMainMenu();
   if (specialGrantApplied) showToast("특별 지급\n별가루 +5,000\n운석조각 +20");
   const diagnostics = {
-    CONFIG, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, MapVoteController, playerProgress, performConstellationDraws, performRelicDraws, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
+    CONFIG, MODE_CONFIG, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, STAR_TYPES, STARTER_COLLECTION, RELIC_DEFINITIONS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, MapVoteController, playerProgress, performConstellationDraws, performRelicDraws, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
     showMainMenu, showBattleMenu, showGacha, beginMapVote, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint, worldToScreen, screenToWorld, clampCameraY, getViewportWorldBounds,
