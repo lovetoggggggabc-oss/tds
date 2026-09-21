@@ -26,6 +26,7 @@
         <p>ZODIAC DEFENSE</p>
       </header>
       <button type="button" class="hero-play" id="open-battle-menu"><i>✦</i><b>플레이</b><small>별이 지키는 전장을 향해</small></button>
+      <button type="button" class="monster-codex-entry" data-open-monster-codex><i aria-hidden="true">◉</i><span>몬스터 도감</span><small>MONSTER CODEX</small></button>
       <nav class="bottom-nav" aria-label="메인 메뉴">
         <button type="button" data-coming-soon><i>▣</i><span>상점</span></button>
         <button type="button" data-open-collection><i>⌁</i><span>별 &amp; 별자리</span></button>
@@ -33,6 +34,15 @@
         <button type="button" data-open-relics><i>◇</i><span>유물</span></button>
         <button type="button" data-open-gacha><i>✦</i><span>뽑기</span></button>
       </nav>
+    </section>
+
+    <section class="lobby-screen monster-codex-screen" id="monster-codex-screen" hidden aria-labelledby="monster-codex-title">
+      <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
+      <header class="subscreen-header"><button type="button" data-main-home aria-label="메인 메뉴로 돌아가기">←</button><div><small>MONSTER CODEX</small><h1 id="monster-codex-title">몬스터 도감</h1></div></header>
+      <div class="monster-codex-content">
+        <div id="monster-codex-list" class="monster-codex-list" aria-label="몬스터 목록"></div>
+        <article id="monster-codex-detail" class="monster-codex-detail" aria-live="polite"></article>
+      </div>
     </section>
 
     <section class="lobby-screen gacha-screen" id="gacha-screen" hidden aria-labelledby="gacha-title">
