@@ -7,6 +7,12 @@
   --cyan: #76e9ff;
   --violet: #a98cff;
   --danger: #ff6688;
+  --layer-map: 10;
+  --layer-hud: 120;
+  --layer-navigation: 200;
+  --layer-modal-backdrop: 1000;
+  --layer-modal-panel: 1001;
+  --layer-toast: 1100;
 }
 * {
   box-sizing: border-box;
@@ -1736,6 +1742,121 @@ body.summon-input-locked>section:not(.draw-result-dialog),body.summon-input-lock
 .map-vote-screen{padding:max(28px,env(safe-area-inset-top)) 16px 22px;background:radial-gradient(circle at 50% 30%,#412f7f66,transparent 36%),#06091f}.map-vote-screen>header{position:relative;z-index:2;text-align:center}.map-vote-screen h1{margin:5px;font-size:25px}.map-vote-cards{position:relative;z-index:2;display:grid;gap:10px;min-height:0;overflow:auto}.map-vote-cards button{display:grid;grid-template-columns:112px 1fr auto;grid-template-rows:1fr 1fr;align-items:center;min-height:145px;padding:10px;border:1px solid #6679bc77;border-radius:18px;background:linear-gradient(135deg,#151c48e8,#0c1032e8);color:#eaf1ff;text-align:left;transition:.2s}.map-vote-cards svg{grid-row:1/3;width:102px;height:120px;background:#050921;border-radius:12px}.map-vote-cards path{fill:none;stroke:#70dfff;stroke-width:4;filter:drop-shadow(0 0 3px #5cf)}.mini-spawn{fill:#76ffab}.mini-base{fill:#ffe68c}.map-vote-cards strong{font-size:17px}.map-vote-cards small{color:#aebcdf}.map-vote-cards i{display:none;color:#85ffd1;font-size:25px}.map-vote-cards.selected{border:2px solid #74f3ff;box-shadow:0 0 20px #55dfff77,inset 0 0 18px #557cff33}.map-vote-cards.selected i{display:block}.map-vote-cards.winner{border-color:#fff2a1;box-shadow:0 0 28px #ffe77e88}.map-vote-cards.faded{opacity:.3}.map-vote-result{position:absolute;z-index:8;left:12%;right:12%;top:42%;padding:24px;border:1px solid #ffe7a5;border-radius:20px;background:#090d2bea;text-align:center;box-shadow:0 0 40px #8edfff55}.map-vote-result strong{display:block;margin-top:7px;color:#fff0ad;font-size:25px}
 .utility-dialog{position:fixed;z-index:10000;inset:0;display:grid;place-items:center;background:#02051dcc;padding:20px}.utility-dialog[hidden]{display:none}.utility-dialog>div{width:min(360px,92vw);max-height:76vh;overflow:auto;padding:22px;border:1px solid #8399df88;border-radius:20px;background:linear-gradient(150deg,#192050,#080c2b);box-shadow:0 0 45px #523ebd55}.utility-dialog label{display:flex;justify-content:space-between;align-items:center;margin:14px 0;padding:12px;background:#ffffff0a;border-radius:12px}.utility-dialog button{padding:10px 15px;border-radius:12px;background:#394b92;color:white}.utility-dialog article{display:grid;gap:10px}.utility-dialog #rate-details{display:grid;grid-template-columns:1fr 1fr;gap:5px}.utility-dialog #rate-details p{grid-column:1/-1;margin:10px 0 2px;color:#ffe7a1}
 .collection-screen{display:flex;flex-direction:column;height:100%;min-height:0;padding-bottom:calc(78px + env(safe-area-inset-bottom))}.collection-screen>.subscreen-header,.collection-screen>.galaxy-wallet,.collection-screen>.collection-tabs{flex-shrink:0}.collection-scroll{flex:1;height:auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(32px + env(safe-area-inset-bottom))}.relic-screen{padding-bottom:calc(90px + env(safe-area-inset-bottom))}.relic-collection{padding-bottom:32px}.collection-card h3{font-size:17px}.star-upgrade-details,.constellation-upgrade-details{font-size:13px;line-height:1.45}.collection-card button{font-size:13px}.collection-star{position:relative;display:grid;place-items:center;height:75px;font-size:0}.collection-star i{color:var(--star-color);font-size:62px;font-style:normal;text-shadow:0 0 8px #fff,0 0 24px var(--star-color)}.collection-star b,.collection-star em{position:absolute;border:1px solid var(--star-color);border-radius:50%}.collection-star.stage-2 b{width:65px;height:25px;transform:rotate(-15deg)}.collection-star.stage-3 b{width:70px;height:70px;box-shadow:0 0 15px var(--star-color)}.collection-star.stage-3 em{width:78px;height:12px}.collection-star.stage-4:before,.collection-star.stage-4:after{content:"";position:absolute;width:84px;height:2px;background:linear-gradient(90deg,transparent,var(--star-color),transparent);box-shadow:0 0 8px var(--star-color)}.collection-star.stage-4:after{transform:rotate(90deg)}.collection-star.stage-4 b{width:72px;height:72px;box-shadow:0 0 22px var(--star-color),inset 0 0 18px var(--star-color)}
+
+/* Responsive UI system: type follows the centered 9:16 shell, never the wide viewport. */
+.lobby-screen,#game-shell { container-type:inline-size; container-name:game-shell; }
+.lobby-screen { font-size:clamp(14px,3.2cqw,18px); }
+.subscreen-header h1,.utility-dialog h2 { font-size:clamp(22px,5.4cqw,30px); }
+.subscreen-header small,.stage-copy>small { font-size:clamp(12px,2.8cqw,15px); }
+.hero-play small,.lobby-menu button small { font-size:clamp(12px,2.8cqw,15px); line-height:1.35; }
+.permanent-wallet small { font-size:clamp(11px,2.5cqw,14px); }
+.permanent-wallet b { font-size:clamp(14px,3.2cqw,18px); }
+.bottom-nav { z-index:var(--layer-navigation); min-height:78px; height:calc(78px + env(safe-area-inset-bottom)); }
+.bottom-nav button { min-height:54px; }
+.bottom-nav i { font-size:clamp(20px,4.8cqw,25px); }
+.bottom-nav span { font-size:clamp(12px,2.7cqw,15px); line-height:1.2; }
+.bottom-nav button:not(.active) { color:#aab4d3; }
+.bottom-nav button.active span { color:#fff4bd; text-shadow:0 0 8px #82dcff; }
+
+/* Battle is three non-overlapping flow regions: HUD, flexible arena, action deck. */
+#game-shell { padding:0 8px calc(92px + env(safe-area-inset-bottom)); gap:6px; }
+.game-hud { position:relative; z-index:var(--layer-hud); flex:0 0 auto; min-height:126px; padding:max(9px,env(safe-area-inset-top)) 8px 8px; grid-template-columns:minmax(0,1fr) minmax(104px,.86fr) minmax(0,1fr); grid-template-rows:auto 1fr; column-gap:8px; row-gap:5px; align-items:start; }
+.brand { min-width:0; }
+.brand b { font-size:clamp(15px,3.6cqw,19px); white-space:normal; line-height:1.15; }
+.brand small { font-size:clamp(10px,2.2cqw,12px); letter-spacing:.08em; }
+.wave b { font-size:clamp(22px,5.3cqw,30px); line-height:1.05; }
+.wave>span { font-size:clamp(14px,3.3cqw,18px); }
+.wave span small { font-size:clamp(11px,2.5cqw,14px); }
+.hp b { font-size:clamp(16px,3.7cqw,21px); line-height:1.15; white-space:normal; }
+.hp span { font-size:clamp(10px,2.3cqw,12px); }
+.resources { grid-column:1; grid-row:2; align-self:start; display:grid; gap:4px; }
+.resources .primary-resource { min-width:0; width:100%; min-height:32px; padding:5px 6px; grid-template-columns:17px 1fr auto; }
+.resources .primary-resource i { font-size:clamp(14px,3.2cqw,18px); }
+.resources .primary-resource b { font-size:clamp(15px,3.5cqw,20px); }
+.resources .primary-resource em { position:static; font-size:clamp(11px,2.5cqw,13px); }
+.partner-resource { display:none; }
+.next-wave { grid-column:3; grid-row:2; width:100%; min-width:0; padding:5px 4px 5px 7px; overflow-wrap:anywhere; }
+.next-wave>small { font-size:clamp(10px,2.3cqw,12px); letter-spacing:.04em; }
+.next-wave>b { font-size:clamp(13px,3cqw,16px); line-height:1.25; }
+#nextEnemies { font-size:clamp(11px,2.55cqw,14px); line-height:1.35; }
+.arena { z-index:var(--layer-map); flex:1 1 auto; min-height:0; }
+.battle-exit { position:static; }
+.side-controls { z-index:var(--layer-hud); top:calc(max(8px,env(safe-area-inset-top)) + 132px); right:14px; gap:8px; }
+.side-controls button { width:48px; height:44px; border-radius:14px; font-size:clamp(15px,3.4cqw,18px); }
+.side-controls button span { font-size:clamp(12px,2.7cqw,14px); }
+.control-deck { z-index:var(--layer-navigation); }
+.game-controls button,.game-controls .codex-button { min-height:44px; font-size:clamp(14px,3.2cqw,17px); line-height:1.2; white-space:normal; }
+.game-controls button[data-act="zodiac"] small { font-size:clamp(11px,2.5cqw,13px); }
+.context-actions { position:fixed; z-index:calc(var(--layer-navigation) + 1); left:50%!important; top:auto!important; bottom:calc(84px + env(safe-area-inset-bottom)); transform:translateX(-50%); display:flex; width:auto; height:auto; gap:8px; }
+.context-actions button { position:static; transform:none!important; min-height:44px; font-size:clamp(14px,3.1cqw,17px); white-space:normal; }
+.star-info { top:134px; right:70px; font-size:clamp(12px,2.7cqw,15px); }
+.star-info strong { font-size:clamp(15px,3.4cqw,18px); }
+.binding-relic-status { top:134px; right:70px; font-size:clamp(12px,2.7cqw,14px); }
+
+/* Compact shared endpoint renderer (about 1.3 road widths in visual diameter). */
+.portal-aura { fill:#6c49d933; stroke:#8f75ff77; stroke-width:.35; transform-origin:0 0; }
+.portal-rim { fill:#10092f; stroke:#c49bff; stroke-width:.65; }
+.portal-runes { stroke:#7edcff; stroke-width:.3; transform-origin:0 0; }
+.portal-swirl { stroke-width:.42; transform-origin:0 0; }
+.base-frame { fill:#13264faa; stroke:#a7e7ff; stroke-width:.55; filter:drop-shadow(0 0 2px #7fbfff); }
+.base-accent { fill:none; stroke:#8bdcff; stroke-width:.6; stroke-linecap:round; filter:drop-shadow(0 0 2px #8bdcff); }
+.base-orbit { stroke-width:.3; }
+.base-star { fill:#fff; font-size:2.5px; text-anchor:middle; filter:drop-shadow(0 0 2px #9ee9ff); }
+.start-label,.destination-label { font-size:clamp(2.3px,.65cqw,3px); text-anchor:middle; letter-spacing:.08em; }
+
+/* One modal stack owns settings, mail and nested probability information. */
+.utility-dialog { position:absolute; z-index:var(--layer-modal-backdrop); inset:0; width:100%; height:100%; padding:20px; background:#02051de8; backdrop-filter:blur(7px); pointer-events:auto; }
+.utility-dialog>.modal-panel,.utility-dialog>div { position:relative; z-index:var(--layer-modal-panel); width:min(90%,430px); max-height:85%; overflow:hidden; padding:0; display:flex; flex-direction:column; }
+.modal-title { flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; min-height:62px; padding:12px 16px; border:0; background:#192050; }
+.modal-title h2 { margin:0; }
+.modal-title button { min-width:44px; min-height:44px; padding:4px; font-size:24px; }
+.modal-body { min-height:0; overflow-y:auto; padding:12px 16px 20px; overscroll-behavior:contain; }
+.utility-dialog label { gap:10px; min-height:64px; margin:8px 0; font-size:clamp(15px,3.5cqw,19px); }
+.utility-dialog label span { display:grid; gap:4px; }
+.utility-dialog label small { color:#aeb8d8; font-size:clamp(12px,2.8cqw,15px); line-height:1.4; }
+.utility-dialog button { min-height:44px; font-size:clamp(14px,3.2cqw,17px); }
+.settings-link { width:100%; display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+.settings-rates { min-height:0; display:flex; flex-direction:column; }
+.rate-summary { flex:0 0 auto; display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 16px; }
+.rate-summary strong { padding:12px 8px; border-radius:12px; background:#ffffff0b; font-size:clamp(14px,3.2cqw,17px); text-align:center; }
+.rate-summary b { display:block; color:#fff0a3; font-size:clamp(20px,4.6cqw,25px); }
+.rate-list { display:grid; gap:6px; }
+.rate-list h3 { margin:12px 0 3px; color:#8fe9ff; font-size:clamp(16px,3.7cqw,20px); }
+.rate-list div { display:flex; justify-content:space-between; gap:12px; padding:9px 11px; border-radius:9px; background:#ffffff08; font-size:clamp(14px,3.2cqw,17px); }
+.rate-list b { color:#fff0aa; }
+body.modal-open .lobby-screen,body.modal-open #game-shell { pointer-events:none; }
+body.modal-open .utility-dialog:not([hidden]) { pointer-events:auto; }
+.game-toast { z-index:var(--layer-toast); font-size:clamp(13px,3cqw,16px); }
+
+/* Readable content cards grow with copy instead of clipping it. */
+.summon-card p,.summon-balance small,.gacha-rates { font-size:clamp(14px,3.2cqw,17px); }
+.gacha-rates span { width:100%; }
+.draw-actions button { min-height:60px; font-size:clamp(15px,3.5cqw,19px); }
+.draw-actions small { font-size:clamp(14px,3.2cqw,17px); }
+.collection-card { height:auto; overflow:visible; }
+.collection-card h3 { font-size:clamp(17px,3.9cqw,21px); }
+.star-upgrade-details,.constellation-upgrade-details,.collection-card button { font-size:clamp(13px,3cqw,16px); line-height:1.45; }
+.collection-actions button { min-height:44px; }
+.relic-card { height:auto; }
+.relic-card small { font-size:clamp(11px,2.5cqw,14px); }
+.relic-card h2 { font-size:clamp(18px,4.1cqw,22px); }
+.relic-card p { font-size:clamp(14px,3.2cqw,17px); white-space:normal; overflow:visible; }
+.zodiac-card h3 { font-size:clamp(19px,4.4cqw,24px); }
+.zodiac-card p { font-size:clamp(14px,3.2cqw,17px); }
+.zodiac-card dt,.zodiac-card dd,.zodiac-card h4,.zodiac-card h4 span { font-size:clamp(12px,2.8cqw,15px); }
+.map-vote-screen h1 { font-size:clamp(24px,5.6cqw,31px); }
+.map-vote-screen>header small { font-size:clamp(12px,2.8cqw,15px); }
+.map-vote-cards strong { font-size:clamp(18px,4.2cqw,22px); }
+.map-vote-cards small,.map-vote-cards b { font-size:clamp(13px,3cqw,16px); }
+.mini-spawn { fill:#8b72ff; stroke:#c2efff; stroke-width:1; }
+.mini-base { fill:#fff; stroke:#8fdfff; stroke-width:1.2; filter:drop-shadow(0 0 2px #8fdfff); }
+
+@media (max-height:700px) {
+  .game-hud { min-height:112px; grid-template-rows:auto 1fr; }
+  .side-controls { top:118px; }
+  .star-info,.binding-relic-status { top:118px; }
+  .control-deck { transform:translateX(-50%); }
+}
 .skip-summon{right:max(18px,env(safe-area-inset-right));top:auto;bottom:max(22px,env(safe-area-inset-bottom));padding:15px 22px;font-size:14px}
 body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-preview{filter:none!important;opacity:.55}body[data-zodiac-vfx="weak"] .zodiac-particle{display:none!important}
 .battle-result-overlay:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 18%,#9a7aff22,transparent 25%),linear-gradient(#01031688,#070319dd);animation:resultDarken 1.2s both}.battle-result-overlay.reveal-results .result-sigil{filter:drop-shadow(0 0 20px #8d6cff);animation:resultSigil 1.1s .35s both}@keyframes resultDarken{from{opacity:0}to{opacity:1}}@keyframes resultSigil{from{opacity:0;transform:scale(.3) rotate(-40deg)}to{opacity:1;transform:scale(1) rotate(0)}}

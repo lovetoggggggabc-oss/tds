@@ -45,7 +45,7 @@
       <article class="summon-card constellation-board" data-gacha-board="constellation">
         <div class="summon-orbit" aria-hidden="true"><i>✦</i></div>
         <h2>별자리 뽑기</h2><p>별가루로 새로운 별과<br />별자리를 만날 준비를 하세요.</p>
-        <div class="gacha-rates"><button type="button" data-open-rates>확률보기</button><span>천장 [<b data-constellation-pity>0 / 40</b>]</span></div>
+        <div class="gacha-rates"><span>천장 [<b data-constellation-pity>0 / 40</b>]</span></div>
         <div class="summon-balance"><small>현재 별가루</small><strong><span class="fragment-gem">✦</span> <span data-star-dust>0</span></strong></div>
         <div class="draw-actions"><button type="button" data-draw="constellation" data-cost="100"><b>1회 뽑기</b><small>✦ 100</small></button><button type="button" data-draw="constellation" data-cost="1000"><b>10회 뽑기</b><small>✦ 1000</small></button></div>
       </article>
@@ -97,12 +97,10 @@
 
     <section class="lobby-screen map-vote-screen" id="map-vote" hidden aria-labelledby="map-vote-title"><div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div><header><small>CHOOSE THE BATTLEFIELD</small><h1 id="map-vote-title">맵 선택 · <span id="map-vote-time">10</span></h1></header><div id="map-vote-cards" class="map-vote-cards"></div><div id="map-vote-result" class="map-vote-result" hidden><small>전장 결정</small><strong></strong></div></section>
 
-    <section class="utility-dialog" id="settings-dialog" hidden role="dialog" aria-modal="true"><div><h2>설정</h2><label>몬스터 체력 숫자 <button type="button" data-setting-hp>ON</button></label><label>조디악 연결 효과 <button type="button" data-setting-vfx>강하게</button></label><button type="button" data-close-utility>닫기</button></div></section>
+    <section class="utility-dialog" id="settings-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="settings-title"><div class="modal-panel"><div class="settings-main" data-settings-view="main"><header class="modal-title"><h2 id="settings-title">설정</h2><button type="button" data-close-utility aria-label="설정 닫기">×</button></header><div class="modal-body"><label><span>몬스터 체력 숫자<small>전투 중 몬스터의 현재 체력을 표시합니다.</small></span><button type="button" data-setting-hp>ON</button></label><label><span>조디악 연결 효과<small>별자리 연결 시각 효과의 강도를 조절합니다.</small></span><button type="button" data-setting-vfx>강하게</button></label><button type="button" class="settings-link" data-open-rates>별자리 뽑기 확률 <b>›</b></button></div></div><div class="settings-rates" data-settings-view="rates" hidden><header class="modal-title"><button type="button" data-rates-back aria-label="설정으로 돌아가기">←</button><h2>별자리 뽑기 확률</h2></header><div class="rate-summary"><strong>일반 별 <b data-star-rate-total>95%</b></strong><strong>별자리 <b data-zodiac-rate-total>5%</b></strong></div><div id="rate-details" class="modal-body rate-list"></div></div></div></section>
     <section class="utility-dialog" id="mail-dialog" hidden role="dialog" aria-modal="true"><div><h2>편지함</h2><article><h3>[보상]</h3><p>업데이트 보상이 도착했습니다.</p><strong>별가루 ×3000</strong><button type="button" id="claim-update-reward">보상 수령</button></article><button type="button" data-close-utility>닫기</button></div></section>
-    <section class="utility-dialog" id="rates-dialog" hidden role="dialog" aria-modal="true"><div><h2>뽑기 확률</h2><div id="rate-details"></div><button type="button" data-close-utility>닫기</button></div></section>
 
     <main class="app" id="game-shell" hidden>
-      <button type="button" class="battle-exit" id="battle-exit" aria-label="전투 나가기">☰<span>나가기</span></button>
       <header class="game-hud">
         <div class="brand"><b>별자리 디펜스</b><small>ZODIAC DEFENSE</small></div>
         <div class="wave">
@@ -144,25 +142,22 @@
           <path class="roadStars" />
           <g class="route-arrows arrow"></g>
           <g class="cosmic-base">
-            <path class="base-wing" d="M45 4 40 2 42 7 38 10 45 8M55 4 60 2 58 7 62 10 55 8" />
-            <path class="base-shield" d="M50 0.8 55 3.5 55 8.5 50 11.2 45 8.5 45 3.5Z" />
-            <circle class="base-orbit" cx="50" cy="6" r="4.7" />
-            <circle class="goal goalPulse" cx="50" cy="6" r="5.5" />
-            <circle class="goal" cx="50" cy="6" r="3.5" />
-            <circle class="base-core" cx="50" cy="6" r="1.35" />
+            <path class="base-frame" d="M0 -4.1 3.55 -2.05 3.55 2.05 0 4.1 -3.55 2.05 -3.55 -2.05Z" />
+            <path class="base-accent" d="M-6 0h2.3M3.7 0H6" />
+            <circle class="base-orbit" cx="0" cy="0" r="3" />
+            <circle class="goal goalPulse" cx="0" cy="0" r="3.8" />
+            <circle class="base-core" cx="0" cy="0" r="1.15" />
+            <text class="base-star" x="0" y="1.05">✦</text>
           </g>
-          <text class="destination-label" x="50" y="13">DESTINATION</text>
-          <text x="50" y="7.4" text-anchor="middle" fill="#fff" font-size="4">
-            ✦
-          </text>
+          <text class="destination-label">DESTINATION</text>
           <g class="spawn-portal">
-            <circle class="portal-aura" cx="50" cy="94" r="6.2" />
-            <circle class="portal-rim" cx="50" cy="94" r="5" />
-            <circle class="portal-runes" cx="50" cy="94" r="4.25" />
-            <circle class="start" cx="50" cy="94" r="3.5" />
-            <path class="portal-swirl" d="M47.5 94c1.2-2.4 5.3-2 5.4.5.1 2-3.4 2.6-4.1.7-.5-1.4 1.8-2.2 2.5-.8" />
+            <circle class="portal-aura" cx="0" cy="0" r="4.1" />
+            <circle class="portal-rim" cx="0" cy="0" r="3.45" />
+            <circle class="portal-runes" cx="0" cy="0" r="2.65" />
+            <circle class="start" cx="0" cy="0" r="1.75" />
+            <path class="portal-swirl" d="M-2.1 0c1-2 4.5-1.7 4.6.4.1 1.7-2.9 2.2-3.5.6-.4-1.2 1.5-1.9 2.1-.7" />
           </g>
-          <text class="start-label" x="50" y="89">SPAWN</text>
+          <text class="start-label">SPAWN</text>
         </svg>
         <svg id="links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg
         ><svg id="ranges" viewBox="0 0 100 100" preserveAspectRatio="none"></svg
@@ -215,7 +210,7 @@
         </div>
       </section>
       <nav class="side-controls" aria-label="게임 설정">
-        <button type="button" disabled aria-label="일시정지 (사용할 수 없음)">Ⅱ</button>
+        <button type="button" id="battle-exit" aria-label="전투 나가기"><span>나가기</span></button>
         <button type="button" class="speed" id="speed" aria-label="게임 속도 변경">×1</button>
         <button type="button" data-open-settings aria-label="설정">⚙</button>
       </nav>

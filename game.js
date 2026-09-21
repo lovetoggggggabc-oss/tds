@@ -2527,8 +2527,11 @@ class MapVoteController {
 function renderActiveMap() {
   const pathSvg = getRequiredElement("paths"); const pathData = routePathData();
   pathSvg.querySelectorAll(".roadGlow,.roadEdge,.road,.roadStars").forEach((path) => path.setAttribute("d", pathData));
-  pathSvg.querySelectorAll(".start,.portal-aura,.portal-rim,.portal-runes").forEach((node) => { node.setAttribute("cx", activeMap.spawn.x); node.setAttribute("cy", activeMap.spawn.y); });
-  pathSvg.querySelectorAll(".goal,.base-orbit,.base-core").forEach((node) => { node.setAttribute("cx", activeMap.destination.x); node.setAttribute("cy", activeMap.destination.y); });
+  pathSvg.querySelector(".spawn-portal")?.setAttribute("transform", `translate(${activeMap.spawn.x} ${activeMap.spawn.y})`);
+  pathSvg.querySelector(".cosmic-base")?.setAttribute("transform", `translate(${activeMap.destination.x} ${activeMap.destination.y})`);
+  const spawnLabel = pathSvg.querySelector(".start-label"), destinationLabel = pathSvg.querySelector(".destination-label");
+  if (spawnLabel) { spawnLabel.setAttribute("x", activeMap.spawn.x); spawnLabel.setAttribute("y", Math.max(3, activeMap.spawn.y - 5)); }
+  if (destinationLabel) { destinationLabel.setAttribute("x", activeMap.destination.x); destinationLabel.setAttribute("y", Math.min(98, activeMap.destination.y + 6)); }
   const arrowLayer = pathSvg.querySelector(".route-arrows");
   if (arrowLayer) arrowLayer.innerHTML = activeMap.arrows.map((progress) => { const point = routePoint(progress), before = routePoint(progress-.004), after = routePoint(progress+.004); const angle = Math.atan2(after.y-before.y,after.x-before.x)*180/Math.PI+90; return `<path d="M0 -2.2L2 1.8L0 .8L-2 1.8Z" transform="translate(${point.x} ${point.y}) rotate(${angle})"/>`; }).join("");
 }
@@ -2747,7 +2750,19 @@ function bootstrapGame() {
   document.querySelectorAll?.("[data-open-relics]").forEach((button) => { button.onclick = navigateOnce(showRelics); });
   document.querySelectorAll?.("[data-main-home]").forEach((button) => { button.onclick = navigateOnce(showMainMenu); });
   getRequiredElement("battle-back").onclick = navigateOnce(showMainMenu);
-  getRequiredElement("play-battle").onclick = navigateOnce(beginMapVote);
+  // A delayed mobile synthetic click can be retargeted after the bottom-nav
+  // screen swap. Arm PLAY only when this control received its own pointerdown;
+  // keyboard/assistive clicks (detail === 0) remain supported.
+  const playBattleButton = getRequiredElement("play-battle");
+  let playIntentArmed = false;
+  playBattleButton.onpointerdown = (event) => { playIntentArmed = event.isPrimary !== false; };
+  playBattleButton.onpointercancel = () => { playIntentArmed = false; };
+  playBattleButton.onclick = (event) => {
+    event.preventDefault(); event.stopPropagation();
+    const intentionalActivation = event.detail === 0 || playIntentArmed;
+    playIntentArmed = false;
+    if (intentionalActivation) beginMapVote();
+  };
   getRequiredElement("battle-exit").onclick = () => { exitDialog.hidden = false; };
   getRequiredElement("exit-cancel").onclick = () => { exitDialog.hidden = true; };
   getRequiredElement("exit-confirm").onclick = leaveBattle;
@@ -2804,7 +2819,11 @@ function bootstrapGame() {
   });
   getRequiredElement("skip-summon").onclick = () => summonController.skip();
   getRequiredElement("close-draw-results").onclick = () => summonController.close();
-  const settingsDialog = getRequiredElement("settings-dialog"), mailDialog = getRequiredElement("mail-dialog"), ratesDialog = getRequiredElement("rates-dialog");
+  const settingsDialog = getRequiredElement("settings-dialog"), mailDialog = getRequiredElement("mail-dialog");
+  const setModalOpen = (dialog, open) => {
+    dialog.hidden = !open;
+    document.body.classList.toggle("modal-open", open || Boolean(document.querySelector(".utility-dialog:not([hidden])")));
+  };
   const refreshSettings = () => {
     document.body.dataset.zodiacVfx = playerProgress.settings.zodiacVfx;
     const hpButton = settingsDialog.querySelector("[data-setting-hp]"), vfxButton = settingsDialog.querySelector("[data-setting-vfx]");
@@ -2812,15 +2831,18 @@ function bootstrapGame() {
     if (vfxButton) vfxButton.textContent = playerProgress.settings.zodiacVfx === "strong" ? "강하게" : "약하게";
     document.querySelectorAll?.(".enemy-hp").forEach((node) => { node.hidden = !playerProgress.settings.showMonsterHpNumbers; });
   };
-  document.querySelectorAll?.("[data-open-settings]").forEach((button) => button.onclick = () => { refreshSettings(); settingsDialog.hidden = false; });
+  const showSettingsView = (view) => settingsDialog.querySelectorAll("[data-settings-view]").forEach((panel) => { panel.hidden = panel.dataset.settingsView !== view; });
+  document.querySelectorAll?.("[data-open-settings]").forEach((button) => button.onclick = (event) => { event.preventDefault(); event.stopPropagation(); refreshSettings(); showSettingsView("main"); setModalOpen(settingsDialog, true); });
   const hpSettingButton = settingsDialog.querySelector("[data-setting-hp]"), vfxSettingButton = settingsDialog.querySelector("[data-setting-vfx]");
   if (hpSettingButton) hpSettingButton.onclick = () => { playerProgress.settings.showMonsterHpNumbers = !playerProgress.settings.showMonsterHpNumbers; savePlayerProgress(); refreshSettings(); };
   if (vfxSettingButton) vfxSettingButton.onclick = () => { playerProgress.settings.zodiacVfx = playerProgress.settings.zodiacVfx === "strong" ? "weak" : "strong"; savePlayerProgress(); refreshSettings(); };
   const refreshMail = () => { const claimed = playerProgress.claimedMail[UPDATE_REWARD_ID] === true; document.querySelectorAll?.("[data-mail-badge]").forEach((node)=>node.hidden=claimed); const button=getRequiredElement("claim-update-reward"); button.disabled=claimed; button.textContent=claimed?"수령 완료":"보상 수령"; };
-  document.querySelectorAll?.("[data-open-mail]").forEach((button)=>button.onclick=()=>{refreshMail();mailDialog.hidden=false;});
+  document.querySelectorAll?.("[data-open-mail]").forEach((button)=>button.onclick=()=>{refreshMail();setModalOpen(mailDialog,true);});
   const claimUpdateReward = getRequiredElement("claim-update-reward"); claimUpdateReward.onclick=()=>{ if(playerProgress.claimedMail[UPDATE_REWARD_ID]) return; playerProgress.claimedMail[UPDATE_REWARD_ID]=true; playerProgress.starDust+=3000; savePlayerProgress(); refreshMail(); updateMetaCurrency(); };
-  document.querySelectorAll?.("[data-open-rates]").forEach((button)=>button.onclick=()=>{ const stars=Object.values(STAR_TYPES), zodiacs=Object.values(CONSTELLATION_DEFINITIONS); getRequiredElement("rate-details").innerHTML=`<p>일반 별 전체 <b>${GACHA_RULES.starChance*100}%</b></p>${stars.map((x)=>`<small>${x.name} ${(GACHA_RULES.starChance/stars.length*100).toFixed(2)}%</small>`).join("")}<p>별자리 전체 <b>${GACHA_RULES.constellationChance*100}%</b></p>${zodiacs.map((x)=>`<small>${x.name} ${(GACHA_RULES.constellationChance/zodiacs.length*100).toFixed(2)}%</small>`).join("")}`;ratesDialog.hidden=false;});
-  document.querySelectorAll?.("[data-close-utility]").forEach((button)=>button.onclick=()=>button.closest(".utility-dialog").hidden=true);
+  document.querySelectorAll?.("[data-open-rates]").forEach((button)=>button.onclick=()=>{ const stars=Object.values(STAR_TYPES), zodiacs=Object.values(CONSTELLATION_DEFINITIONS); getRequiredElement("rate-details").innerHTML=`<h3>일반 별 개별 확률</h3>${stars.map((x)=>`<div><span>${x.name}</span><b>${(GACHA_RULES.starChance/stars.length*100).toFixed(2)}%</b></div>`).join("")}<h3>별자리 개별 확률</h3>${zodiacs.map((x)=>`<div><span>${x.name}</span><b>${(GACHA_RULES.constellationChance/zodiacs.length*100).toFixed(2)}%</b></div>`).join("")}`; settingsDialog.querySelector("[data-star-rate-total]").textContent=`${GACHA_RULES.starChance*100}%`; settingsDialog.querySelector("[data-zodiac-rate-total]").textContent=`${GACHA_RULES.constellationChance*100}%`; showSettingsView("rates"); });
+  const ratesBackButton = settingsDialog.querySelector("[data-rates-back]");
+  if (ratesBackButton) ratesBackButton.onclick=()=>showSettingsView("main");
+  document.querySelectorAll?.("[data-close-utility]").forEach((button)=>button.onclick=()=>setModalOpen(button.closest(".utility-dialog"),false));
   refreshSettings(); refreshMail();
   window.addEventListener("resize", () => {
     RangeSystem.refresh();
