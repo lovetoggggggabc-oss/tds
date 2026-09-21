@@ -19,13 +19,13 @@ assert.match(css, /padding-bottom:calc\(var\(--mobile-safe-bottom\) \+ 64px\)/);
 
 assert.match(game, /Math\.hypot\([^)]*\) > 10/);
 assert.match(game, /let modeSelectionLocked = false/);
-assert.match(game, /now - battleMenuOpenedAt > 80/);
+assert.doesNotMatch(game, /battleMenuOpenedAt/, "mode activation must rely on a card-local pointer lifecycle, not a timer");
 assert.match(game, /bindPointerTap\(card/);
 assert.match(game, /mode === GAME_MODES\.NORMAL \? beginMapRandom\(\) : startBattle\(GAME_MODES\.EXPERIMENTAL_VERTICAL\)/);
-assert.match(game, /const GAME_VERSION = "1\.02 BETA"/);
-assert.match(game, /id: "beta_1_02_mode_selection_fix", version: GAME_VERSION/);
+assert.match(game, /const GAME_VERSION = "1\.03 BETA"/);
+assert.match(game, /id: "beta_1_03_collection_ui_update", version: GAME_VERSION/);
 assert.match(game, /id: "beta_1_01_mobile_play_fix", version: "1\.01 BETA"/);
 assert.match(game, /class="news-version">VERSION \$\{item\.version\}/);
 assert.match(html, /class="game-version" data-game-version/);
 
-console.log("Full-card mobile mode selection and 1.02 BETA version/news regression checks passed.");
+console.log("Full-card mobile mode selection and 1.03 BETA version/news regression checks passed.");
