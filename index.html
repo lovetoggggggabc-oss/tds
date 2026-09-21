@@ -9,17 +9,17 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=49" />
+    <link rel="stylesheet" href="styles.css?v=50" />
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
       <div class="lobby-sky" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="main-top-bar"><div class="permanent-wallet" aria-label="보유 영구 재화">
-        <span><i class="fragment-gem">✦</i><small>별가루</small><b data-star-dust>0</b></span>
-        <span><i class="shard-gem">◆</i><small>별조각</small><b data-star-shards>0</b></span>
-        <span><i class="meteor-gem">☄</i><small>운석조각</small><b data-meteor-fragments>0</b></span>
+        <span class="currency-item"><i class="fragment-gem">✦</i><small class="currency-label">별가루</small><b class="currency-value" data-star-dust>0</b></span>
+        <span class="currency-item"><i class="shard-gem">◆</i><small class="currency-label">별조각</small><b class="currency-value" data-star-shards>0</b></span>
+        <span class="currency-item"><i class="meteor-gem">☄</i><small class="currency-label">운석조각</small><b class="currency-value" data-meteor-fragments>0</b></span>
       </div>
-      <div class="menu-tools"><button type="button" data-open-news aria-label="뉴스"><span>뉴스</span><b data-news-badge>NEW</b></button><button type="button" data-open-mail aria-label="편지함">✉<b data-mail-badge>2</b></button><button type="button" data-open-settings aria-label="설정">⚙</button></div></div>
+      <div class="menu-tools"><button type="button" data-open-news aria-label="뉴스"><span>뉴스</span><b data-news-badge>NEW</b></button><button type="button" data-open-mail aria-label="우편함"><i aria-hidden="true">✉</i><span class="utility-label">우편함</span><b data-mail-badge>2</b></button><button type="button" data-open-settings aria-label="설정"><i aria-hidden="true">⚙</i><span class="utility-label">설정</span></button></div></div>
       <header class="lobby-title">
         <div class="celestial-emblem" aria-hidden="true"><i>✦</i></div>
         <h1 id="main-menu-title">별자리 디펜스</h1>
