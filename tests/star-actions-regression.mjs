@@ -33,11 +33,11 @@ context.arena = {
 };
 vm.createContext(context);
 vm.runInContext(
-  `${definitions}\nthis.testApi = { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem };`,
+  `${definitions}\nthis.testApi = { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, StarManager, Targeting, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem };`,
   context,
 );
 
-const { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem } =
+const { playerProgress, CONFIG, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, Star, StarManager, Targeting, Constellation, RangeSystem, MergeSystem, SwapSystem, ZodiacSystem, DivinationSystem } =
   context.testApi;
 playerProgress.ownedConstellations = Object.keys(CONSTELLATION_DEFINITIONS);
 playerProgress.equippedConstellations = Object.keys(CONSTELLATION_DEFINITIONS);
@@ -103,6 +103,27 @@ context.game = {
   },
   markDirty() {},
 };
+
+// Purple reuses spatial targeting and keeps source ordering for equal HP.
+const targetPosition = { x: 50, y: 50 };
+const enemiesByHp = [120, 40, 40].map((hp) => ({ hp, dead: false, position: () => targetPosition }));
+context.game.spatial = { near: () => enemiesByHp };
+const purple = new Star("purple");
+assert.equal(Targeting.choose(purple, enemiesByHp, targetPosition), enemiesByHp[1]);
+
+// Green support is derived from live, unconsumed board state rather than a
+// permanent mutation, so merge/swap/zodiac consumption immediately changes it.
+const supportBoard = { stars: [new Star("green"), new Star("green"), new Star("blue")] };
+supportBoard.greenStarCount = StarManager.prototype.greenStarCount;
+const attackBoard = { stars: [], greenStarCount: StarManager.prototype.greenStarCount };
+context.game.players = [{ manager: supportBoard }, { manager: attackBoard }];
+assert.equal(StarManager.prototype.alliedAttackSpeedModifier.call(attackBoard), 1.06);
+supportBoard.stars[0].support = true;
+assert.equal(StarManager.prototype.alliedAttackSpeedModifier.call(attackBoard), 1.03);
+supportBoard.stars[1] = null;
+assert.equal(StarManager.prototype.alliedAttackSpeedModifier.call(attackBoard), 1);
+context.game.players = [];
+context.game.spatial = null;
 
 // Merge is immediate, clears the successful result selection, and empties one material slot.
 const mergeManager = makeManager();
@@ -395,7 +416,7 @@ assert.equal(twilight.effectiveRange(), 5, "Twilight retains range 5 during tran
 context.game.gameTime = 0;
 
 // Divination replaces exchange for a constellation: 30 is paid first, then
-// success grants 60 while failure removes at most another 15.
+// success grants 60 while the alternate result grants 15.
 const divineManager = makeManager();
 divineManager.stars[0] = new Star("blue");
 divineManager.stars[0].constellation = { center: 0, definitionId: "ASTROLOGER", runtime: {} };
@@ -403,12 +424,13 @@ divineManager.selected = [0];
 context.Math.random = () => 0.49;
 DivinationSystem.execute(divineManager, 0);
 assert.equal(divineManager.player.resources.starlight, 130);
+divineManager.player.resources.starlight = 100;
 context.Math.random = () => 0.51;
 DivinationSystem.execute(divineManager, 0);
 assert.equal(divineManager.player.resources.starlight, 85);
 divineManager.player.resources.starlight = 31;
 DivinationSystem.execute(divineManager, 0);
-assert.equal(divineManager.player.resources.starlight, 0);
+assert.equal(divineManager.player.resources.starlight, 16);
 assert.deepEqual(divinationResults.map((result) => result.success), [true, false, false]);
 
 // Visual paths preserve selection, deselection, and reselection order for

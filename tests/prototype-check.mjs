@@ -68,7 +68,7 @@ assert.match(
   "the control bar must live in a fixed top-level input layer",
 );
 assert.match(js, /this\.stars = Array\(MAX_STARS_PER_PLAYER\)\.fill\(null\)/);
-assert.match(js, /startStarlight:\s*5000/);
+assert.match(js, /startStarlight:\s*500/);
 assert.match(js, /startDivinity:\s*50/);
 assert.match(js, /waveSeconds:\s*10/);
 assert.match(js, /bossWaveSeconds:\s*20/);
