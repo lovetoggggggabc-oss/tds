@@ -303,7 +303,9 @@ const judgementEnemy = { dead:false, judgementTarget:true, hp:10000, distanceTra
 const frontEnemy = { dead:false, judgementTarget:false, hp:50000, distanceTravelled:90, position:()=>({x:50,y:50}), hit:judgementEnemy.hit };
 context.game.enemies = [frontEnemy, judgementEnemy]; context.game.spatial = null;
 judgement.behavior.attack(judgement, judgementEnemy, {x:50,y:50});
-assert.equal(judgementEnemy.hp, 8000, "judgement deals 1,000 plus 10% of the target's pre-hit current HP");
+assert.equal(judgementEnemy.hp, 8650, "judgement deals 1,000 plus 3.5% of the target's pre-hit current HP");
+judgement.behavior.attack(judgement, judgementEnemy, {x:50,y:50});
+assert.equal(judgementEnemy.hp, 7347.25, "each hit snapshots the newly reduced current HP before dealing execution damage");
 assert.equal(frontEnemy.hp, 50000, "an in-range judgement target takes priority over route progress");
 const progressed = Targeting.choose({ data:()=>({range:7.5,target:"progress"}) }, [judgementEnemy, frontEnemy], {x:50,y:50});
 assert.equal(progressed, frontEnemy, "progress targeting uses route distance rather than HP or screen position");
