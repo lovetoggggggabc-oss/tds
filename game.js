@@ -1516,10 +1516,10 @@ function curvePoint(points, t) {
     y: u ** 3 * points[0].y + 3 * u * u * t * points[1].y + 3 * u * t * t * points[2].y + t ** 3 * points[3].y };
 }
 function buildRouteCache(map) {
-  // Vertical battlefields render a 2.8x taller world. Measure route samples
-  // in that same world metric so an equal travelled distance is independent
-  // of whether a segment is horizontal, vertical, or curved.
-  const xScale = 1;
+  // Measure every sample in the map's actual rendered aspect ratio. This keeps
+  // a monster's visual speed constant through horizontal and vertical bends;
+  // map shape never adds an arbitrary speed multiplier.
+  const xScale = map.assetWidth && map.assetHeight ? map.assetWidth / map.assetHeight : 1;
   const yScale = map.worldHeightScale || 1;
   const samples = [{ ...map.spawn, distance: 0 }]; let total = 0; let previous = map.spawn;
   map.route.forEach((segment) => { for (let step = 1; step <= 80; step++) {
