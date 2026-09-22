@@ -2457,7 +2457,7 @@ body.modal-open #main-menu .main-top-bar.redesigned{visibility:hidden!important}
 
 /* Illustrated normal battles use one fixed composition. The map and every
    gameplay coordinate share the same fitted native-image rectangle. */
-.battle-ui-art{position:absolute;z-index:124;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.battle-ui-art{position:absolute;z-index:50;inset:0;width:100%;height:100%;object-fit:fill;display:block;visibility:visible;opacity:1;pointer-events:none;user-select:none;-webkit-user-drag:none}
 .arena.illustrated-normal-map{border:0;border-radius:0;background:#050914;box-shadow:none}
 .arena.illustrated-normal-map #paths{z-index:4;opacity:1}
 .arena.illustrated-normal-map .battle-world.fixed-map-ratio #paths .roadGlow,
@@ -2476,14 +2476,14 @@ body.modal-open #main-menu .main-top-bar.redesigned{visibility:hidden!important}
 @keyframes ambientConstellation{50%{opacity:.32;translate:2px -3px}to{opacity:.16;translate:-2px 2px}}
 .arena.illustrated-normal-map .free-field,.arena.illustrated-normal-map #links,.arena.illustrated-normal-map #ranges,.arena.illustrated-normal-map #effects{z-index:3}
 #game-shell:has(.arena.illustrated-normal-map){padding:0;gap:0;isolation:isolate;background:#050914}
-#game-shell:has(.arena.illustrated-normal-map) .battle-map-area{position:absolute;z-index:10;inset:0}
+#game-shell:has(.arena.illustrated-normal-map) .battle-map-area{position:absolute;inset:0}
 #game-shell:has(.arena.illustrated-normal-map) .battle-map-area .arena{height:100%;border-radius:0}
-#game-shell:has(.arena.illustrated-normal-map) .battle-overlay-layer{z-index:130}
+#game-shell:has(.arena.illustrated-normal-map) .battle-overlay-layer{z-index:60}
 #game-shell:has(.arena.illustrated-normal-map) .battle-control-rail{top:11.4%;right:1.6%;gap:1.05%;height:18.2%;display:grid;grid-template-rows:repeat(3,1fr)}
 #game-shell:has(.arena.illustrated-normal-map) .battle-control-rail button{width:18.2cqw;height:auto;min-width:0;min-height:44px;border:0;border-radius:22%;color:transparent;background:transparent;box-shadow:none;touch-action:manipulation}
 #game-shell:has(.arena.illustrated-normal-map) .battle-control-rail button:focus-visible{outline:2px solid #bdefff;outline-offset:2px}
 #game-shell:has(.arena.illustrated-normal-map) .battle-control-rail button:active{background:#9de9ff22;transform:scale(.96)}
-#game-shell:has(.arena.illustrated-normal-map) .battle-bottom-area{position:absolute;z-index:131;inset:0;min-height:0;padding:0;background:none;pointer-events:none}
+#game-shell:has(.arena.illustrated-normal-map) .battle-bottom-area{position:absolute;z-index:60;inset:0;min-height:0;padding:0;background:none;pointer-events:none}
 #game-shell:has(.arena.illustrated-normal-map) .battle-bottom-hud{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;margin:0}
 #game-shell:has(.arena.illustrated-normal-map) .game-controls{position:absolute;inset:0;padding:0}
 #game-shell:has(.arena.illustrated-normal-map) .game-controls button{color:transparent!important;background:transparent!important;border:0!important;box-shadow:none!important;touch-action:manipulation}
@@ -2495,19 +2495,26 @@ body.modal-open #main-menu .main-top-bar.redesigned{visibility:hidden!important}
 #game-shell:has(.arena.illustrated-normal-map) .battle-resources .primary-resource{min-width:25cqw;height:3.6cqh;padding:0 1.8cqw;border:0;background:#07102ee8;grid-template-columns:1fr;border-radius:20px}
 #game-shell:has(.arena.illustrated-normal-map) .battle-resources .primary-resource i,#game-shell:has(.arena.illustrated-normal-map) .battle-resources .primary-resource em{display:none}
 #game-shell:has(.arena.illustrated-normal-map) .battle-resources .primary-resource b{grid-column:1;justify-self:end;align-self:center;padding-right:1cqw;color:#fff3ad;font-size:clamp(11px,3.4cqw,17px)}
-#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud{z-index:132}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud{z-index:60}
 #game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .wave{top:1.15%;background:#07102ee8;border:0;box-shadow:none}
 #game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .hp{top:1.25%;right:2%;width:29%;max-width:none;justify-content:center;background:#07102ee8;border:0;box-shadow:none}
 #game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .next-wave{top:5.1%;right:2%;width:30%;max-width:none;background:#07102ee8;border:0;box-shadow:none}
 #game-shell:has(.arena.illustrated-normal-map) .hint{z-index:4;bottom:11.9%;left:24%;right:24%;color:#d9e7ff;background:#07102ecc;border:0}
-#game-shell:has(.arena.illustrated-normal-map) .context-actions{z-index:140;bottom:12%}
-#game-shell:has(.arena.experimental-vertical) .battle-space-background,#game-shell:has(.arena.experimental-vertical) .battle-map-art,#game-shell:has(.arena.experimental-vertical) .battle-ui-art{display:none}
+#game-shell:has(.arena.illustrated-normal-map) .context-actions{z-index:70;bottom:12%}
+#game-shell:has(.arena.experimental-vertical) .battle-space-background,#game-shell:has(.arena.experimental-vertical) .battle-map-art{display:none}
 @media(prefers-reduced-motion:reduce){.map-ambient-motion i,.map-ambient-motion b{animation:none}}
 
 /* The frame artwork and every interactive/text layer use the battle shell's
    same 9:16 coordinate space. Artwork never intercepts a touch; only the
    transparent controls above its painted buttons do. */
-#game-shell:has(.arena.illustrated-normal-map) .battle-ui-art{object-fit:fill;pointer-events:none}
+#game-shell:has(.arena.illustrated-normal-map) .battle-map-art{z-index:1}
+#game-shell:has(.arena.illustrated-normal-map) .battle-world>:not(.battle-space-background):not(.battle-map-art){z-index:10}
+#game-shell:has(.arena.illustrated-normal-map) .battle-ui-art{z-index:50;display:block;visibility:visible;opacity:1;object-fit:fill;pointer-events:none}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud,
+#game-shell:has(.arena.illustrated-normal-map) .battle-overlay-layer,
+#game-shell:has(.arena.illustrated-normal-map) .battle-bottom-area{z-index:60}
+#game-shell:has(.arena.illustrated-normal-map) .battle-control-rail,
+#game-shell:has(.arena.illustrated-normal-map) .game-controls{z-index:70}
 #game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .wave{top:1.15%;width:31%;padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none}
 #game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .wave>b>small{font:800 clamp(8px,2.35cqw,13px)/1 system-ui;color:#aebfee;letter-spacing:.14em;text-shadow:0 0 7px #4779ff}
 #game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .wave>b>#wave{font:900 clamp(18px,5.8cqw,32px)/.95 Georgia,serif;color:#eef3ff;text-shadow:0 0 5px #fff,0 0 13px #627dff}
