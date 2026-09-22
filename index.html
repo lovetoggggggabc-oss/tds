@@ -219,11 +219,11 @@
         </div>
       </section>
       </div>
-      <img class="battle-ui-art" src="assets/battle/battle-ui-overlay.png" alt="" aria-hidden="true" draggable="false">
+      <img class="battle-ui-art" id="battleUiFrame" src="assets/battle/battle-ui-default-frame.png" alt="" aria-hidden="true" draggable="false">
       <div class="battle-overlay-layer" aria-label="전투 오버레이"><div class="binding-status-slot"></div><aside class="star-info battle-selection-info" id="starInfo" hidden aria-live="polite"></aside><nav class="side-controls battle-control-rail" aria-label="게임 설정">
         <button type="button" id="battle-exit" aria-label="전투 나가기"><span>나가기</span></button>
         <button type="button" class="speed" id="speed" aria-label="게임 속도 변경">×1</button>
-        <button type="button" data-open-settings aria-label="설정">⚙</button>
+        <button type="button" data-open-settings aria-label="설정"><span>설정</span></button>
       </nav></div>
       <section
         class="zodiac-codex"
@@ -245,9 +245,9 @@
         <section class="game-controls" data-player="0" aria-label="1P 게임 조작">
           <b class="player-badge">1P</b>
           <button type="button" data-act="zodiac"><i>✦</i><span>조디악<small>ZODIAC</small></span></button>
-          <button type="button" class="zodiac-cancel" data-act="zodiac-cancel" hidden>↶ 조디악 실행 취소</button>
-          <button type="button" class="battle-resonance-button" data-battle-resonance>✦ 공명</button>
-          <button type="button" class="codex-button" data-act="codex">별자리 도감</button>
+          <button type="button" class="zodiac-cancel" data-act="zodiac-cancel" hidden><span>실행 취소</span></button>
+          <button type="button" class="battle-resonance-button" data-battle-resonance><span>공명</span></button>
+          <button type="button" class="codex-button" data-act="codex"><span>별자리 도감</span></button>
         </section>
       </nav></div>
     </main>
