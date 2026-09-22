@@ -9,7 +9,8 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=57" />
+    <link rel="stylesheet" href="styles.css?v=58" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
@@ -19,7 +20,7 @@
         <span class="currency-item"><i class="atlas-sprite currency-shard" aria-hidden="true"></i><small class="currency-label">별조각</small><b class="currency-value" data-star-shards>0</b></span>
         <span class="currency-item"><i class="atlas-sprite currency-meteor" aria-hidden="true"></i><small class="currency-label">운석조각</small><b class="currency-value" data-meteor-fragments>0</b></span>
       </div>
-      <div class="menu-tools"><button type="button" data-open-news aria-label="소식"><i class="atlas-sprite tool-news" aria-hidden="true"></i><span>소식</span><b data-news-badge>NEW</b></button><button type="button" data-open-mail aria-label="우편함"><i class="atlas-sprite tool-mail" aria-hidden="true"></i><span class="utility-label">우편함</span><b data-mail-badge>2</b></button><button type="button" data-open-settings aria-label="설정"><i class="atlas-sprite tool-settings" aria-hidden="true"></i><span class="utility-label">설정</span></button></div></div>
+      <div class="menu-tools"><button type="button" class="account-button" data-open-account aria-label="계정"><span data-account-label>로그인</span></button><button type="button" data-open-news aria-label="소식"><i class="atlas-sprite tool-news" aria-hidden="true"></i><span>소식</span><b data-news-badge>NEW</b></button><button type="button" data-open-mail aria-label="우편함"><i class="atlas-sprite tool-mail" aria-hidden="true"></i><span class="utility-label">우편함</span><b data-mail-badge>2</b></button><button type="button" data-open-settings aria-label="설정"><i class="atlas-sprite tool-settings" aria-hidden="true"></i><span class="utility-label">설정</span></button></div></div>
       <header class="lobby-title">
         <h1 id="main-menu-title" class="sr-only">별자리 디펜스</h1><span class="main-logo atlas-sprite" role="img" aria-label="별자리 디펜스"></span>
         <small class="game-version" data-game-version aria-label="현재 게임 버전"></small>
@@ -251,6 +252,21 @@
     <section class="confirm-dialog" id="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" hidden>
       <div><small>LEAVE BATTLE</small><h2 id="exit-dialog-title">전투 종료</h2><p>전투를 종료하고 메인 메뉴로 돌아가시겠습니까?</p><footer><button type="button" id="exit-cancel">취소</button><button type="button" class="danger" id="exit-confirm">나가기</button></footer></div>
     </section>
+    <div class="account-modal" id="account-modal" hidden>
+      <div class="account-panel" role="dialog" aria-modal="true" aria-labelledby="account-title">
+        <button type="button" class="account-close" data-close-account aria-label="닫기">×</button>
+        <small>ASTRA ACCOUNT</small><h2 id="account-title">계정</h2>
+        <p class="account-status" data-account-status>로그인하면 진행 상황을 클라우드에 저장할 수 있습니다.</p>
+        <div data-auth-form>
+          <label>이메일<input type="email" data-auth-email autocomplete="email" placeholder="email@example.com"></label>
+          <label>비밀번호<input type="password" data-auth-password autocomplete="current-password" minlength="6" placeholder="6자 이상"></label>
+          <div class="account-actions"><button type="button" data-auth-login>로그인</button><button type="button" data-auth-signup>회원가입</button></div>
+          <small class="account-help">회원가입 후 이메일 인증을 완료하고 로그인하세요.</small>
+        </div>
+        <div data-auth-user hidden><b data-auth-email-label></b><small>클라우드 저장 연결됨</small><button type="button" data-auth-logout>로그아웃</button></div>
+      </div>
+    </div>
+
     <script src="game.js?v=56" defer></script>
   </body>
 </html>

@@ -1,0 +1,3 @@
+import fs from "node:fs";import assert from "node:assert/strict";
+const game=fs.readFileSync(new URL("../game.js",import.meta.url),"utf8"),html=fs.readFileSync(new URL("../index.html",import.meta.url),"utf8");
+assert.match(game,/GAME_VERSION = "1\.12 BETA"/);assert.match(game,/from\("player_saves"\)\.upsert/);assert.match(game,/signInWithPassword/);assert.match(game,/auth\.signUp/);assert.match(game,/auth\.signOut/);assert.match(game,/queueCloudSave\(\)/);assert.match(html,/id="account-modal"/);assert.match(html,/data-auth-login/);console.log("1.12 auth regression assertions passed");

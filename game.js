@@ -41,7 +41,7 @@ let activeGameMode = GAME_MODES.NORMAL;
 
 const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", MAP_RANDOM: "MAP_RANDOM", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS", MONSTER_CODEX: "MONSTER_CODEX", NEWS: "NEWS" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
-const PROGRESS_SCHEMA_VERSION = 9;
+const PROGRESS_SCHEMA_VERSION = 10;
 const UPDATE_REWARD_ID = "balance_update_stardust_3000_v1";
 const RESONANCE_UPDATE_REWARD_ID = "beta_1_05_resonance_stardust_1000";
 const METEOR_MAIL_REWARD_ID = "meteor_fragment_mail_30_v1";
@@ -51,13 +51,16 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.11 BETA";
+const GAME_VERSION = "1.12 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, oneStarChance: .04, twoStarChance: .01, oneStarPityLimit: 40, twoStarPityLimit: 100 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong", showBattleStarInfo: true });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
+  id: "beta_1_12_account_cloud_save", version: GAME_VERSION, date: "2026.09.22", title: "계정 및 클라우드 저장",
+  sections: Object.freeze([Object.freeze({ title: "[1.12 BETA]", paragraphs: Object.freeze(["이메일 계정 로그인과 클라우드 저장 기능을 추가했습니다."]) }),Object.freeze({ title: "계정", bullets: Object.freeze(["이메일 회원가입 · 로그인 · 로그아웃 지원", "로그인 시 계정별 player_saves 데이터를 불러옵니다.", "게임 진행 변경 시 로컬 저장과 함께 클라우드에도 자동 저장합니다.", "처음 로그인해 클라우드 저장이 비어 있으면 현재 기기의 진행 상황을 계정에 업로드합니다."]) })]), footer: "이제 같은 계정으로 다른 기기에서도 진행 상황을 이어갈 수 있습니다.",
+}), Object.freeze({
   id: "beta_1_11_dawn_update", version: GAME_VERSION, date: "2026.09.22", title: "여명의 자리",
   sections: Object.freeze([
     Object.freeze({ title: "[1.11 BETA]", paragraphs: Object.freeze(["별자리 등급과 신규 ★★ 별자리 여명의 자리를 추가했습니다."]) }),
@@ -472,9 +475,45 @@ function loadPlayerProgress() {
   }
 }
 const playerProgress = loadPlayerProgress();
+const SUPABASE_URL = "https://lhbqruokcuckqirwhsvj.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_aTUBawq3XkOztNA80YTvsA_L2J3CZ2k";
+const supabaseClient = typeof window !== "undefined" && window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+let authUser = null, cloudSaveTimer = 0, applyingCloudSave = false;
+function replaceProgressFromCloud(saved) {
+  if (!saved || typeof saved !== "object") return false;
+  try {
+    localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(saved));
+    const normalized = loadPlayerProgress();
+    Object.keys(playerProgress).forEach((key) => delete playerProgress[key]);
+    Object.assign(playerProgress, normalized);
+    return true;
+  } catch (_) { return false; }
+}
+async function pushCloudSave() {
+  if (!supabaseClient || !authUser || applyingCloudSave) return;
+  const payload = JSON.parse(JSON.stringify(playerProgress));
+  await supabaseClient.from("player_saves").upsert({ user_id: authUser.id, save_data: payload, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+}
+function queueCloudSave() {
+  if (!authUser || applyingCloudSave) return;
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(() => { pushCloudSave().catch(() => {}); }, 700);
+}
+async function syncCloudAfterLogin(user) {
+  authUser = user;
+  const { data, error } = await supabaseClient.from("player_saves").select("save_data").eq("user_id", user.id).maybeSingle();
+  if (!error && data?.save_data) {
+    applyingCloudSave = true;
+    replaceProgressFromCloud(data.save_data);
+    applyingCloudSave = false;
+    savePlayerProgress();
+  } else if (!error) await pushCloudSave();
+  window.dispatchEvent(new CustomEvent("astra-auth-updated"));
+}
 function savePlayerProgress() {
   try {
     if (typeof localStorage !== "undefined") localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(playerProgress));
+    queueCloudSave();
   } catch (_error) {
     // The game remains playable when storage is blocked by private-browser settings.
   }
@@ -3585,6 +3624,17 @@ function bootstrapGame() {
   finalWave = getRequiredElement("finalWave");
   gameover = getRequiredElement("gameover");
 
+  const accountModal=document.getElementById("account-modal"), authForm=accountModal?.querySelector("[data-auth-form]"), authUserPanel=accountModal?.querySelector("[data-auth-user]");
+  const refreshAccountUI=()=>{const logged=Boolean(authUser);document.querySelectorAll("[data-account-label]").forEach(n=>n.textContent=logged?(authUser.email||"계정"):"로그인");if(authForm)authForm.hidden=logged;if(authUserPanel)authUserPanel.hidden=!logged;const label=accountModal?.querySelector("[data-auth-email-label]");if(label)label.textContent=authUser?.email||"";const status=accountModal?.querySelector("[data-account-status]");if(status)status.textContent=logged?"로그인됨 · 진행 상황이 클라우드에 저장됩니다.":"로그인하면 진행 상황을 클라우드에 저장할 수 있습니다.";};
+  document.querySelectorAll("[data-open-account]").forEach(b=>b.onclick=()=>{refreshAccountUI();accountModal.hidden=false;});
+  accountModal?.querySelector("[data-close-account]")?.addEventListener("click",()=>accountModal.hidden=true);
+  accountModal?.addEventListener("click",(e)=>{if(e.target===accountModal)accountModal.hidden=true;});
+  const authValues=()=>({email:accountModal.querySelector("[data-auth-email]").value.trim(),password:accountModal.querySelector("[data-auth-password]").value});
+  accountModal?.querySelector("[data-auth-signup]")?.addEventListener("click",async()=>{const {email,password}=authValues();if(!email||password.length<6)return showToast("이메일과 6자 이상 비밀번호를 입력하세요.");const {error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:"https://lovetoggggggabc-oss.github.io/tds/"}});showToast(error?error.message:"인증 메일을 보냈습니다. 이메일을 확인하세요.");});
+  accountModal?.querySelector("[data-auth-login]")?.addEventListener("click",async()=>{const {email,password}=authValues();const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)return showToast("로그인 실패: "+error.message);await syncCloudAfterLogin(data.user);refreshAccountUI();updateMetaCurrency();renderCollection?.();renderRelics?.();showToast("로그인했습니다.");});
+  accountModal?.querySelector("[data-auth-logout]")?.addEventListener("click",async()=>{await pushCloudSave();await supabaseClient.auth.signOut();authUser=null;refreshAccountUI();showToast("로그아웃했습니다.");});
+  window.addEventListener("astra-auth-updated",()=>{refreshAccountUI();updateMetaCurrency();});
+  if(supabaseClient){supabaseClient.auth.getSession().then(async({data})=>{if(data.session?.user)await syncCloudAfterLogin(data.session.user);refreshAccountUI();});supabaseClient.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_OUT"){authUser=null;refreshAccountUI();}});}
   const mainMenu = getRequiredElement("main-menu");
   const battleMenu = getRequiredElement("battle-menu");
   const gachaScreen = getRequiredElement("gacha-screen");
