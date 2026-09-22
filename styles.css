@@ -2434,3 +2434,12 @@ body[data-resonance-pulse="red"] .resonance-panel{animation:resonanceRed .8s eas
 
 /* 1.15.6 top menu owns the highest interactive layer */
 #main-menu .main-top-bar.redesigned{z-index:900!important;pointer-events:none!important}#main-menu .main-profile,#main-menu .permanent-wallet,#main-menu .main-menu-dropdown-wrap{pointer-events:auto!important}#main-menu .main-menu-dropdown-wrap{isolation:isolate;z-index:910!important}#main-menu .main-menu-toggle{z-index:912!important;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}#main-menu .main-menu-dropdown{z-index:911!important;display:grid}#main-menu .main-menu-dropdown[hidden]{display:none!important}
+
+/* Native disclosure keeps the utility menu usable even when Safari emits a
+   different pointer/touch/click sequence. */
+#main-menu details.main-menu-dropdown-wrap{list-style:none}
+#main-menu .main-menu-toggle{display:flex;align-items:center;justify-content:center;gap:5px;list-style:none;cursor:pointer}
+#main-menu .main-menu-toggle::-webkit-details-marker{display:none}
+#main-menu .main-menu-dropdown{display:none!important}
+#main-menu .main-menu-dropdown-wrap[open]>.main-menu-dropdown{display:grid!important}
+#main-menu .main-menu-dropdown-wrap[open]>.main-menu-toggle i{transform:rotate(180deg)}

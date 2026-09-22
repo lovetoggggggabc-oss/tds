@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=66" />
+    <link rel="stylesheet" href="styles.css?v=67" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
@@ -18,7 +18,7 @@
       <div class="main-top-bar redesigned">
         <button type="button" class="main-profile" data-open-profile aria-label="프로필 열기"><span class="profile-avatar" data-profile-avatar>✦</span><span><b data-profile-nickname>별빛 수호자</b><small>PROFILE</small></span></button>
         <div class="permanent-wallet" aria-label="보유 영구 재화"><span class="currency-item"><i class="atlas-sprite currency-dust" aria-hidden="true"></i><small class="currency-label">별가루</small><b class="currency-value" data-star-dust>0</b></span><span class="currency-item"><i class="atlas-sprite currency-shard" aria-hidden="true"></i><small class="currency-label">별조각</small><b class="currency-value" data-star-shards>0</b></span><span class="currency-item"><i class="atlas-sprite currency-meteor" aria-hidden="true"></i><small class="currency-label">운석조각</small><b class="currency-value" data-meteor-fragments>0</b></span></div>
-        <div class="main-menu-dropdown-wrap"><button type="button" class="main-menu-toggle" data-main-menu-toggle aria-expanded="false">메뉴 <i>⌄</i></button><div class="main-menu-dropdown" data-main-menu-dropdown hidden><button type="button" data-open-mail>편지함 <b data-mail-badge>2</b></button><button type="button" data-open-news>소식 <b data-news-badge>NEW</b></button><button type="button" data-open-settings>설정</button><button type="button" data-open-account><span data-account-label>로그인</span></button></div></div>
+        <details class="main-menu-dropdown-wrap" data-main-menu-disclosure><summary class="main-menu-toggle" data-main-menu-toggle aria-expanded="false">메뉴 <i>⌄</i></summary><div class="main-menu-dropdown" data-main-menu-dropdown><button type="button" data-open-mail>편지함 <b data-mail-badge>2</b></button><button type="button" data-open-news>소식 <b data-news-badge>NEW</b></button><button type="button" data-open-settings>설정</button><button type="button" data-open-account><span data-account-label>로그인</span></button></div></details>
       </div>
       <header class="lobby-title">
         <h1 id="main-menu-title" class="sr-only">별자리 디펜스</h1><span class="main-logo atlas-sprite" role="img" aria-label="별자리 디펜스"></span>
@@ -268,6 +268,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=68" defer></script>
+    <script src="game.js?v=69" defer></script>
   </body>
 </html>
