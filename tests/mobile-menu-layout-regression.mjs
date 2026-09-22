@@ -25,6 +25,9 @@ assert.match(css, /\.main-menu-dropdown-wrap\[open\]>\.main-menu-dropdown\{displ
 assert.match(game, /mainMenuDisclosure\.addEventListener\("toggle",syncMainDropdownState\)/);
 assert.match(game, /const bindReliableMenuAction=\(button,action\)=>/);
 assert.match(game, /n\.style\.left=`\$\{position\.x\}%`;n\.style\.top=`\$\{position\.y\}%`/);
+assert.match(game, /mainMenuToggle\.addEventListener\("touchend"/);
+assert.match(game, /if\(open\)closeMainDropdown\(\)/);
+assert.match(css, /body\.modal-open #main-menu \.main-top-bar\.redesigned\{visibility:hidden!important\}/);
 
 assert.match(html, /class="screen-scroll-content summon-content-scroll"[\s\S]*class="draw-actions"/);
 assert.doesNotMatch(html, />\ucc9c\uc7a5 \[<b data-constellation-pity/);
