@@ -633,7 +633,7 @@ const MAP_DEFINITIONS = Object.freeze({
       {x:69.3,y:44.9},{x:70.3,y:41.0},{x:66.1,y:36.8},{x:57.1,y:33.9},
       {x:48.4,y:30.9},{x:45.2,y:27.0},{x:47.8,y:22.5},{x:54.8,y:18.6},
       {x:62.1,y:14.6},{x:65.5,y:10.4},{x:65.8,y:6.2},
-    ]),
+    ], 80),
     arrows: Object.freeze([0.14, 0.38, 0.63, 0.86]),
   }),
   CURVED_MAP: Object.freeze({
@@ -667,21 +667,43 @@ const MAP_DEFINITIONS = Object.freeze({
   }),
 });
 
-function buildSmoothRoute(points) {
+function buildSmoothRoute(points, requestedSegments = points.length - 1) {
   const frozen = points.map((point) => Object.freeze({...point}));
-  const segments = [];
+  const sourceSegments = [];
   for (let index = 0; index < frozen.length - 1; index++) {
     const p0 = frozen[Math.max(0, index - 1)];
     const p1 = frozen[index];
     const p2 = frozen[index + 1];
     const p3 = frozen[Math.min(frozen.length - 1, index + 2)];
-    segments.push(Object.freeze([
+    sourceSegments.push([
       p1,
-      Object.freeze({x:p1.x+(p2.x-p0.x)/6,y:p1.y+(p2.y-p0.y)/6}),
-      Object.freeze({x:p2.x-(p3.x-p1.x)/6,y:p2.y-(p3.y-p1.y)/6}),
+      {x:p1.x+(p2.x-p0.x)/6,y:p1.y+(p2.y-p0.y)/6},
+      {x:p2.x-(p3.x-p1.x)/6,y:p2.y-(p3.y-p1.y)/6},
       p2,
-    ]));
+    ]);
   }
+  const evaluate = (segment, t) => {
+    const mt=1-t,[p0,p1,p2,p3]=segment;
+    return {x:mt**3*p0.x+3*mt**2*t*p1.x+3*mt*t**2*p2.x+t**3*p3.x,y:mt**3*p0.y+3*mt**2*t*p1.y+3*mt*t**2*p2.y+t**3*p3.y};
+  };
+  const derivative = (segment, t) => {
+    const mt=1-t,[p0,p1,p2,p3]=segment;
+    return {x:3*mt**2*(p1.x-p0.x)+6*mt*t*(p2.x-p1.x)+3*t**2*(p3.x-p2.x),y:3*mt**2*(p1.y-p0.y)+6*mt*t*(p2.y-p1.y)+3*t**2*(p3.y-p2.y)};
+  };
+  const segments=[];
+  sourceSegments.forEach((source,index)=>{
+    const count=Math.floor(requestedSegments/sourceSegments.length)+(index<requestedSegments%sourceSegments.length?1:0);
+    for(let part=0;part<count;part++){
+      const t0=part/count,t1=(part+1)/count,dt=t1-t0;
+      const start=evaluate(source,t0),end=evaluate(source,t1),startVelocity=derivative(source,t0),endVelocity=derivative(source,t1);
+      segments.push(Object.freeze([
+        Object.freeze(start),
+        Object.freeze({x:start.x+startVelocity.x*dt/3,y:start.y+startVelocity.y*dt/3}),
+        Object.freeze({x:end.x-endVelocity.x*dt/3,y:end.y-endVelocity.y*dt/3}),
+        Object.freeze(end),
+      ]));
+    }
+  });
   return Object.freeze(segments);
 }
 
