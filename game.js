@@ -51,14 +51,26 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.06 BETA";
+const GAME_VERSION = "1.07 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong", showBattleStarInfo: true });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
-  id: "beta_1_06_battle_hud_resonance_ui", version: GAME_VERSION, date: "2026.09.22", title: "전투 HUD 및 공명 연출 개선",
+  id: "beta_1_07_galaxy_boss_update", version: GAME_VERSION, date: "2026.09.22", title: "은하계의 진동",
+  sections: Object.freeze([
+    Object.freeze({ title: "[1.07 BETA]", paragraphs: Object.freeze(["은하계가 진동하며 새로운 위협이 나타났습니다."]) }),
+    Object.freeze({ title: "신규 보스", paragraphs: Object.freeze(["은하계 학살자가 그림자 러너 무리를 이끌고 등장하며 활성 조디악 연결을 붕괴시킵니다.", "별 포식자가 공허 골렘과 등장해 연결되지 않은 별의 Stage를 흡수하고, 완전히 포식할수록 최대 체력이 증가합니다."]) }),
+    Object.freeze({ title: "웨이브 확장", bullets: Object.freeze(["Wave 21~29 · Wave 1~9 구성 반복", "Wave 30 · 은하계 학살자", "Wave 31~39 · Wave 1~9 구성 반복", "Wave 40 · 별 포식자", "Wave 41~49 · 몬스터 수 +20%", "Wave 50 · 공허의 사제 + 공허의 인도자"]) }),
+    Object.freeze({ title: "은하계의 진동", paragraphs: Object.freeze(["Wave 40의 별 포식자를 처치하면 해당 전투 동안 각 별자리의 동시 활성 제한이 1개에서 2개로 증가합니다."]) }),
+    Object.freeze({ title: "전투 개선", bullets: Object.freeze(["모든 보스 Wave 제한시간을 22초로 조정했습니다.", "Wave 40은 별 포식자를 처치할 때까지 계속됩니다.", "전투 시작 3초 전부터 3 · 2 · 1 카운트다운이 표시됩니다."]) }),
+    Object.freeze({ title: "버그 수정", bullets: Object.freeze(["심판의 자리가 활성화되지 않았는데 심판 대상이 생성되던 문제를 수정했습니다."]) }),
+    Object.freeze({ title: "뽑기 개선", bullets: Object.freeze(["1회 뽑기의 별, 별자리, 운석 결과가 뽑기 화면 중앙에 표시됩니다."]) }),
+    Object.freeze({ title: "특별 코드", bullets: Object.freeze(["새로운 특별 코드가 추가되었습니다."]) }),
+  ]), footer: "은하계의 진동을 넘어 Wave 50에 도전하세요.",
+}), Object.freeze({
+  id: "beta_1_06_battle_hud_resonance_ui", version: "1.06 BETA", date: "2026.09.22", title: "전투 HUD 및 공명 연출 개선",
   sections: Object.freeze([
     Object.freeze({ title: "[1.06 BETA]", paragraphs: Object.freeze(["전투 HUD와 별의 공명 UI 및 활성화 연출을 개선했습니다."]) }),
     Object.freeze({ title: "전투 HUD 수정", bullets: Object.freeze(["전투 중 별빛과 신성이 표시되지 않던 문제를 수정했습니다.", "별빛과 신성을 조디악 왼쪽에 표시하도록 수정했습니다.", "조디악이 화면 하단 중앙에서 밀리지 않도록 배치를 개선했습니다.", "공명 및 별자리 도감 버튼과 전투 재화 UI가 겹치지 않도록 개선했습니다."]) }),
@@ -427,11 +439,21 @@ function savePlayerProgress() {
 savePlayerProgress();
 function redeemSpecialCode(rawCode) {
   const code = String(rawCode ?? "").trim();
-  if (code !== "hamburger123") return { ok: false, message: "유효하지 않은 코드입니다." };
+  const supportedCodes = new Set(["hamburger123", "hamburger7777"]);
+  if (!supportedCodes.has(code)) return { ok: false, message: "유효하지 않은 코드입니다." };
   playerProgress.redeemedSpecialCodes ||= {};
   if (playerProgress.redeemedSpecialCodes[code]) return { ok: false, message: "이미 사용한 코드입니다." };
-  // Eligibility and every reward are committed synchronously as one state change.
   playerProgress.redeemedSpecialCodes[code] = true;
+  if (code === "hamburger7777") {
+    // The definitions registry is authoritative, so future constellations are included automatically.
+    for (const id of Object.keys(CONSTELLATION_DEFINITIONS)) {
+      const entry = playerProgress.constellationCollection[id];
+      if (!entry?.owned) playerProgress.constellationCollection[id] = { owned: true, copies: 0, level: 1 };
+      if (!playerProgress.ownedConstellations.includes(id)) playerProgress.ownedConstellations.push(id);
+    }
+    savePlayerProgress();
+    return { ok: true, message: "코드 사용 완료!\n모든 별자리를 획득했습니다." };
+  }
   playerProgress.starDust += 50000;
   playerProgress.starShards += 50000;
   playerProgress.meteorFragments += 1000;
@@ -796,7 +818,7 @@ playerProgress.equippedConstellations = playerProgress.equippedConstellations
 savePlayerProgress();
 const CONFIG = {
   waveSeconds: 10,
-  bossWaveSeconds: 20,
+  bossWaveSeconds: 22,
   summonCost: 30,
   swapCost: 10,
   divinationCost: 30,
@@ -850,7 +872,8 @@ const CONFIG = {
     },
     kingSlime: { name: "우주 킹슬라임", hp: 14000, speed: 2.2, reward: 35, baseDamage: 600, allyCombatDamage: 210, boss: true, bossAbility: "summonSlimes", abilityDelay: .8 },
     timeRunner: { name: "시공간 러너", hp: 18000, speed: 3.6, reward: 45, baseDamage: 800, allyCombatDamage: 250, boss: true, bossAbility: "timeSprint", abilityDelay: 5, speedMultiplier: 3.2, abilityDuration: 3 },
-    galaxySlayer: { name: "은하 학살자", hp: 30000, speed: 1.55, reward: 70, baseDamage: 1400, allyCombatDamage: 380, boss: true, bossAbility: "severZodiac", abilityDelay: 5 },
+    galaxySlayer: { name: "은하계 학살자", hp: 25000, speed: 3, reward: 70, baseDamage: 1400, allyCombatDamage: 380, boss: true, bossAbility: "zodiacCollapse", abilityDelay: 5, role: "보스", abilityName: "선행 습격 · 조디악 붕괴", abilityText: "그림자 러너 12마리 뒤에 등장합니다. 등장 5초와 20초에 활성 조디악 하나를 해제합니다.", description: "깨진 은하 고리와 붉은 균열로 별의 연결을 끊는 존재입니다." },
+    starDevourer: { name: "별 포식자", hp: 33000, speed: 3.5, reward: 90, baseDamage: 1700, allyCombatDamage: 420, boss: true, bossAbility: "starDevour", abilityDelay: 0, role: "보스", abilityName: "공허의 선봉 · 별 포식 · 포식 성장", abilityText: "공허 골렘 8마리 뒤에 등장해 연결되지 않은 별 최대 6개의 Stage를 2 낮춥니다. 사라진 별마다 최대 체력이 30% 증가합니다.", description: "별빛을 먹고 성장하는 거대한 공허 생명체입니다." },
   },
   stars: Object.freeze(Object.fromEntries(Object.values(STAR_TYPES).map(({ id: _id, key, ...definition }) => [key, Object.freeze(definition)]))),
 };
@@ -866,7 +889,23 @@ const EARLY_WAVE_COMPOSITIONS = Object.freeze([
   { shadowRunner: 12 }, { voidGolem: 4, shadowRunner: 4 }, { voidGolem: 8 },
   { darkSlime: 4, voidGolem: 2, shadowRunner: 2, abyssEye: 1 }, { voidPriest: 1 },
 ].map((entry) => entry && Object.freeze(entry)));
-const MONSTER_CODEX_IDS = Object.freeze(["darkSlime", "shadowRunner", "voidGolem", "abyssEye", "voidGuide", "voidPriest"]);
+// Authoritative normal-mode wave definitions. Composition reuse never reuses HP scaling.
+const NORMAL_WAVE_DEFINITIONS = Object.freeze(Object.fromEntries(Array.from({ length: 50 }, (_, offset) => {
+  const wave = offset + 1;
+  if (wave <= 20) return [wave, Object.freeze({ composition: EARLY_WAVE_COMPOSITIONS[wave], isBossWave: wave === 10 || wave === 20 })];
+  if (wave === 30) return [wave, Object.freeze({ composition: Object.freeze({ galaxySlayer: 1 }), isBossWave: true, bossType: "galaxySlayer" })];
+  if (wave === 40) return [wave, Object.freeze({ composition: Object.freeze({ starDevourer: 1 }), isBossWave: true, bossType: "starDevourer", waitForBossDefeat: true })];
+  if (wave === 50) return [wave, Object.freeze({ composition: Object.freeze({ voidPriest: 1, voidGuide: 1 }), isBossWave: true, bosses: Object.freeze(["voidPriest", "voidGuide"]) })];
+  const baseWave = ((wave - 1) % 10) + 1;
+  const base = EARLY_WAVE_COMPOSITIONS[baseWave];
+  const composition = Object.freeze(Object.fromEntries(Object.entries(base || {}).map(([type, count]) => [type, wave >= 41 ? Math.ceil(count * 1.2) : count])));
+  return [wave, Object.freeze({ composition, isBossWave: false, sourceWave: baseWave })];
+})));
+function waveDefinition(wave, mode = game?.mode || activeGameMode) {
+  if (mode === GAME_MODES.NORMAL && NORMAL_WAVE_DEFINITIONS[wave]) return NORMAL_WAVE_DEFINITIONS[wave];
+  return Object.freeze({ composition: EARLY_WAVE_COMPOSITIONS[wave] || null, isBossWave: WaveManager.isLegacyBoss(wave, mode), bossType: bossTypeForWave(wave) });
+}
+const MONSTER_CODEX_IDS = Object.freeze(["darkSlime", "shadowRunner", "voidGolem", "abyssEye", "voidGuide", "voidPriest", "galaxySlayer", "starDevourer"]);
 const MODE_CONFIG = Object.freeze({
   normal: Object.freeze({ baseEnemyHp: 250, enemyCountMultiplier: 1, startingStarlight: 300, startingDivinity: 1 }),
   experimental_vertical: Object.freeze({ baseEnemyHp: 300, waveHpGrowth: .04, enemyCountMultiplier: 2, startingStarlight: 1500, startingDivinity: 30 }),
@@ -987,7 +1026,9 @@ class Enemy {
     this.isBoss = this.boss === true;
     this.spawnTime = game?.gameTime || 0;
     this.nextAbilityAt = this.type === "abyssEye" ? this.spawnTime + 10
-      : (this.type === "voidGuide" || this.type === "voidPriest") ? this.spawnTime + 2 : Infinity;
+      : (this.type === "voidGuide" || this.type === "voidPriest") ? this.spawnTime + 2
+      : this.type === "galaxySlayer" ? this.spawnTime + 5 : Infinity;
+    this.abilityUses = 0;
     this.marchBuffs = new Map();
     this.healFlashUntil = 0;
     this.abilityTriggered = false;
@@ -1045,7 +1086,7 @@ class Enemy {
     this.el.classList.toggle("ritual-healed", this.healFlashUntil > game.gameTime);
     this.updateAbility();
     if (this.dead) return;
-    if (this.bossAbility && !this.abilityTriggered && game.gameTime - this.spawnTime >= (this.abilityDelay || 0)) {
+    if (this.bossAbility && this.type !== "galaxySlayer" && !this.abilityTriggered && game.gameTime - this.spawnTime >= (this.abilityDelay || 0)) {
       this.abilityTriggered = true;
       if (this.bossAbility === "summonSlimes") {
         this.el.classList.add("boss-casting", "slime-pulse");
@@ -1058,7 +1099,7 @@ class Enemy {
       } else if (this.bossAbility === "timeSprint") {
         this.speedBoostUntil = game.gameTime + this.abilityDuration; this.el.classList.add("runner-boost");
       } else if (this.bossAbility === "meteorShot") game.fireBossMeteor(this);
-      else if (this.bossAbility === "severZodiac") game.forceDismantleRandom(this);
+      else if (this.bossAbility === "starDevour") game.devourUnlinkedStars(this);
     }
     if (this.bossAbility === "timeSprint") {
       this.el.classList.toggle("runner-charging", !this.abilityTriggered);
@@ -1101,7 +1142,12 @@ class Enemy {
   }
   updateAbility() {
     if (this.dead || game.gameTime < this.nextAbilityAt) return;
-    if (this.type === "abyssEye") {
+    if (this.type === "galaxySlayer") {
+      if (this.abilityUses >= 2) { this.nextAbilityAt = Infinity; return; }
+      game.forceDismantleRandom(this);
+      this.abilityUses++;
+      this.nextAbilityAt = this.abilityUses === 1 ? this.spawnTime + 20 : Infinity;
+    } else if (this.type === "abyssEye") {
       const stars = game.players.flatMap((player) => player.manager.stars.filter((star) => star && !star.support && !star.constellation).map((star) => ({ star, position: player.manager.pos(player.manager.stars.indexOf(star)) })));
       let target = null, closest = Infinity;
       stars.forEach((candidate) => { const distance = RangeSystem.distance(this.position(), candidate.position); if (distance < closest) { closest = distance; target = candidate; } });
@@ -1230,100 +1276,97 @@ class GuardianUnit {
   }
 }
 class EnemySpawner {
-  constructor(game) {
-    this.game = game;
-    this.queue = [];
+  constructor(game) { this.game = game; this.queue = []; }
+  judgementEnabled() { return this.game.hasActiveConstellation(CONSTELLATION_IDS.JUDGEMENT); }
+  enqueueSequence(types, startAt = 0, interval = .12, options = {}) {
+    types.forEach((type, index) => this.queue.push({ at: startAt + index * interval, type, lane: 0, ...options }));
+    return startAt + Math.max(0, types.length - 1) * interval;
   }
   wave(n) {
-    const early = EARLY_WAVE_COMPOSITIONS[n];
-    if (early) {
-      const bossType = early.voidGuide ? "voidGuide" : early.voidPriest ? "voidPriest" : null;
-      if (bossType) {
-        const preparation = bossType === "voidGuide" ? ["shadowRunner", "shadowRunner", "voidGolem"] : ["darkSlime", "darkSlime", "voidGolem"];
-        preparation.forEach((type, index) => this.queue.push({ at: index * .12, type, lane: 0, bossPreparation: true }));
-        this.queue.push({ at: .74, type: bossType, lane: 0, judgementTarget: true });
-        return;
-      }
-      const multiplier = MODE_CONFIG[this.game.mode]?.enemyCountMultiplier || 1;
-      const remaining = Object.fromEntries(Object.entries(early).map(([type, count]) => [type, count * multiplier]));
-      const order = [];
-      while (Object.values(remaining).some(Boolean)) Object.keys(remaining).forEach((type) => { if (remaining[type] > 0) { order.push(type); remaining[type]--; } });
-      const judgementIndex = Math.floor(Math.random() * order.length);
-      order.forEach((type, index) => this.queue.push({ at: index * .7, type, lane: 0, judgementTarget: index === judgementIndex }));
-    } else if (WaveManager.isBoss(n, this.game.mode)) {
-      this.queue.push({ at: 0, type: bossTypeForWave(n), lane: 0, judgementTarget: true });
-    } else {
-      const normalCount = Math.min(4 + Math.floor(n * 1.2), 25);
-      let count = normalCount * (MODE_CONFIG[this.game.mode]?.enemyCountMultiplier || 1);
-      const judgementIndex = Math.floor(Math.random() * count);
-      for (let i = 0; i < count; i++)
-        this.queue.push({
-          at: i * 0.7,
-          type: (i + n) % 3 === 0 ? "bug" : "slime",
-          lane: 0,
-          judgementTarget: i === judgementIndex,
-        });
+    const definition = waveDefinition(n, this.game.mode);
+    const composition = definition.composition || {};
+    const judgement = this.judgementEnabled();
+    this.game.clearInactiveJudgementTargets();
+    if (definition.isBossWave) {
+      const bosses = definition.bosses || [definition.bossType || Object.keys(composition).find((type) => CONFIG.monsters[type]?.boss)];
+      let latestBossAt = 0;
+      bosses.filter(Boolean).forEach((bossType) => {
+        const preparation = bossType === "galaxySlayer" ? Array(12).fill("shadowRunner")
+          : bossType === "starDevourer" ? Array(8).fill("voidGolem")
+          : bossType === "voidGuide" ? ["shadowRunner", "shadowRunner", "voidGolem"]
+          : bossType === "voidPriest" ? ["darkSlime", "darkSlime", "voidGolem"] : [];
+        const finalPreparationAt = this.enqueueSequence(preparation, 0, .12, { bossPreparation: true });
+        const bossAt = preparation.length ? finalPreparationAt + .5 : 0;
+        latestBossAt = Math.max(latestBossAt, bossAt);
+        this.queue.push({ at: bossAt, type: bossType, lane: 0, judgementTarget: judgement, bossBody: true });
+      });
+      this.queue.sort((a,b) => a.at - b.at);
+      this.game.wave.waitingForBossSpawn = true;
+      return;
     }
+    const multiplier = MODE_CONFIG[this.game.mode]?.enemyCountMultiplier || 1;
+    const remaining = Object.fromEntries(Object.entries(composition).map(([type, count]) => [type, count * multiplier]));
+    const order = [];
+    while (Object.values(remaining).some(Boolean)) Object.keys(remaining).forEach((type) => { if (remaining[type] > 0) { order.push(type); remaining[type]--; } });
+    const judgementIndex = judgement && order.length ? Math.floor(Math.random() * order.length) : -1;
+    order.forEach((type, index) => this.queue.push({ at: index * .7, type, lane: 0, judgementTarget: index === judgementIndex }));
   }
   update(dt) {
-    this.queue.forEach((x) => (x.at -= dt));
+    this.queue.forEach((entry) => (entry.at -= dt));
     while (this.queue[0] && this.queue[0].at <= 0) {
-      let x = this.queue.shift();
-      this.game.enemies.push(new Enemy(x.type, x.lane, this.game.wave.wave, x.judgementTarget));
+      const entry = this.queue.shift();
+      const enemy = new Enemy(entry.type, entry.lane, this.game.wave.wave, entry.judgementTarget && this.judgementEnabled());
+      this.game.enemies.push(enemy);
+      if (entry.bossBody) this.game.wave.onBossSpawn(enemy);
     }
   }
 }
 function bossTypeForWave(n) {
   // Legacy 21+ boss rotation remains intact; early-wave spawning is handled
   // authoritatively by EARLY_WAVE_COMPOSITIONS before this fallback is used.
-  const landmark = ({ 10: "kingSlime", 20: "timeRunner", 30: "meteor", 40: "galaxySlayer" })[n];
+  const landmark = ({ 10: "voidGuide", 20: "voidPriest", 30: "galaxySlayer", 40: "starDevourer", 50: "voidPriest" })[n];
   if (landmark) return landmark;
   return ["kingSlime", "timeRunner", "meteor", "galaxySlayer"][Math.floor(n / 5 - 2) % 4] || "drone";
 }
 class WaveManager {
-  constructor(game) {
-    this.game = game;
-    this.wave = 0;
-    this.left = 0;
-  }
-  static isBoss(n, mode = game?.mode || activeGameMode) {
-    // Previous vertical schedule: n === 10 || (n >= 15 && n % 5 === 0).
-    // Waves 1–20 now deliberately defer to the shared authoritative schedule.
+  constructor(game) { this.game = game; this.wave = 0; this.left = 0; this.waitingForBossSpawn = false; this.wave40Boss = null; }
+  static isLegacyBoss(n, mode = game?.mode || activeGameMode) {
     if (n <= 20) return n === 10 || n === 20;
     if (mode === VERTICAL_BETA) return n >= 25 && n % 5 === 0;
-    return (
-      (n <= 40 && n % 10 === 0) ||
-      (n >= 45 && n <= 60 && n % 5 === 0) ||
-      (n >= 62 && n % 2 === 0)
-    );
+    return (n <= 40 && n % 10 === 0) || (n >= 45 && n <= 60 && n % 5 === 0) || (n >= 62 && n % 2 === 0);
+  }
+  static isBoss(n, mode = game?.mode || activeGameMode) { return Boolean(waveDefinition(n, mode).isBossWave); }
+  onBossSpawn(enemy) {
+    if (this.wave === 40 && enemy.type === "starDevourer") this.wave40Boss = enemy;
+    this.waitingForBossSpawn = false;
+    this.left = waveDefinition(this.wave, this.game.mode).waitForBossDefeat ? null : CONFIG.bossWaveSeconds;
+  }
+  startNextWave() {
+    this.wave++;
+    const definition = waveDefinition(this.wave, this.game.mode);
+    this.left = definition.isBossWave ? null : CONFIG.waveSeconds;
+    this.game.spawner.wave(this.wave);
+    if (definition.isBossWave) UIManager.alert(`⚠ BOSS WAVE ${this.wave}`);
   }
   update(dt) {
-    this.left -= dt;
-    if (this.left <= 0) {
-      this.wave++;
-      this.left += WaveManager.isBoss(this.wave, this.game.mode)
-        ? CONFIG.bossWaveSeconds
-        : CONFIG.waveSeconds;
-      this.game.spawner.wave(this.wave);
-      if (WaveManager.isBoss(this.wave, this.game.mode))
-        UIManager.alert(`⚠ BOSS WAVE ${this.wave}`);
+    const definition = this.wave ? waveDefinition(this.wave, this.game.mode) : null;
+    if (definition?.waitForBossDefeat) {
+      const bossDefeated = this.wave40Boss?.dead === true;
+      const requiredEnemiesRemain = this.game.enemies.some((enemy) => !enemy.dead) || this.game.spawner.queue.length > 0;
+      if (bossDefeated && !requiredEnemiesRemain && this.game.phase === "COMBAT") this.game.beginWave40Event();
+      return;
     }
+    if (this.waitingForBossSpawn || this.left === null) return;
+    this.left -= dt;
+    if (this.left <= 0) this.startNextWave();
   }
 }
 
 function nextWaveSummary(currentWave, mode = game?.mode || activeGameMode) {
-  const n = currentWave + 1;
-  if (EARLY_WAVE_COMPOSITIONS[n]) {
-    const multiplier = MODE_CONFIG[mode]?.enemyCountMultiplier || 1;
-    return Object.entries(EARLY_WAVE_COMPOSITIONS[n]).map(([type, count]) => ({ type, count: CONFIG.monsters[type].boss ? count : count * multiplier }));
-  }
-  if (WaveManager.isBoss(n, mode))
-    return [{ type: bossTypeForWave(n), count: 1 }];
-  const count = Math.min(4 + Math.floor(n * 1.2), 25) * (MODE_CONFIG[mode]?.enemyCountMultiplier || 1);
-  let slime = 0, bug = 0;
-  for (let i = 0; i < count; i++) (i + n) % 3 === 0 ? bug++ : slime++;
-  return [{ type: "slime", count: slime }, { type: "bug", count: bug }].filter((entry) => entry.count);
+  const n = currentWave + 1, definition = waveDefinition(n, mode), composition = definition.composition || {};
+  return Object.entries(composition).map(([type, count]) => ({ type, count: CONFIG.monsters[type]?.boss ? count : count * (MODE_CONFIG[mode]?.enemyCountMultiplier || 1) }));
 }
+
 class Star {
   constructor(type, tier = 1, x = 50, y = 50) {
     this.type = type;
@@ -2281,9 +2324,10 @@ class ZodiacSystem {
     const picks = [...m.selected];
     const counts = this.counts(m);
     const definitionId = this.exactMatch(counts);
-    if (definitionId && game.players.some((player) => player.manager.activeConstellations()
-      .some((constellation) => constellation.definitionId === definitionId)))
-      return UIManager.hint("이미 전장에 존재하는 별자리입니다.");
+    const activeOfType = definitionId ? game.players.reduce((count, player) => count + player.manager.activeConstellations()
+      .filter((constellation) => constellation.definitionId === definitionId).length, 0) : 0;
+    if (definitionId && activeOfType >= game.constellationInstanceLimit)
+      return UIManager.hint(`동일 별자리는 ${game.constellationInstanceLimit}개까지 활성화할 수 있습니다.`);
     const supportPicks = picks.filter((i) => m.stars[i]?.support);
     const usesBindingRelic = supportPicks.length > 0;
     if (!definitionId || picks.some((i) => m.stars[i]?.constellation) ||
@@ -2479,6 +2523,11 @@ class UIManager {
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line"); line.setAttribute("class", "strike-beam");
     [["x1", from.x], ["y1", from.y], ["x2", to.x], ["y2", to.y]].forEach(([key, value]) => line.setAttribute(key, value));
     line.style.setProperty("--strike-power", Math.min(1, stacks / 100)); this.addTransient(line, effects, 420);
+  }
+  static devourBeam(from, to) {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line"); line.setAttribute("class", "devour-beam");
+    [["x1", from.x], ["y1", from.y], ["x2", to.x], ["y2", to.y]].forEach(([key, value]) => line.setAttribute(key, value));
+    this.addTransient(line, effects, 650);
   }
   static horizonLink(from, to) {
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line"); line.setAttribute("class", "horizon-focus-line");
@@ -2833,12 +2882,13 @@ class UIManager {
     this.renderInfo(g);
   }
   static renderHud(g, force = false) {
-    const preparing = g.phase === "PREPARING";
+    const preparing = g.phase === "PREPARING" || g.phase === "SPECIAL_EVENT";
     document.querySelector?.(".route-arrows")?.classList.toggle("visible", preparing);
-    const seconds = Math.max(0, Math.ceil(preparing ? g.preparationRemaining : g.wave.left));
+    const unboundedBoss = !preparing && waveDefinition(g.wave.wave, g.mode).waitForBossDefeat;
+    const seconds = Math.max(0, Math.ceil(preparing ? g.preparationRemaining : (g.wave.left ?? 0)));
     const values = {
       wave: String(preparing ? 1 : g.wave.wave),
-      timer: `00:${String(seconds).padStart(2, "0")}`,
+      timer: unboundedBoss ? "BOSS" : `00:${String(seconds).padStart(2, "0")}`,
       hp: `♥ ${Math.round(g.base.hp).toLocaleString()} / ${Math.round(g.base.maxHp).toLocaleString()}`,
       starlight1: String(g.players[0].resources.starlight),
       divinity1: String(g.players[0].resources.divinity),
@@ -2940,6 +2990,8 @@ class GameManager {
     this.speed = 1;
     this.phase = "PREPARING";
     this.preparationRemaining = PREPARATION_SECONDS;
+    this.constellationInstanceLimit = 1;
+    this.lastCountdownSecond = null;
     this.battleRewardGranted = false;
     this.galaxyFragmentsEarned = 0;
     this.fateDice = this.rollFateDice();
@@ -3126,6 +3178,50 @@ class GameManager {
     this.simulationTimeout(() => { target.release(); target.owner.selected = []; this.recomputeCombatCaches(); this.render(); }, 320);
     return true;
   }
+  hasActiveConstellation(definitionId) {
+    return this.players.some((player) => player.manager.activeConstellations().some((constellation) => constellation.definitionId === definitionId));
+  }
+  clearInactiveJudgementTargets() {
+    if (this.hasActiveConstellation(CONSTELLATION_IDS.JUDGEMENT)) return;
+    this.enemies.forEach((enemy) => {
+      enemy.judgementTarget = false;
+      enemy.el?.classList.remove("judgement-target");
+      enemy.el?.querySelector(".judgement-mark")?.remove();
+    });
+  }
+  devourUnlinkedStars(enemy) {
+    if (enemy.dead || enemy.devourResolved) return;
+    enemy.devourResolved = true;
+    const candidates = this.players.flatMap((player) => player.manager.stars.map((star, index) => ({ player, manager: player.manager, star, index })))
+      .filter(({ star }) => star && !star.support && !star.constellation);
+    for (let i = candidates.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [candidates[i], candidates[j]] = [candidates[j], candidates[i]]; }
+    const targets = candidates.slice(0, 6), preDevourMaxHp = enemy.maxHp;
+    let destroyedCount = 0;
+    targets.forEach(({ manager, star, index }) => {
+      UIManager.devourBeam?.(manager.pos(index), enemy.position());
+      star.tier -= 2;
+      if (star.tier <= 0) { manager.stars[index] = null; destroyedCount++; }
+    });
+    if (destroyedCount) {
+      const increase = preDevourMaxHp * .30 * destroyedCount;
+      enemy.maxHp += increase;
+      enemy.hp = Math.min(enemy.maxHp, enemy.hp + increase);
+      enemy.el.classList.add("devour-growth");
+      enemy.updateHealthBar();
+    }
+    this.recomputeCombatCaches(); this.render();
+  }
+  beginWave40Event() {
+    if (this.phase === "SPECIAL_EVENT") return;
+    this.phase = "SPECIAL_EVENT";
+    this.constellationInstanceLimit = 2;
+    this.preparationRemaining = PREPARATION_SECONDS;
+    this.preparationStartedAt = null;
+    this.specialEventStartedAt = null;
+    const event = document.getElementById("wave40Event");
+    if (event) { event.hidden = false; event.innerHTML = "<strong>은하계가 진동합니다.</strong><span>별자리의 힘이 확장됩니다.<br>각 별자리의 개수 제한 <b>1 → 2</b></span>"; }
+    arena?.classList.add("galaxy-tremor"); this.markDirty();
+  }
   kill(e, sourceConstellation = null) {
     if (e.killRewardGranted) return;
     e.killRewardGranted = true;
@@ -3176,12 +3272,15 @@ class GameManager {
     let dt = realDt * this.speed;
     this.last = t;
     if (this.running) {
-      if (this.phase === "PREPARING") {
+      if (this.phase === "PREPARING" || this.phase === "SPECIAL_EVENT") {
         if (this.preparationStartedAt === null) this.preparationStartedAt = t;
         this.preparationRemaining = Math.max(0, PREPARATION_SECONDS - (t - this.preparationStartedAt) / 1000);
+        this.updateCountdown();
         this.gameTime += realDt;
         this.players.forEach((p) => p.manager.update(realDt));
-        if (this.preparationRemaining <= 0) this.beginCombat();
+        if (this.preparationRemaining <= 0) {
+          if (this.phase === "SPECIAL_EVENT") this.finishWave40Event(); else this.beginCombat();
+        }
       } else {
         this.gameTime += dt;
         this.wave.update(dt);
@@ -3201,6 +3300,23 @@ class GameManager {
       }
     }
     this.rafId = requestAnimationFrame((x) => this.loop(x));
+  }
+  updateCountdown() {
+    const second = Math.ceil(this.preparationRemaining);
+    if (second === this.lastCountdownSecond) return;
+    this.lastCountdownSecond = second;
+    const countdown = document.getElementById("battleCountdown");
+    if (!countdown) return;
+    if (second >= 1 && second <= 3) {
+      countdown.textContent = String(second); countdown.hidden = false;
+      countdown.classList.remove("play"); void countdown.offsetWidth; countdown.classList.add("play");
+    } else { countdown.hidden = true; countdown.classList.remove("play"); }
+  }
+  finishWave40Event() {
+    document.getElementById("wave40Event")?.setAttribute("hidden", "");
+    arena?.classList.remove("galaxy-tremor");
+    this.phase = "COMBAT"; this.preparationRemaining = 0; this.lastCountdownSecond = null;
+    this.wave.startNextWave(); this.markDirty();
   }
   beginCombat() {
     if (this.phase !== "PREPARING") return;
@@ -3229,6 +3345,9 @@ class GameManager {
     starInfo.hidden = true;
     zodiacCodex.hidden = true;
     document.body.classList.remove("codex-open");
+    document.getElementById("battleCountdown")?.setAttribute("hidden", "");
+    document.getElementById("wave40Event")?.setAttribute("hidden", "");
+    arena?.classList.remove("galaxy-tremor");
   }
   render() {
     UIManager.render(this);
@@ -3758,7 +3877,7 @@ function bootstrapGame() {
   showMainMenu();
   if (specialGrantApplied) showToast("특별 지급\n별가루 +5,000\n운석조각 +20");
   const diagnostics = {
-    CONFIG, MODE_CONFIG, EARLY_WAVE_COMPOSITIONS, MONSTER_CODEX_IDS, GAME_VERSION, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STAR_FAMILIES, RESONANCE_FAMILIES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, inferConstellationFamily, getEquippedResonance, resonanceDamageMultiplier, resonanceAttackSpeedFlat, calculateKillStarlight, canUpgradeStar, canUpgradeConstellation, canUpgradeRelic, getNormalWaveHpMultiplier, getWaveHpMultiplier, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, RandomMapSelector, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, normalStarSpecial, normalStarAbilityText, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
+    CONFIG, MODE_CONFIG, EARLY_WAVE_COMPOSITIONS, NORMAL_WAVE_DEFINITIONS, waveDefinition, MONSTER_CODEX_IDS, GAME_VERSION, NEWS_ITEMS, GAME_MODES, EXPERIMENTAL_VERTICAL_MAP, VERTICAL_BETA_WAYPOINTS, STAR_TYPES, STAR_FAMILIES, RESONANCE_FAMILIES, STARTER_COLLECTION, RELIC_DEFINITIONS, RELIC_UPGRADE_COSTS, GACHA_RULES, CONSTELLATION_IDS, CONSTELLATION_DEFINITIONS, ZODIAC_RECIPES, RECIPE_COUNTS, recipeCountsMatch, inferConstellationFamily, getEquippedResonance, resonanceDamageMultiplier, resonanceAttackSpeedFlat, calculateKillStarlight, canUpgradeStar, canUpgradeConstellation, canUpgradeRelic, getNormalWaveHpMultiplier, getWaveHpMultiplier, SCREEN_STATES, SUMMON_STATES, PREPARATION_SECONDS, GACHA_COSTS, STAR_LEVEL_COSTS, CONSTELLATION_LEVEL_COSTS, MAP_DEFINITIONS, ROUTE_CACHES, RandomMapSelector, playerProgress, performConstellationDraws, performRelicDraws, getRelicEffect, relicEffectText, upgradeRelic, redeemSpecialCode, effectiveMaxStars, toggleEquippedConstellation, starLevelCosts, starLevelDamageMultiplier, starLevelAttackSpeedBonus, normalStarSpecial, normalStarAbilityText, constellationLevelDamageMultiplier, constellationLevelAttackSpeedBonus, upgradeStar, upgradeConstellation, bossTypeForWave, summonController,
     get game() { return game; },
     get currentScreen() { return currentScreen; },
     showMainMenu, showBattleMenu, showGacha, showMonsterCodex, beginMapRandom, startBattle, leaveBattle, finishBattle, setActiveMap, routePoint, worldToScreen, screenToWorld, clampCameraY, getViewportWorldBounds,
