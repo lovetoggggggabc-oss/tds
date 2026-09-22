@@ -2475,7 +2475,8 @@ body.modal-open #main-menu .main-top-bar.redesigned{visibility:hidden!important}
 #game-shell:has(.arena.illustrated-normal-map) .battle-bottom-hud{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;margin:0}
 #game-shell:has(.arena.illustrated-normal-map) .game-controls{position:absolute;inset:0;padding:0}
 #game-shell:has(.arena.illustrated-normal-map) .game-controls button{color:transparent!important;background:transparent!important;border:0!important;box-shadow:none!important;touch-action:manipulation}
-#game-shell:has(.arena.illustrated-normal-map) .game-controls button[data-act="zodiac"],#game-shell:has(.arena.illustrated-normal-map) .game-controls button[data-act="zodiac-cancel"]{left:28%!important;top:88.1%!important;width:40.5%!important;height:8.1%!important;min-height:44px!important;transform:none!important;border-radius:18%!important}
+#game-shell:has(.arena.illustrated-normal-map) .game-controls button[data-act="zodiac"]{left:28%!important;top:88.1%!important;width:40.5%!important;height:8.1%!important;min-height:44px!important;transform:none!important;border-radius:18%!important}
+#game-shell:has(.arena.illustrated-normal-map) .game-controls button[data-act="zodiac-cancel"]{left:1.7%!important;top:88.4%!important;width:25.5%!important;height:7.6%!important;min-height:44px!important;transform:none!important;border-radius:18%!important}
 #game-shell:has(.arena.illustrated-normal-map) .battle-resonance-button{left:69.5%!important;top:88.4%!important;width:13.3%!important;height:7.6%!important;min-height:44px!important}
 #game-shell:has(.arena.illustrated-normal-map) .game-controls .codex-button{right:1.6%!important;top:88.4%!important;width:15.2%!important;height:7.6%!important;min-height:44px!important}
 #game-shell:has(.arena.illustrated-normal-map) .battle-resources{position:absolute;left:2%!important;top:1.2%!important;gap:.45%;pointer-events:none}
