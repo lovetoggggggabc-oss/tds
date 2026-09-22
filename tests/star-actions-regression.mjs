@@ -239,10 +239,10 @@ for (let hit = 0; hit < 4; hit++) {
   constellation.cooldown = 0;
   constellation.attack(0);
 }
-assert.deepEqual(damage, [500, 500, 500, 500, 500 * 15]);
+assert.deepEqual(damage, [625, 625, 625, 625, 625 * 15]);
 assert.equal(constellation.runtime.sameTargetHits, 0);
 assert.equal(moonPlays, 1, "special attack must not replay the moon");
-assert.deepEqual(dawnBursts, [{ position: { x: 1, y: 0 }, damage: 7500 }]);
+assert.deepEqual(dawnBursts, [{ position: { x: 1, y: 0 }, damage: 9375 }]);
 
 // Dawn's streak belongs to one living, in-range target only.
 const nextEnemy = { ...enemy, dead: false, hp: 100000, position: () => ({ x: 2, y: 0 }), hit: enemy.hit };
@@ -279,7 +279,7 @@ const chained = Array.from({ length: 5 }, (_, index) => ({
 context.game.enemies = chained;
 radiance.cooldown = 0;
 radiance.attack(0);
-const radianceDamage = 950;
+const radianceDamage = 1425;
 assert.deepEqual(chained.map((enemy) => enemy.received || []), [
   [radianceDamage], [radianceDamage], [radianceDamage], [radianceDamage], [],
 ]);
@@ -336,15 +336,15 @@ assert.ok(moonfallHits.every((args) => args.length === 2), "moonfall kills must 
 // Radiance begins at +0%, gains exactly +0.2% per direct kill, and applies the
 // divided stage multiplier once before its accumulated multiplier.
 assert.equal(radiance.runtime.radianceKills, 0);
-assert.equal(radiance.currentDamage(), 950);
+assert.equal(radiance.currentDamage(), 1425);
 for (let kill = 0; kill < 10; kill++) radiance.registerKill();
 assert.equal(radiance.runtime.radianceKills, 10);
 assert.equal(radiance.runtime.radianceKillBonus, 0.02);
-assert.equal(radiance.currentDamage(), 950 * 1.02);
+assert.equal(radiance.currentDamage(), 1425 * 1.02);
 for (let kill = 10; kill < 100; kill++) radiance.registerKill();
 assert.equal(radiance.runtime.radianceKills, 100);
 assert.equal(radiance.runtime.radianceKillBonus, 0.2);
-assert.equal(radiance.currentDamage(), 950 * 1.2);
+assert.equal(radiance.currentDamage(), 1425 * 1.2);
 
 const stageSevenManager = makeManager();
 [[0, "red", 2], [1, "red", 2], [2, "white", 3]].forEach(([slot, type, tier]) => {
@@ -355,7 +355,7 @@ stageSevenManager.zodiacMode = true;
 ZodiacSystem.create(stageSevenManager);
 const stageSevenRadiance = stageSevenManager.stars[0].constellation;
 assert.equal(stageSevenRadiance.componentStageSum, 7);
-assert.equal(stageSevenRadiance.currentDamage(), 950 * 1.75, "2 + 2 + 3 stages must apply exactly one x1.75 multiplier");
+assert.equal(stageSevenRadiance.currentDamage(), 1425 * 1.75, "2 + 2 + 3 stages must apply exactly one x1.75 multiplier");
 
 // Recipe matching is count-based: selection order and star tier never affect it.
 for (const tiers of [[1, 1, 1], [2, 4, 3]]) {
@@ -448,15 +448,15 @@ ZodiacSystem.create(linkManager);
 const link = linkManager.stars[6].constellation;
 const linked = { componentStageSum: 7 };
 context.game.players = [{ manager: { activeConstellations: () => [link, linked] } }];
-assert.equal(link.currentDamage(), 700);
+assert.equal(link.currentDamage(), 1050);
 linked.componentStageSum = 10;
-assert.equal(link.currentDamage(), 2000);
+assert.equal(link.currentDamage(), 3000);
 linked.componentStageSum = 20;
-assert.equal(link.currentDamage(), 6000);
+assert.equal(link.currentDamage(), 9000);
 linked.componentStageSum = 30;
-assert.equal(link.currentDamage(), 12000);
+assert.equal(link.currentDamage(), 18000);
 context.game.players = [{ manager: { activeConstellations: () => [link] } }];
-assert.equal(link.currentDamage(), 100, "no linked constellation keeps a minimum x1 inheritance multiplier");
+assert.equal(link.currentDamage(), 150, "no linked constellation keeps a minimum x1 inheritance multiplier");
 
 // The reported Twilight case uses tiers 4 + 2 + 3 + 1, for a stage sum of
 // ten and therefore 800 * (10 / 4) = 2,000 base stage damage.
@@ -469,14 +469,14 @@ ZodiacSystem.create(twilightManager);
 const twilight = twilightManager.stars[6].constellation;
 assert.equal(twilight.definitionId, "TWILIGHT");
 assert.equal(twilight.componentStageSum, 10);
-assert.equal(twilight.currentDamage(), 2000);
+assert.equal(twilight.currentDamage(), 3000);
 assert.deepEqual([...twilight.connectionOrder], [6, 2, 8, 4]);
 const weakenedTwilightTarget = {
   dead: false, hp: 50, maxHp: 100,
   hit(damage) { this.lastDamage = damage; },
 };
 twilight.behavior.attack(twilight, weakenedTwilightTarget, { x: 0, y: 0 });
-assert.equal(weakenedTwilightTarget.lastDamage, 4000, "Twilight retains double damage at 50% HP");
+assert.equal(weakenedTwilightTarget.lastDamage, 6000, "Twilight retains double damage at 50% HP");
 assert.equal(twilight.effectiveAttackSpeed(weakenedTwilightTarget), 4,
   "Twilight retains double attack speed at 50% HP");
 context.game.gameTime = 10;
@@ -585,7 +585,7 @@ sagittarius.runtime.focusHits = 19;
 sagittarius.behavior.attack(sagittarius, focusEnemy, { x: 0, y: 0 });
 sagittarius.runtime.focusHits = 39;
 sagittarius.behavior.attack(sagittarius, focusEnemy, { x: 0, y: 0 });
-assert.deepEqual(focusDamage, [400 * 11, 400 * 21], "the 20th and 40th focus hits use stage-scaled 1100% and 2100% damage");
+assert.deepEqual(focusDamage, [500 * 11, 500 * 21], "the 20th and 40th focus hits use stage-scaled 1100% and 2100% damage");
 sagittarius.runtime.focusHits = 59;
 sagittarius.behavior.attack(sagittarius, enemy, { x: 0, y: 0 });
 assert.equal("totalHits" in sagittarius.runtime, false);
