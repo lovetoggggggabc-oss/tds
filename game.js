@@ -636,7 +636,7 @@ const MAP_DEFINITIONS = Object.freeze({
       {x:46.0,y:30.0},{x:44.0,y:28.0},{x:44.0,y:26.0},{x:46.0,y:24.0},
       {x:49.0,y:22.0},{x:53.0,y:20.0},{x:58.0,y:18.0},{x:62.0,y:16.0},
       {x:64.0,y:14.0},{x:65.0,y:12.0},{x:65.5,y:10.0},{x:65.8,y:6.2},
-    ], 80),
+    ], 160),
     arrows: Object.freeze([0.14, 0.38, 0.63, 0.86]),
   }),
   CURVED_MAP: Object.freeze({
@@ -1568,8 +1568,12 @@ function buildRouteCache(map) {
   const xScale = map.assetWidth && map.assetHeight ? map.assetWidth / map.assetHeight : 1;
   const yScale = map.worldHeightScale || 1;
   const samples = [{ ...map.spawn, distance: 0 }]; let total = 0; let previous = map.spawn;
-  map.route.forEach((segment) => { for (let step = 1; step <= 80; step++) {
-    const point = curvePoint(segment, step / 80); total += Math.hypot((point.x - previous.x) * xScale, (point.y - previous.y) * yScale);
+  // The illustrated S road uses 160 exact curve pieces. Forty samples per
+  // piece retain the same 6,400-point precision as before while preventing a
+  // larger cache from changing frame cost on mobile devices.
+  const stepsPerSegment = map.id === "ORIGINAL_S" ? 40 : 80;
+  map.route.forEach((segment) => { for (let step = 1; step <= stepsPerSegment; step++) {
+    const point = curvePoint(segment, step / stepsPerSegment); total += Math.hypot((point.x - previous.x) * xScale, (point.y - previous.y) * yScale);
     samples.push({ ...point, distance: total }); previous = point;
   }});
   return Object.freeze({ samples: Object.freeze(samples), length: total });
