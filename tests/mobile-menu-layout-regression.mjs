@@ -6,8 +6,9 @@ const [html, css, game] = await Promise.all([readFile("index.html", "utf8"), rea
 assert.match(html, /class="currency-item"[\s\S]*class="currency-label">별가루<[\s\S]*class="currency-value" data-star-dust/);
 assert.match(html, /class="currency-label">별조각/);
 assert.match(html, /class="currency-label">운석조각/);
-assert.match(html, /class="utility-label">우편함/);
-assert.match(html, /class="utility-label">설정/);
+assert.match(html, /<details class="main-menu-dropdown-wrap" data-main-menu-disclosure>/);
+assert.match(html, /<summary class="main-menu-toggle" data-main-menu-toggle/);
+assert.match(html, /data-main-menu-dropdown>[\s\S]*data-open-mail>편지함[\s\S]*data-open-news>소식[\s\S]*data-open-settings>설정/);
 
 const mobile = css.slice(css.indexOf("/* Mobile lobby composition"));
 assert.match(mobile, /@media \(max-width:600px\)/);
@@ -20,6 +21,8 @@ assert.match(mobile, /\.monster-codex-detail section p\s*\{[^}]*word-break:keep-
 assert.match(css, /height:100dvh/);
 assert.match(css, /env\(safe-area-inset-top\)/);
 assert.match(css, /env\(safe-area-inset-bottom\)/);
+assert.match(css, /\.main-menu-dropdown-wrap\[open\]>\.main-menu-dropdown\{display:grid!important\}/);
+assert.match(game, /mainMenuDisclosure\.addEventListener\("toggle",syncMainDropdownState\)/);
 
 assert.match(html, /class="screen-scroll-content summon-content-scroll"[\s\S]*class="draw-actions"/);
 assert.doesNotMatch(html, />\ucc9c\uc7a5 \[<b data-constellation-pity/);
