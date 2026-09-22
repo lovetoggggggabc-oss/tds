@@ -502,40 +502,28 @@ function redeemSpecialCode(rawCode) {
 function performConstellationDraws(count, random = Math.random) {
   const cost = count === 10 ? GACHA_COSTS.constellation[1] : GACHA_COSTS.constellation[0];
   if (![1, 10].includes(count) || playerProgress.starDust < cost) return null;
-  const next = {
-    pity: playerProgress.constellationPity,
-    stars: { ...playerProgress.ownedStars },
-    constellations: [...playerProgress.ownedConstellations], collection: Object.fromEntries(Object.entries(playerProgress.constellationCollection).map(([id, entry]) => [id, { ...entry }])),
-  };
-  const constellationIds = Object.keys(CONSTELLATION_DEFINITIONS);
+  const next = { pity: playerProgress.constellationPity, twoStarPity: playerProgress.twoStarConstellationPity || 0, stars: { ...playerProgress.ownedStars }, constellations: [...playerProgress.ownedConstellations], collection: Object.fromEntries(Object.entries(playerProgress.constellationCollection).map(([id, entry]) => [id, { ...entry }])) };
+  const rarityOf = (id) => CONSTELLATION_DEFINITIONS[id]?.rarity === 2 ? 2 : 1;
+  const oneStarIds = Object.keys(CONSTELLATION_DEFINITIONS).filter((id) => rarityOf(id) === 1);
+  const twoStarIds = Object.keys(CONSTELLATION_DEFINITIONS).filter((id) => rarityOf(id) === 2);
   const starIds = Object.keys(STAR_TYPES);
-  const results = [];
-  for (let index = 0; index < count; index++) {
-    const guaranteed = next.pity >= GACHA_RULES.pityLimit - 1;
-    if (guaranteed || random() < GACHA_RULES.constellationChance) {
-      const id = constellationIds[Math.min(constellationIds.length - 1, Math.floor(random() * constellationIds.length))];
-      const isNew = !next.constellations.includes(id);
-      if (isNew) { next.constellations.push(id); next.collection[id] = { owned: true, copies: 0, level: 1 }; }
-      else next.collection[id].copies++;
-      next.pity = 0;
-      results.push({ kind: "constellation", id, isNew, guaranteed });
-    } else {
-      const id = starIds[Math.min(starIds.length - 1, Math.floor(random() * starIds.length))];
-      const isNew = !(next.stars[id] > 0);
-      next.stars[id] = (next.stars[id] || 0) + 1;
-      next.pity++;
-      results.push({ kind: "star", id, isNew });
-    }
+  const pick = (pool) => pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))];
+  const grant = (id, guaranteed, rarity) => { const isNew=!next.constellations.includes(id); if(isNew){next.constellations.push(id);next.collection[id]={owned:true,copies:0,level:1};}else next.collection[id].copies++; return {kind:"constellation",id,isNew,guaranteed,rarity}; };
+  const results=[];
+  for(let index=0;index<count;index++){
+    const twoGuaranteed=next.twoStarPity>=GACHA_RULES.twoStarPityLimit-1 && twoStarIds.length;
+    const oneGuaranteed=next.pity>=GACHA_RULES.oneStarPityLimit-1;
+    let result;
+    if(twoGuaranteed) result=grant(pick(twoStarIds),true,2);
+    else if(oneGuaranteed) result=grant(pick(oneStarIds),true,1);
+    else { const roll=random(); if(roll<GACHA_RULES.twoStarChance && twoStarIds.length) result=grant(pick(twoStarIds),false,2); else if(roll<GACHA_RULES.twoStarChance+GACHA_RULES.oneStarChance) result=grant(pick(oneStarIds),false,1); else {const id=pick(starIds),isNew=!(next.stars[id]>0);next.stars[id]=(next.stars[id]||0)+1;result={kind:"star",id,isNew};} }
+    next.pity=result.kind==="constellation"?0:next.pity+1;
+    next.twoStarPity=result.kind==="constellation"&&result.rarity===2?0:next.twoStarPity+1;
+    results.push(result);
   }
-  // Commit only after every result was generated, keeping currency and collection atomic.
-  playerProgress.starDust -= cost;
-  playerProgress.constellationPity = next.pity;
-  playerProgress.ownedStars = next.stars;
-  Object.entries(next.stars).forEach(([id, count]) => { playerProgress.starCollection[id].count = count; });
-  playerProgress.ownedConstellations = next.constellations;
-  playerProgress.constellationCollection = next.collection;
-  savePlayerProgress();
-  return results;
+  playerProgress.starDust-=cost; playerProgress.constellationPity=next.pity; playerProgress.twoStarConstellationPity=next.twoStarPity; playerProgress.ownedStars=next.stars;
+  Object.entries(next.stars).forEach(([id,amount])=>{playerProgress.starCollection[id].count=amount;});
+  playerProgress.ownedConstellations=next.constellations; playerProgress.constellationCollection=next.collection; savePlayerProgress(); return results;
 }
 function performRelicDraws(count, random = Math.random) {
   const cost = count === 10 ? GACHA_COSTS.relic[1] : GACHA_COSTS.relic[0];
