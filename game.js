@@ -668,6 +668,23 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       "새벽의 자리가 피해를 준 적의 킬 관여 4회마다 살아있는 모든 적에게 현재 체력의 15% 특수 피해를 줍니다.",
     ]),
   }),
+  [CONSTELLATION_IDS.DAYBREAK]: Object.freeze({
+    createRuntime: (constellation) => ({ componentStageSum: constellation.componentStageSum, lightStacks: 0, awakened: false, hitCount: 0 }),
+    attack(constellation, target, origin) {
+      if (!target.hit(constellation.currentDamage(), origin, constellation)) return;
+      if (!constellation.runtime.awakened || target.dead) return;
+      constellation.runtime.hitCount++;
+      if (constellation.runtime.hitCount < 8) return;
+      constellation.runtime.hitCount = 0;
+      constellation.originalComponents.forEach((component) => {
+        if (target.dead) return;
+        const from=constellation.owner.pos(component.index);
+        UIManager.beam(from,target.position());
+        target.hit(target.maxHp*0.025,from,null,true);
+      });
+      game.markDirty();
+    },
+  }),
   [CONSTELLATION_IDS.RADIANCE]: Object.freeze({
     id: CONSTELLATION_IDS.RADIANCE, family: "RED", name: "광휘의 별자리",
     recipe: Object.freeze({ red: 2, white: 1 }), attackDamage: 500,
@@ -786,6 +803,12 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       "특수능력 — 심판 대상: 매 웨이브 적 1명을 심판 대상으로 지정합니다. 대상이 사정거리 안에 있다면 최우선으로 공격합니다.",
       "특수능력 — 처단: 심판 대상을 공격할 때마다 대상의 공격 직전 현재 체력의 3.5%만큼 추가 피해를 입힙니다.",
     ]),
+  }),
+  [CONSTELLATION_IDS.DAYBREAK]: Object.freeze({
+    id: CONSTELLATION_IDS.DAYBREAK, rarity: 2, family: "WHITE", name: "여명의 자리",
+    recipe: Object.freeze({ white: 3, orange: 2 }), attackDamage: 200, attackSpeed: 3.3, range: 1, targeting: "progress",
+    previewLayout: Object.freeze({ nodes: Object.freeze([[16,70],[32,36],[50,18],[68,36],[84,70]]), edges: Object.freeze([[0,1],[1,2],[2,3],[3,4],[1,3]]) }),
+    specialDescriptions: Object.freeze(["광명: [광명] 버튼으로 별자리에 연결되지 않은 Stage 4 일반 별을 선택해 폭파하고 광명 1스택을 얻습니다.","광명 5스택에서 공격력 3,500 · 공격속도 5 · 사정거리 5로 힘을 개방합니다.","각성 후 8회 타격마다 구성 별 5개가 현재 대상에게 사거리와 관계없이 각각 대상 최대 체력의 2.5% 빛의 화살을 1회 발사합니다."]),
   }),
 });
 const RESONANCE_FAMILIES = Object.freeze({ RED: "RED", WHITE: "WHITE", BLUE: "BLUE", SPECIAL: "SPECIAL" });
@@ -1787,6 +1810,7 @@ class Constellation {
     this.cooldown = 1 / attackSpeed;
   }
   currentDamage(localMultiplier = 1) {
+    if (this.definitionId === CONSTELLATION_IDS.DAYBREAK && this.runtime.awakened) return 3500 * localMultiplier;
     const allyMultiplier = game.attackBuffUntil > game.gameTime ? 11 : 1;
     const killMultiplier = this.definitionId === CONSTELLATION_IDS.RADIANCE
       ? 1 + this.runtime.radianceKillBonus
@@ -1864,11 +1888,13 @@ class Constellation {
     game.markDirty();
   }
   effectiveRange() {
+    if (this.definitionId === CONSTELLATION_IDS.DAYBREAK && this.runtime.awakened) return 5;
     if (this.definitionId === CONSTELLATION_IDS.TWILIGHT && this.runtime.transcendenceUntil > game.gameTime)
       return this.definition.transcendenceRange;
     return this.definition.range;
   }
   effectiveAttackSpeed(target = this.target) {
+    if (this.definitionId === CONSTELLATION_IDS.DAYBREAK && this.runtime.awakened) return 5;
     const resonance = Math.min(.20, (game?.activeConstellationCount || 0) * getRelicEffect("COSMIC_RESONANCE"));
     const globalModifier = (this.owner.alliedAttackSpeedModifier?.() || 1) * relicMultiplier("SONG_OF_CONSTELLATIONS") * (1 + resonance);
     const levelBonus = constellationLevelAttackSpeedBonus(playerProgress.constellationCollection[this.definitionId]?.level || 1) + resonanceAttackSpeedFlat(this.definition.family);
