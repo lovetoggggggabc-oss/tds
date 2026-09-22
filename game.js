@@ -618,39 +618,47 @@ const MAX_STARS_PER_PLAYER = effectiveMaxStars();
 const MAP_DEFINITIONS = Object.freeze({
   ORIGINAL_S: Object.freeze({
     id: "ORIGINAL_S", name: "별의 S길",
-    artwork: "assets/battle/star-s-path.png",
+    artwork: "assets/battle/star-s-path.png", assetWidth: 885, assetHeight: 1536,
     roadWidth: 34,
     placementPadding: 3,
-    spawn: Object.freeze({ x: 50, y: 94 }),
-    destination: Object.freeze({ x: 50, y: 6 }),
+    spawn: Object.freeze({ x: 44.8, y: 86.2 }),
+    destination: Object.freeze({ x: 65.2, y: 6.2 }),
     route: Object.freeze([
-      Object.freeze([{ x: 50, y: 94 }, { x: 49, y: 85 }, { x: 25, y: 83 }, { x: 31, y: 69 }]),
-      Object.freeze([{ x: 31, y: 69 }, { x: 38, y: 57 }, { x: 72, y: 58 }, { x: 69, y: 43 }]),
-      Object.freeze([{ x: 69, y: 43 }, { x: 66, y: 31 }, { x: 39, y: 30 }, { x: 50, y: 6 }]),
+      Object.freeze([{x:44.8,y:86.2},{x:45.5,y:78.5},{x:50,y:74.5},{x:49,y:70}]),
+      Object.freeze([{x:49,y:70},{x:47,y:64},{x:34,y:64},{x:34.5,y:56.5}]),
+      Object.freeze([{x:34.5,y:56.5},{x:35,y:49.5},{x:55,y:47},{x:67,y:39.5}]),
+      Object.freeze([{x:67,y:39.5},{x:75,y:34},{x:70,y:27},{x:59,y:24}]),
+      Object.freeze([{x:59,y:24},{x:47,y:21},{x:49,y:14},{x:56.5,y:10.5}]),
+      Object.freeze([{x:56.5,y:10.5},{x:59.5,y:8.7},{x:62.5,y:7.2},{x:65.2,y:6.2}]),
     ]),
     arrows: Object.freeze([0.14, 0.38, 0.63, 0.86]),
   }),
   CURVED_MAP: Object.freeze({
     id: "CURVED_MAP", name: "성운의 곡선",
-    artwork: "assets/battle/nebula-curve-map.png",
+    artwork: "assets/battle/nebula-curve-map.png", assetWidth: 883, assetHeight: 1536,
     roadWidth: 34, placementPadding: 3,
-    spawn: Object.freeze({ x: 72, y: 6 }), destination: Object.freeze({ x: 42, y: 94 }),
+    spawn: Object.freeze({ x: 73.2, y: 8.2 }), destination: Object.freeze({ x: 47.2, y: 84.5 }),
     route: Object.freeze([
-      Object.freeze([{x:72,y:6},{x:70,y:20},{x:36,y:18},{x:34,y:35}]),
-      Object.freeze([{x:34,y:35},{x:32,y:48},{x:72,y:45},{x:70,y:61}]),
-      Object.freeze([{x:70,y:61},{x:68,y:74},{x:32,y:72},{x:42,y:94}]),
+      Object.freeze([{x:73.2,y:8.2},{x:72,y:15},{x:58,y:18.5},{x:42,y:22.5}]),
+      Object.freeze([{x:42,y:22.5},{x:29,y:26},{x:29,y:34},{x:41,y:38.5}]),
+      Object.freeze([{x:41,y:38.5},{x:53,y:43},{x:72,y:45},{x:72,y:53.5}]),
+      Object.freeze([{x:72,y:53.5},{x:72,y:60},{x:57,y:64},{x:44,y:69.5}]),
+      Object.freeze([{x:44,y:69.5},{x:33,y:74.5},{x:37,y:81},{x:47.2,y:84.5}]),
     ]), arrows: Object.freeze([.14,.38,.63,.86]),
   }),
   LOOP_MAP: Object.freeze({
     id: "LOOP_MAP", name: "은하의 고리",
-    artwork: "assets/battle/galaxy-ring-map.png",
+    artwork: "assets/battle/galaxy-ring-map.png", assetWidth: 882, assetHeight: 1536,
     roadWidth: 30, placementPadding: 3,
-    spawn: Object.freeze({ x: 43, y: 88 }), destination: Object.freeze({ x: 73, y: 7 }),
+    spawn: Object.freeze({ x: 40.7, y: 85.2 }), destination: Object.freeze({ x: 72.9, y: 8.2 }),
     route: Object.freeze([
-      Object.freeze([{x:43,y:88},{x:24,y:78},{x:17,y:60},{x:38,y:48}]),
-      Object.freeze([{x:38,y:48},{x:57,y:36},{x:77,y:43},{x:70,y:56}]),
-      Object.freeze([{x:70,y:56},{x:63,y:69},{x:39,y:61},{x:45,y:48}]),
-      Object.freeze([{x:45,y:48},{x:53,y:32},{x:77,y:28},{x:73,y:7}]),
+      Object.freeze([{x:40.7,y:85.2},{x:36,y:78},{x:25,y:72},{x:24,y:63}]),
+      Object.freeze([{x:24,y:63},{x:23,y:54},{x:32,y:48},{x:42,y:44}]),
+      Object.freeze([{x:42,y:44},{x:54,y:39},{x:68,y:43},{x:72,y:51}]),
+      Object.freeze([{x:72,y:51},{x:76,y:59},{x:67,y:64},{x:57,y:63}]),
+      Object.freeze([{x:57,y:63},{x:46,y:62},{x:41,y:57},{x:44,y:51}]),
+      Object.freeze([{x:44,y:51},{x:47,y:45},{x:55,y:39},{x:64,y:34}]),
+      Object.freeze([{x:64,y:34},{x:73,y:29},{x:72,y:18},{x:72.9,y:8.2}]),
     ]), arrows: Object.freeze([.12,.34,.55,.76,.91]),
   }),
 });
@@ -1520,7 +1528,25 @@ function buildRouteCache(map) {
   return Object.freeze({ samples: Object.freeze(samples), length: total });
 }
 const ROUTE_CACHES = Object.freeze(Object.fromEntries([...Object.values(MAP_DEFINITIONS), EXPERIMENTAL_VERTICAL_MAP].map((map) => [map.id, buildRouteCache(map)])));
-function setActiveMap(mapId) { activeMap = mapId === EXPERIMENTAL_VERTICAL_MAP.id ? EXPERIMENTAL_VERTICAL_MAP : MAP_DEFINITIONS[mapId] || MAP_DEFINITIONS.ORIGINAL_S; activeRouteCache = ROUTE_CACHES[activeMap.id]; return activeMap; }
+function fitBattleWorldToArena() {
+  if (!arena || !battleWorld) return;
+  if (activeMap === EXPERIMENTAL_VERTICAL_MAP) {
+    battleWorld.style.removeProperty("width"); battleWorld.style.removeProperty("height");
+    battleWorld.style.removeProperty("left"); battleWorld.style.removeProperty("top");
+    battleWorld.classList.remove("fixed-map-ratio");
+    RangeSystem.refresh();
+    return;
+  }
+  const aspect = (activeMap.assetWidth || 885) / (activeMap.assetHeight || 1536);
+  const availableWidth = arena.clientWidth || 1, availableHeight = arena.clientHeight || 1;
+  const width = Math.min(availableWidth, availableHeight * aspect);
+  const height = width / aspect;
+  battleWorld.style.width = `${width}px`; battleWorld.style.height = `${height}px`;
+  battleWorld.style.left = "50%"; battleWorld.style.top = "50%";
+  battleWorld.classList.add("fixed-map-ratio");
+  RangeSystem.refresh();
+}
+function setActiveMap(mapId) { activeMap = mapId === EXPERIMENTAL_VERTICAL_MAP.id ? EXPERIMENTAL_VERTICAL_MAP : MAP_DEFINITIONS[mapId] || MAP_DEFINITIONS.ORIGINAL_S; activeRouteCache = ROUTE_CACHES[activeMap.id]; fitBattleWorldToArena(); return activeMap; }
 setActiveMap(activeMap.id);
 function routePoint(progressOrLane, legacyProgress) {
   const progress = Math.max(0, Math.min(1, legacyProgress === undefined ? progressOrLane : legacyProgress));
@@ -3109,15 +3135,22 @@ function maxCameraY() {
 function clampCameraY(value = game?.cameraY || 0) {
   return Math.max(0, Math.min(maxCameraY(), Number.isFinite(value) ? value : 0));
 }
+function battleWorldViewportOffset() {
+  if (!battleWorld || !arena || game?.mode === GAME_MODES.EXPERIMENTAL_VERTICAL) return { x: 0, y: 0 };
+  const worldRect = battleWorld.getBoundingClientRect(), arenaRect = arena.getBoundingClientRect();
+  return { x: worldRect.left - arenaRect.left, y: worldRect.top - arenaRect.top };
+}
 function worldToScreen(point) {
   const width = battleWorld?.clientWidth || arena?.clientWidth || 100;
   const height = battleWorld?.clientHeight || arena?.clientHeight || 100;
-  return { x: point.x / 100 * width, y: point.y / 100 * height - (game?.cameraY || 0) };
+  const offset = battleWorldViewportOffset();
+  return { x: offset.x + point.x / 100 * width, y: offset.y + point.y / 100 * height - (game?.cameraY || 0) };
 }
 function screenToWorld(point) {
   const width = battleWorld?.clientWidth || arena?.clientWidth || 100;
   const height = battleWorld?.clientHeight || arena?.clientHeight || 100;
-  return { x: point.x / width * 100, y: (point.y + (game?.cameraY || 0)) / height * 100 };
+  const offset = battleWorldViewportOffset();
+  return { x: (point.x - offset.x) / width * 100, y: (point.y - offset.y + (game?.cameraY || 0)) / height * 100 };
 }
 function getViewportWorldBounds() {
   const top = screenToWorld({ x: 0, y: 0 }).y;
@@ -3629,11 +3662,12 @@ class RandomMapSelector {
 
 function renderActiveMap() {
   const pathSvg = getRequiredElement("paths"); const pathData = routePathData();
-  const mapArt = document.getElementById("battleMapArt");
+  const mapObject = document.getElementById("battleMapArt");
   const illustratedMap = Boolean(activeMap.artwork);
   arena.dataset.mapId = activeMap.id;
   arena.classList.toggle("illustrated-normal-map", illustratedMap);
-  if (mapArt) { mapArt.hidden = !illustratedMap; if (illustratedMap) mapArt.src = activeMap.artwork; }
+  if (mapObject) { mapObject.hidden = !illustratedMap; if (illustratedMap) mapObject.src = activeMap.artwork; }
+  fitBattleWorldToArena();
   pathSvg.querySelectorAll(".roadGlow,.roadEdge,.road,.roadStars").forEach((path) => path.setAttribute("d", pathData));
   const arrowLayer = pathSvg.querySelector(".route-arrows");
   if (arrowLayer) arrowLayer.innerHTML = activeMap.arrows.map((progress) => { const point = routePoint(progress), before = routePoint(progress-.004), after = routePoint(progress+.004); const angle = Math.atan2(after.y-before.y,after.x-before.x)*180/Math.PI+90; return `<path d="M0 -2.2L2 1.8L0 .8L-2 1.8Z" transform="translate(${point.x} ${point.y}) rotate(${angle})"/>`; }).join("");
@@ -3647,6 +3681,8 @@ function bootstrapGame() {
   document.querySelectorAll?.("[data-game-version]")?.forEach((node) => { node.textContent = `v${GAME_VERSION}`; });
   arena = getRequiredElement("arena");
   battleWorld = getRequiredElement("battleWorld");
+  if (typeof ResizeObserver === "function") new ResizeObserver(() => fitBattleWorldToArena()).observe(arena);
+  else window.addEventListener("resize", fitBattleWorldToArena);
   experimentalMinimap = getRequiredElement("experimentalMinimap");
   experimentalBadge = getRequiredElement("experimentalBadge");
   renderActiveMap();
