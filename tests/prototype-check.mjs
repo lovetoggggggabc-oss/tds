@@ -193,7 +193,7 @@ assert.match(
   /let dt = realDt \* this\.speed/,
   "global simulation delta must use speed multiplier",
 );
-assert.match(js, /p\.resources\.starlight \+= Math\.floor\(e\.reward \* relicMultiplier\("STARLIGHT_CRYSTAL"\)\)/);
+assert.match(js, /p\.resources\.starlight \+= calculateKillStarlight\(e\.reward, this\.resonance\)/);
 assert.match(js, /if \(e\.boss\) p\.resources\.divinity\+\+/);
 assert.match(js, /const BASE_MAX_HP = 400/);
 assert.match(js, /this\.base = \{ hp: initialBaseHp, maxHp: initialBaseHp \}/);

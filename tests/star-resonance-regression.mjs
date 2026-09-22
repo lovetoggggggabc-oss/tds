@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+const js=fs.readFileSync(new URL("../game.js",import.meta.url),"utf8");
+const html=fs.readFileSync(new URL("../index.html",import.meta.url),"utf8");
+const css=fs.readFileSync(new URL("../styles.css",import.meta.url),"utf8");
+assert.match(js,/const GAME_VERSION = "1\.05 BETA"/);
+assert.match(js,/beta_1_05_star_resonance/);
+assert.match(js,/beta_1_05_resonance_stardust_1000/);
+for(const [id,family] of Object.entries({DAWN:"BLUE",SAGITTARIUS:"BLUE",GUARDIAN:"BLUE",JUDGEMENT:"WHITE",BOND:"WHITE",STRIKE:"WHITE",RADIANCE:"RED",ASTROLOGER:"RED",TWILIGHT:"RED",LINK:"RED",HORIZON:"SPECIAL"})) assert.match(js,new RegExp(`id: CONSTELLATION_IDS\\.${id}, family: "${family}"`));
+assert.match(js,/function inferConstellationFamily/);assert.match(js,/function getEquippedResonance/);assert.match(js,/this\.resonance = getEquippedResonance/);
+assert.match(js,/globalDamageBonus:redTier===6\?3:0/);assert.match(js,/killStarlightFlat:\(\{2:1,3:2\}/);assert.match(js,/calculateKillStarlight\(e\.reward, this\.resonance\)/);
+assert.match(js,/const starCanUpgrade = canUpgradeStar/);assert.match(js,/constellationCanUpgrade = canUpgradeConstellation/);assert.match(js,/relicCanUpgrade = canUpgradeRelic/);
+assert.match(html,/data-resonance-summary/);assert.match(html,/id="resonance-dialog"/);assert.match(html,/id="starlight1"/);assert.match(html,/id="divinity1"/);assert.match(css,/family-red/);assert.match(css,/battle-resources\{display:grid!important/);
+console.log("Star resonance 1.05 regression passed.");
