@@ -21,8 +21,8 @@ assert.match(game, /CURVED_MAP:[\s\S]*artwork: "assets\/battle\/nebula-curve-map
 assert.match(game, /LOOP_MAP:[\s\S]*\{x:72,y:48\}[\s\S]*\{x:57,y:62\}[\s\S]*\{x:44,y:42\}/);
 assert.match(css, /button\[data-act="zodiac-cancel"\]\{left:28%!important;top:88\.1%!important;width:40\.5%!important/);
 assert.doesNotMatch(css, /\.battle-bottom-area:before\{content:""[\s\S]*left:1\.4%/);
-assert.match(css, /#paths \.roadGlow\{opacity:1;[\s\S]*stroke-width:32px/);
-assert.match(css, /#paths \.road\{opacity:1;[\s\S]*stroke-width:22px/);
+assert.match(css, /#paths \.roadGlow,[\s\S]*#paths \.roadEdge\{opacity:0\}/);
+assert.match(css, /#paths \.road\{opacity:\.24;[\s\S]*stroke-width:1\.4px/);
 assert.match(html, /data-act="zodiac-cancel" hidden>↶ 조디악 실행 취소<\/button>/);
 assert.match(game, /const xScale = map\.assetWidth && map\.assetHeight \? map\.assetWidth \/ map\.assetHeight : 1/);
 assert.match(game, /function fitBattleWorldToArena\(\)[\s\S]*assetWidth[\s\S]*assetHeight/);

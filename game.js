@@ -621,15 +621,18 @@ const MAP_DEFINITIONS = Object.freeze({
     artwork: "assets/battle/star-s-path.png", assetWidth: 885, assetHeight: 1536,
     roadWidth: 34,
     placementPadding: 3,
-    spawn: Object.freeze({ x: 44.8, y: 86.2 }),
-    destination: Object.freeze({ x: 65.2, y: 6.2 }),
-    route: Object.freeze([
-      Object.freeze([{x:44.8,y:86.2},{x:45.5,y:78.5},{x:50,y:74.5},{x:49,y:70}]),
-      Object.freeze([{x:49,y:70},{x:47,y:64},{x:34,y:64},{x:34.5,y:56.5}]),
-      Object.freeze([{x:34.5,y:56.5},{x:35,y:49.5},{x:55,y:47},{x:67,y:39.5}]),
-      Object.freeze([{x:67,y:39.5},{x:75,y:34},{x:70,y:27},{x:59,y:24}]),
-      Object.freeze([{x:59,y:24},{x:47,y:21},{x:49,y:14},{x:56.5,y:10.5}]),
-      Object.freeze([{x:56.5,y:10.5},{x:59.5,y:8.7},{x:62.5,y:7.2},{x:65.2,y:6.2}]),
+    spawn: Object.freeze({ x: 46.8, y: 85.6 }),
+    destination: Object.freeze({ x: 65.8, y: 6.2 }),
+    // Centre points traced from the illustrated road itself, from the blue
+    // spawn portal to the gold destination. Catmull-Rom conversion keeps the
+    // monster on the painted lane through every S bend without corner cuts.
+    route: buildSmoothRoute([
+      {x:46.8,y:85.6},{x:48.6,y:82.0},{x:52.2,y:78.1},{x:53.1,y:74.2},
+      {x:49.7,y:70.3},{x:42.4,y:67.7},{x:34.5,y:65.1},{x:32.2,y:61.2},
+      {x:35.0,y:57.0},{x:42.9,y:53.7},{x:53.7,y:51.1},{x:63.3,y:48.5},
+      {x:69.3,y:44.9},{x:70.3,y:41.0},{x:66.1,y:36.8},{x:57.1,y:33.9},
+      {x:48.4,y:30.9},{x:45.2,y:27.0},{x:47.8,y:22.5},{x:54.8,y:18.6},
+      {x:62.1,y:14.6},{x:65.5,y:10.4},{x:65.8,y:6.2},
     ]),
     arrows: Object.freeze([0.14, 0.38, 0.63, 0.86]),
   }),
@@ -663,6 +666,24 @@ const MAP_DEFINITIONS = Object.freeze({
     ]), arrows: Object.freeze([.12,.34,.55,.76,.91]),
   }),
 });
+
+function buildSmoothRoute(points) {
+  const frozen = points.map((point) => Object.freeze({...point}));
+  const segments = [];
+  for (let index = 0; index < frozen.length - 1; index++) {
+    const p0 = frozen[Math.max(0, index - 1)];
+    const p1 = frozen[index];
+    const p2 = frozen[index + 1];
+    const p3 = frozen[Math.min(frozen.length - 1, index + 2)];
+    segments.push(Object.freeze([
+      p1,
+      Object.freeze({x:p1.x+(p2.x-p0.x)/6,y:p1.y+(p2.y-p0.y)/6}),
+      Object.freeze({x:p2.x-(p3.x-p1.x)/6,y:p2.y-(p3.y-p1.y)/6}),
+      p2,
+    ]));
+  }
+  return Object.freeze(segments);
+}
 
 function buildRoundedOrthogonalRoute(points, radius = 1.25) {
   const cubicLine = (a,b) => Object.freeze([a, {x:a.x+(b.x-a.x)/3,y:a.y+(b.y-a.y)/3}, {x:a.x+(b.x-a.x)*2/3,y:a.y+(b.y-a.y)*2/3}, b].map(Object.freeze));

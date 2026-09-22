@@ -2462,10 +2462,10 @@ body.modal-open #main-menu .main-top-bar.redesigned{visibility:hidden!important}
 .battle-ui-art{position:absolute;z-index:124;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none;-webkit-user-drag:none}
 .arena.illustrated-normal-map{border:0;border-radius:0;background:#050914;box-shadow:none}
 .arena.illustrated-normal-map #paths{z-index:4;opacity:1}
-.arena.illustrated-normal-map .battle-world.fixed-map-ratio #paths .roadGlow{opacity:1;stroke:#745fa8;stroke-opacity:.16;stroke-width:32px;filter:drop-shadow(0 0 5px #7b63c688)}
-.arena.illustrated-normal-map .battle-world.fixed-map-ratio #paths .roadEdge{opacity:1;stroke:#e5bd7a;stroke-opacity:.34;stroke-width:26px}
-.arena.illustrated-normal-map .battle-world.fixed-map-ratio #paths .road{opacity:1;stroke:#28283d;stroke-opacity:.24;stroke-width:22px;filter:none}
-.arena.illustrated-normal-map .battle-world.fixed-map-ratio #paths .roadStars{opacity:.48;stroke:#ffe2a6;stroke-width:1px;stroke-dasharray:.7 11}
+.arena.illustrated-normal-map .battle-world.fixed-map-ratio #paths .roadGlow,
+.arena.illustrated-normal-map .battle-world.fixed-map-ratio #paths .roadEdge{opacity:0}
+.arena.illustrated-normal-map .battle-world.fixed-map-ratio #paths .road{opacity:.24;stroke:#ffe0a0;stroke-width:1.4px;filter:drop-shadow(0 0 2px #ffc76a)}
+.arena.illustrated-normal-map .battle-world.fixed-map-ratio #paths .roadStars{opacity:.22;stroke:#fff0c2;stroke-width:.7px;stroke-dasharray:.5 13}
 .map-ambient-motion{position:absolute;z-index:2;inset:0;overflow:hidden;pointer-events:none}
 .map-ambient-motion i{position:absolute;width:18px;aspect-ratio:1;border-radius:44% 56% 51% 49%;opacity:.34;background:radial-gradient(circle at 35% 30%,#9192a8,#414254 48%,#171824 72%);box-shadow:inset -3px -3px 5px #090a12,0 0 5px #8ea0c533;animation:ambientAsteroid 16s ease-in-out infinite alternate}
 .map-ambient-motion i:nth-child(1){left:9%;top:28%;scale:.72;--drift-x:18px;--drift-y:-12px}
