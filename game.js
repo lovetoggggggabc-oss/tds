@@ -51,13 +51,13 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.13.3 BETA";
+const GAME_VERSION = "1.14 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, oneStarChance: .04, twoStarChance: .01, oneStarPityLimit: 40, twoStarPityLimit: 100 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong", showBattleStarInfo: true });
-const NEWS_ITEMS = Object.freeze([Object.freeze({id:"beta_1_13_3_daybreak_skip",version:GAME_VERSION,date:"2026.09.22",title:"광명 · 뽑기 개선",sections:Object.freeze([Object.freeze({title:"[1.13.3 BETA]",bullets:Object.freeze(["여명의 자리 광명 제물 조건을 Stage 4에서 Stage 3 일반 별로 변경했습니다.","광명 사용 시 제물 별 폭파와 여명의 자리로 흡수되는 시각효과를 추가했습니다.","광명 버튼을 눌렀을 때 반응 효과를 추가했습니다.","뽑기 연출을 스킵하면 결과창이 비어 있던 문제를 수정했습니다."])})]),footer:"여명의 자리 조작감과 뽑기 스킵을 개선했습니다."}),Object.freeze({id:"beta_1_13_2_zodiac_battle_fix",version:GAME_VERSION,date:"2026.09.22",title:"조디악 버튼 복구",sections:Object.freeze([Object.freeze({title:"[1.13.2 BETA]",bullets:Object.freeze(["전투 하단 조디악 버튼이 사라지는 문제를 수정했습니다.","선택 중에는 같은 위치에 취소가 표시되고 완성 가능한 조합이 되면 조디악 버튼이 다시 표시됩니다."])})]),footer:"조디악 생성 흐름을 복구했습니다."}),Object.freeze({id:"beta_1_13_1_main_alignment",version:GAME_VERSION,date:"2026.09.22",title:"메인 UI 정렬 수정",sections:Object.freeze([Object.freeze({title:"[1.13.1 BETA]",bullets:Object.freeze(["메인 상단 프로필·재화·메뉴를 좌/중앙/우 기준으로 정확히 정렬했습니다.","메뉴 펼침 항목을 각각 독립된 버튼 형태로 변경했습니다.","메인 하단에 조디악 버튼을 복구하고 별자리 화면으로 바로 이동하도록 연결했습니다."])})]),footer:"메인 화면 UI 배치를 정돈했습니다."}),Object.freeze({id:"beta_1_13_ui_gacha_zodiac",version:GAME_VERSION,date:"2026.09.22",title:"메인 UI · 뽑기 · 조디악 개선",sections:Object.freeze([Object.freeze({title:"[1.13 BETA]",bullets:Object.freeze(["메인 상단을 프로필과 메뉴 드롭다운 구조로 개편했습니다.","프로필 팝업에서 닉네임을 설정할 수 있습니다. 프로필 그림 변경은 추후 지원합니다.","여명의 자리가 ★★ 뽑기에서 정상 등장하고 전투 특수능력이 동작하도록 수정했습니다.","1회 뽑기 연출 전에 결과가 노출되던 문제를 수정했습니다.","조디악 취소를 조디악 버튼 위치에 표시하고 연결된 별이 선택된 경우 표시하지 않습니다.","새벽의 별자리 특수능력 2 시각효과의 번쩍임을 제거했습니다."])})]),footer:"메인과 전투 조작의 가독성과 안정성을 개선했습니다."}),Object.freeze({id:"beta_1_12_6_signup_direct",version:GAME_VERSION,date:"2026.09.22",title:"회원가입 흐름 개선",sections:Object.freeze([Object.freeze({title:"[1.12.6 BETA]",bullets:Object.freeze(["개발 테스트 단계에서 이메일 인증 없이 회원가입 즉시 로그인되도록 계정 흐름을 변경했습니다.","가입 직후 계정별 클라우드 저장을 바로 연결합니다.","비밀번호 재설정 메일은 SMTP 제한의 영향을 받을 수 있습니다."])})]),footer:"회원가입 후 바로 게임을 시작할 수 있습니다."}),Object.freeze({id:"beta_1_12_5_auth_feedback",version:GAME_VERSION,date:"2026.09.22",title:"계정 사용성 개선",sections:Object.freeze([Object.freeze({title:"[1.12.5 BETA]",bullets:Object.freeze(["로그인·회원가입 버튼에 눌림 애니메이션과 처리 중 표시를 강화했습니다.","Supabase 인증 오류를 이해하기 쉬운 한국어 안내로 변경했습니다.","인증 메일 재전송 기능과 연속 요청 방지 처리를 추가했습니다."])})]),footer:"계정 버튼의 반응과 인증 안내를 개선했습니다."}),Object.freeze({id:"beta_1_12_4_password_reset",version:GAME_VERSION,date:"2026.09.22",title:"비밀번호 재설정",sections:Object.freeze([Object.freeze({title:"[1.12.4 BETA]",bullets:Object.freeze(["계정 창에 비밀번호 재설정 기능을 추가했습니다.","가입 이메일로 재설정 링크를 받고 게임으로 돌아와 새 비밀번호를 설정할 수 있습니다."])})]),footer:"계정 복구 기능을 추가했습니다."}),Object.freeze({id:"beta_1_12_3_auth_tap_fallback",version:GAME_VERSION,date:"2026.09.22",title:"계정 버튼 호환성 수정",sections:Object.freeze([Object.freeze({title:"[1.12.3 BETA]",bullets:Object.freeze(["iPad Safari에서 로그인·회원가입 버튼이 반응하지 않는 문제를 추가 수정했습니다.","계정 창 버튼은 touchend와 click을 직접 처리하고 중복 실행을 방지합니다."])})]),footer:"모바일 Safari 계정 버튼 호환성을 개선했습니다."}),Object.freeze({id:"beta_1_12_2_auth_touch_fix",version:GAME_VERSION,date:"2026.09.22",title:"로그인 터치 수정",sections:Object.freeze([Object.freeze({title:"[1.12.2 BETA]",bullets:Object.freeze(["iPad/iPhone에서 로그인·회원가입 버튼 터치가 동작하지 않던 문제를 수정했습니다.","계정 버튼과 로그인 모달의 터치 처리를 게임의 Pointer Events 방식으로 통일했습니다.","로그인·회원가입 진행 상태와 오류를 계정 창에서 바로 확인할 수 있습니다."])})]),footer:"모바일 계정 입력과 버튼 동작을 안정화했습니다."}),Object.freeze({ id:"beta_1_12_1_signup_fix", version:GAME_VERSION, date:"2026.09.22", title:"회원가입 안정화", sections:Object.freeze([Object.freeze({title:"[1.12.1 BETA]",bullets:Object.freeze(["모바일에서 회원가입 버튼의 처리 상태가 보이지 않던 문제를 수정했습니다.","회원가입 요청 중·인증 메일 발송·오류 내용을 계정 창에 직접 표시합니다.","중복 터치로 회원가입 요청이 여러 번 전송되지 않도록 개선했습니다."])})]), footer:"계정 생성 상태를 더 명확하게 확인할 수 있습니다." }), Object.freeze({
+const NEWS_ITEMS = Object.freeze([Object.freeze({id:"beta_1_14_crit_speed",version:GAME_VERSION,date:"2026.09.22",title:"치명타 · 몬스터 밸런스",sections:Object.freeze([Object.freeze({title:"[1.14 BETA]",bullets:Object.freeze(["모든 적의 기본 이동속도를 0.8 감소시켰습니다.","은하계 학살자의 조디악 해제 능력을 기지 현재 체력 20% 감소로 변경했습니다.","모든 일반 별과 별자리에 기본 치명타 확률 10%, 치명타 피해 150%를 추가했습니다.","치명타 발생 시 CRIT 피해 표시가 나타납니다."])})]),footer:"전투 기본 능력치 시스템을 확장했습니다."}),Object.freeze({id:"beta_1_13_3_daybreak_skip",version:GAME_VERSION,date:"2026.09.22",title:"광명 · 뽑기 개선",sections:Object.freeze([Object.freeze({title:"[1.13.3 BETA]",bullets:Object.freeze(["여명의 자리 광명 제물 조건을 Stage 4에서 Stage 3 일반 별로 변경했습니다.","광명 사용 시 제물 별 폭파와 여명의 자리로 흡수되는 시각효과를 추가했습니다.","광명 버튼을 눌렀을 때 반응 효과를 추가했습니다.","뽑기 연출을 스킵하면 결과창이 비어 있던 문제를 수정했습니다."])})]),footer:"여명의 자리 조작감과 뽑기 스킵을 개선했습니다."}),Object.freeze({id:"beta_1_13_2_zodiac_battle_fix",version:GAME_VERSION,date:"2026.09.22",title:"조디악 버튼 복구",sections:Object.freeze([Object.freeze({title:"[1.13.2 BETA]",bullets:Object.freeze(["전투 하단 조디악 버튼이 사라지는 문제를 수정했습니다.","선택 중에는 같은 위치에 취소가 표시되고 완성 가능한 조합이 되면 조디악 버튼이 다시 표시됩니다."])})]),footer:"조디악 생성 흐름을 복구했습니다."}),Object.freeze({id:"beta_1_13_1_main_alignment",version:GAME_VERSION,date:"2026.09.22",title:"메인 UI 정렬 수정",sections:Object.freeze([Object.freeze({title:"[1.13.1 BETA]",bullets:Object.freeze(["메인 상단 프로필·재화·메뉴를 좌/중앙/우 기준으로 정확히 정렬했습니다.","메뉴 펼침 항목을 각각 독립된 버튼 형태로 변경했습니다.","메인 하단에 조디악 버튼을 복구하고 별자리 화면으로 바로 이동하도록 연결했습니다."])})]),footer:"메인 화면 UI 배치를 정돈했습니다."}),Object.freeze({id:"beta_1_13_ui_gacha_zodiac",version:GAME_VERSION,date:"2026.09.22",title:"메인 UI · 뽑기 · 조디악 개선",sections:Object.freeze([Object.freeze({title:"[1.13 BETA]",bullets:Object.freeze(["메인 상단을 프로필과 메뉴 드롭다운 구조로 개편했습니다.","프로필 팝업에서 닉네임을 설정할 수 있습니다. 프로필 그림 변경은 추후 지원합니다.","여명의 자리가 ★★ 뽑기에서 정상 등장하고 전투 특수능력이 동작하도록 수정했습니다.","1회 뽑기 연출 전에 결과가 노출되던 문제를 수정했습니다.","조디악 취소를 조디악 버튼 위치에 표시하고 연결된 별이 선택된 경우 표시하지 않습니다.","새벽의 별자리 특수능력 2 시각효과의 번쩍임을 제거했습니다."])})]),footer:"메인과 전투 조작의 가독성과 안정성을 개선했습니다."}),Object.freeze({id:"beta_1_12_6_signup_direct",version:GAME_VERSION,date:"2026.09.22",title:"회원가입 흐름 개선",sections:Object.freeze([Object.freeze({title:"[1.12.6 BETA]",bullets:Object.freeze(["개발 테스트 단계에서 이메일 인증 없이 회원가입 즉시 로그인되도록 계정 흐름을 변경했습니다.","가입 직후 계정별 클라우드 저장을 바로 연결합니다.","비밀번호 재설정 메일은 SMTP 제한의 영향을 받을 수 있습니다."])})]),footer:"회원가입 후 바로 게임을 시작할 수 있습니다."}),Object.freeze({id:"beta_1_12_5_auth_feedback",version:GAME_VERSION,date:"2026.09.22",title:"계정 사용성 개선",sections:Object.freeze([Object.freeze({title:"[1.12.5 BETA]",bullets:Object.freeze(["로그인·회원가입 버튼에 눌림 애니메이션과 처리 중 표시를 강화했습니다.","Supabase 인증 오류를 이해하기 쉬운 한국어 안내로 변경했습니다.","인증 메일 재전송 기능과 연속 요청 방지 처리를 추가했습니다."])})]),footer:"계정 버튼의 반응과 인증 안내를 개선했습니다."}),Object.freeze({id:"beta_1_12_4_password_reset",version:GAME_VERSION,date:"2026.09.22",title:"비밀번호 재설정",sections:Object.freeze([Object.freeze({title:"[1.12.4 BETA]",bullets:Object.freeze(["계정 창에 비밀번호 재설정 기능을 추가했습니다.","가입 이메일로 재설정 링크를 받고 게임으로 돌아와 새 비밀번호를 설정할 수 있습니다."])})]),footer:"계정 복구 기능을 추가했습니다."}),Object.freeze({id:"beta_1_12_3_auth_tap_fallback",version:GAME_VERSION,date:"2026.09.22",title:"계정 버튼 호환성 수정",sections:Object.freeze([Object.freeze({title:"[1.12.3 BETA]",bullets:Object.freeze(["iPad Safari에서 로그인·회원가입 버튼이 반응하지 않는 문제를 추가 수정했습니다.","계정 창 버튼은 touchend와 click을 직접 처리하고 중복 실행을 방지합니다."])})]),footer:"모바일 Safari 계정 버튼 호환성을 개선했습니다."}),Object.freeze({id:"beta_1_12_2_auth_touch_fix",version:GAME_VERSION,date:"2026.09.22",title:"로그인 터치 수정",sections:Object.freeze([Object.freeze({title:"[1.12.2 BETA]",bullets:Object.freeze(["iPad/iPhone에서 로그인·회원가입 버튼 터치가 동작하지 않던 문제를 수정했습니다.","계정 버튼과 로그인 모달의 터치 처리를 게임의 Pointer Events 방식으로 통일했습니다.","로그인·회원가입 진행 상태와 오류를 계정 창에서 바로 확인할 수 있습니다."])})]),footer:"모바일 계정 입력과 버튼 동작을 안정화했습니다."}),Object.freeze({ id:"beta_1_12_1_signup_fix", version:GAME_VERSION, date:"2026.09.22", title:"회원가입 안정화", sections:Object.freeze([Object.freeze({title:"[1.12.1 BETA]",bullets:Object.freeze(["모바일에서 회원가입 버튼의 처리 상태가 보이지 않던 문제를 수정했습니다.","회원가입 요청 중·인증 메일 발송·오류 내용을 계정 창에 직접 표시합니다.","중복 터치로 회원가입 요청이 여러 번 전송되지 않도록 개선했습니다."])})]), footer:"계정 생성 상태를 더 명확하게 확인할 수 있습니다." }), Object.freeze({
   id: "beta_1_12_account_cloud_save", version: GAME_VERSION, date: "2026.09.22", title: "계정 및 클라우드 저장",
   sections: Object.freeze([Object.freeze({ title: "[1.12 BETA]", paragraphs: Object.freeze(["이메일 계정 로그인과 클라우드 저장 기능을 추가했습니다."]) }),Object.freeze({ title: "계정", bullets: Object.freeze(["이메일 회원가입 · 로그인 · 로그아웃 지원", "로그인 시 계정별 player_saves 데이터를 불러옵니다.", "게임 진행 변경 시 로컬 저장과 함께 클라우드에도 자동 저장합니다.", "처음 로그인해 클라우드 저장이 비어 있으면 현재 기기의 진행 상황을 계정에 업로드합니다."]) })]), footer: "이제 같은 계정으로 다른 기기에서도 진행 상황을 이어갈 수 있습니다.",
 }), Object.freeze({
@@ -928,6 +928,9 @@ const CONFIG = {
   tierDamage: [1, 1.7, 2.8, 4.4],
   whiteBurstInterval: 0.16,
   whiteBurstRest: 2,
+  baseCritChance: .10,
+  baseCritDamage: 1.50,
+  enemySpeedReduction: .8,
   monsters: {
     darkSlime: { name: "암흑 슬라임", hp: 800, speed: 4.5, reward: 5, role: "기본형", abilityName: "없음", abilityText: "특수 능력이 없습니다.", description: "어둠으로 이루어진 가장 기본적인 몬스터. 작고 단순하지만, 끊임없이 몰려온다." },
     shadowRunner: { name: "그림자 러너", hp: 450, speed: 7, reward: 7, role: "저체력 / 고속", abilityName: "질주", abilityText: "별도의 가속 없이 기본 이동속도 7로 빠르게 전진합니다.", description: "빛을 피하는 그림자. 빠른 속도로 별들을 향해 달려온다." },
@@ -959,11 +962,12 @@ const CONFIG = {
     },
     kingSlime: { name: "우주 킹슬라임", hp: 14000, speed: 2.2, reward: 35, baseDamage: 600, allyCombatDamage: 210, boss: true, bossAbility: "summonSlimes", abilityDelay: .8 },
     timeRunner: { name: "시공간 러너", hp: 18000, speed: 3.6, reward: 45, baseDamage: 800, allyCombatDamage: 250, boss: true, bossAbility: "timeSprint", abilityDelay: 5, speedMultiplier: 3.2, abilityDuration: 3 },
-    galaxySlayer: { name: "은하계 학살자", hp: 25000, speed: 3, reward: 70, baseDamage: 1400, allyCombatDamage: 380, boss: true, bossAbility: "zodiacCollapse", abilityDelay: 5, role: "보스", abilityName: "선행 습격 · 조디악 붕괴", abilityText: "그림자 러너 12마리 뒤에 등장합니다. 등장 5초와 20초에 활성 조디악 하나를 해제합니다.", description: "깨진 은하 고리와 붉은 균열로 별의 연결을 끊는 존재입니다." },
+    galaxySlayer: { name: "은하계 학살자", hp: 25000, speed: 3, reward: 70, baseDamage: 1400, allyCombatDamage: 380, boss: true, bossAbility: "baseRend", abilityDelay: 5, role: "보스", abilityName: "선행 습격 · 코어 붕괴", abilityText: "그림자 러너 12마리 뒤에 등장합니다. 등장 5초와 20초에 기지 현재 체력의 20%를 감소시킵니다.", description: "은하의 균열을 열어 아스트랄 코어의 현재 체력을 직접 깎는 존재입니다." },
     starDevourer: { name: "별 포식자", hp: 33000, speed: 3.5, reward: 90, baseDamage: 1700, allyCombatDamage: 420, boss: true, bossAbility: "starDevour", abilityDelay: 0, role: "보스", abilityName: "공허의 선봉 · 별 포식 · 포식 성장", abilityText: "공허 골렘 8마리 뒤에 등장해 연결되지 않은 별 최대 6개의 Stage를 2 낮춥니다. 사라진 별마다 최대 체력이 30% 증가합니다.", description: "별빛을 먹고 성장하는 거대한 공허 생명체입니다." },
   },
   stars: Object.freeze(Object.fromEntries(Object.values(STAR_TYPES).map(({ id: _id, key, ...definition }) => [key, Object.freeze(definition)]))),
 };
+function rollCriticalDamage(damage, canCrit = true) { const critical = canCrit && Math.random() < CONFIG.baseCritChance; return { damage: damage * (critical ? CONFIG.baseCritDamage : 1), critical }; }
 const VERTICAL_BETA = "experimental_vertical";
 const EARLY_WAVE_COMPOSITIONS = Object.freeze([
   null,
@@ -1201,7 +1205,8 @@ class Enemy {
     const slowMultiplier = status.slowUntil > game.gameTime ? 1 - status.slowPercent / 100 : 1;
     for (const [source, until] of this.marchBuffs) if (until <= game.gameTime) this.marchBuffs.delete(source);
     const marchBonus = this.marchBuffs.size ? 1.8 : 0;
-    this.distanceTravelled += (this.speed + marchBonus) * slowMultiplier * routeLength / 100 * (this.speedBoostUntil > game.gameTime ? this.speedMultiplier : 1) * dt;
+    const reducedBaseSpeed = Math.max(.1, this.speed - CONFIG.enemySpeedReduction);
+    this.distanceTravelled += (reducedBaseSpeed + marchBonus) * slowMultiplier * routeLength / 100 * (this.speedBoostUntil > game.gameTime ? this.speedMultiplier : 1) * dt;
     // Legacy percentage equivalent: this.pathProgress = Math.min(1, this.progress / 100);
     this.pathProgress = Math.min(1, this.distanceTravelled / routeLength);
     this.progress = this.pathProgress * 100;
@@ -1233,7 +1238,10 @@ class Enemy {
     if (this.dead || game.gameTime < this.nextAbilityAt) return;
     if (this.type === "galaxySlayer") {
       if (this.abilityUses >= 2) { this.nextAbilityAt = Infinity; return; }
-      game.forceDismantleRandom(this);
+      const damage = game.base.hp * .20;
+      game.damageBase(damage);
+      UIManager.alert("은하계 학살자 · 코어 붕괴 -20%");
+      this.el.classList.remove("ability-pulse"); void this.el.offsetWidth; this.el.classList.add("ability-pulse");
       this.abilityUses++;
       this.nextAbilityAt = this.abilityUses === 1 ? this.spawnTime + 20 : Infinity;
     } else if (this.type === "abyssEye") {
@@ -1614,7 +1622,7 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
   [CONSTELLATION_IDS.DAYBREAK]: Object.freeze({
     createRuntime: (constellation) => ({ componentStageSum: constellation.componentStageSum, lightStacks: 0, awakened: false, hitCount: 0 }),
     attack(constellation, target, origin) {
-      if (!target.hit(constellation.currentDamage(), origin, constellation)) return;
+      const criticalHit=rollCriticalDamage(constellation.currentDamage()); if (!target.hit(criticalHit.damage, origin, constellation)) return; if(criticalHit.critical) UIManager.critical?.(target.position(),criticalHit.damage);
       if (!constellation.runtime.awakened || target.dead) return;
       constellation.runtime.hitCount++;
       if (constellation.runtime.hitCount < 8) return;
@@ -1640,8 +1648,8 @@ const CONSTELLATION_BEHAVIORS = Object.freeze({
       constellation.runtime.sameTargetHits = 0;
     },
     attack(constellation, target, origin) {
-      const damage = constellation.currentDamage();
-      target.hit(damage, origin, constellation);
+      const criticalHit=rollCriticalDamage(constellation.currentDamage()); const damage=criticalHit.damage;
+      target.hit(damage, origin, constellation); if(criticalHit.critical) UIManager.critical?.(target.position(),damage);
       const runtime = constellation.runtime;
       runtime.sameTargetHits++;
       if (runtime.sameTargetHits === constellation.definition.specialHits) {
@@ -2212,7 +2220,7 @@ class StarManager {
         s.lock = t;
         let damage = s.data().damage * CONFIG.tierDamage[s.tier - 1] * starLevelDamageMultiplier(permanentLevel) *
           (game.attackBuffUntil > game.gameTime ? 11 : 1) * relicMultiplier("BLESSING_OF_PLANETS") * resonanceDamageMultiplier(STAR_FAMILIES[s.type]);
-        t.hit(damage, position);
+        const criticalHit = rollCriticalDamage(damage); damage = criticalHit.damage; t.hit(damage, position); if (criticalHit.critical) UIManager.critical?.(t.position(), damage);
         const special = normalStarSpecial(s.type, s.tier, permanentLevel, game?.normalStarStageSums);
         if (s.type === "blue" && !t.dead) t.applySlow(special.slowPercent, special.duration);
         else if (s.type === "yellow" && !t.dead) t.applyLight(special.lightPercent, special.duration);
@@ -2609,6 +2617,7 @@ class UIManager {
     const line=document.createElementNS("http://www.w3.org/2000/svg","line"); line.setAttribute("class","daybreak-sacrifice-line"); [["x1",position.x],["y1",position.y],["x2",destination.x],["y2",destination.y]].forEach(([k,v])=>line.setAttribute(k,v)); this.addTransient(line,effects,520);
   }
   static daybreakButtonPulse(button) { if(!button)return; button.classList.remove("daybreak-button-pulse"); void button.offsetWidth; button.classList.add("daybreak-button-pulse"); setTimeout(()=>button.classList.remove("daybreak-button-pulse"),520); }
+  static critical(position, damage) { const label=document.createElement("b"); label.className="critical-hit-label"; label.style.left=position.x+"%"; label.style.top=position.y+"%"; label.textContent="CRIT! "+Math.round(damage).toLocaleString(); this.addTransient(label,battleWorld||arena,620); }
   static chainBeam(a, b) {
     let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("class", "chain-beam");
