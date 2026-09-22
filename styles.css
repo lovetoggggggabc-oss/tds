@@ -2379,3 +2379,12 @@ body[data-resonance-pulse="red"] .resonance-panel{animation:resonanceRed .8s eas
 
 /* 1.11 BETA — constellation rarity and Daybreak awakening */
 .constellation-rarity{display:block;margin:2px auto 4px;color:#ffe992;font-size:11px;font-style:normal;font-weight:1000;letter-spacing:.08em;text-shadow:0 0 8px #ffc44c88}.gacha-rates{display:flex;flex-wrap:wrap;justify-content:center;gap:5px 10px}.gacha-rates span:first-child{flex-basis:100%;color:#dce5ff}.daybreak-action{border-color:#ffeaa0!important;box-shadow:0 0 12px #fff0a866!important}.constellation-link-daybreak{stroke:#fff0a8!important;filter:drop-shadow(0 0 4px #fff)}
+
+/* 1.12 account + cloud save */
+.account-button{min-width:58px;padding:0 9px!important;font-size:11px!important;color:#e8f7ff!important;border-color:#71dcff88!important}
+.account-modal{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:20px;background:#030719bb;backdrop-filter:blur(12px)}
+.account-modal[hidden]{display:none!important}.account-panel{position:relative;width:min(92vw,420px);padding:26px 22px;border:1px solid #88cfff66;border-radius:24px;background:linear-gradient(160deg,#111942f5,#17113cf5);box-shadow:0 24px 80px #000b;color:#fff}
+.account-panel>small{color:#7fe6ff;letter-spacing:.18em;font-weight:800}.account-panel h2{margin:6px 0 4px;font-size:28px}.account-status{margin:0 0 18px;color:#bdc7e5;font-size:13px}.account-close{position:absolute;right:14px;top:12px;border:0;background:transparent;color:#fff;font-size:26px}
+.account-panel label{display:grid;gap:6px;margin:12px 0;color:#cfd8f4;font-size:12px}.account-panel input{box-sizing:border-box;width:100%;padding:13px 14px;border:1px solid #7486c366;border-radius:13px;background:#080e2dcc;color:#fff;font-size:16px}
+.account-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.account-actions button,[data-auth-user] button{padding:13px;border:1px solid #91dfff88;border-radius:13px;background:linear-gradient(135deg,#6652dd,#a854d0);color:#fff;font-weight:800}.account-help{display:block;margin-top:12px;color:#9ba8cb;line-height:1.45}
+[data-auth-user]{display:grid;gap:12px;padding-top:10px}[data-auth-user][hidden]{display:none!important}[data-auth-user] b{overflow-wrap:anywhere;color:#eaf8ff}[data-auth-user] small{color:#82e6b5}
