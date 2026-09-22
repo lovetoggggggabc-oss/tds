@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=70" />
+    <link rel="stylesheet" href="styles.css?v=71" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
@@ -145,6 +145,7 @@
       <div class="battle-map-area"><section class="arena" id="arena" aria-label="게임 필드"><div class="battle-world" id="battleWorld">
         <img class="battle-space-background" src="assets/battle/space-background.png" alt="" aria-hidden="true" draggable="false">
         <img class="battle-map-art" id="battleMapArt" src="assets/battle/star-s-path.png" alt="" aria-hidden="true" draggable="false">
+        <div class="map-ambient-motion" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b></div>
         <div class="planet a"><i></i><i></i><i></i></div>
         <div class="planet b"></div>
         <div class="space-dust" aria-hidden="true"></div>
@@ -244,7 +245,7 @@
         <section class="game-controls" data-player="0" aria-label="1P 게임 조작">
           <b class="player-badge">1P</b>
           <button type="button" data-act="zodiac"><i>✦</i><span>조디악<small>ZODIAC</small></span></button>
-          <button type="button" class="zodiac-cancel" data-act="zodiac-cancel" hidden>조디악 취소</button>
+          <button type="button" class="zodiac-cancel" data-act="zodiac-cancel" hidden>↶ 조디악 실행 취소</button>
           <button type="button" class="battle-resonance-button" data-battle-resonance>✦ 공명</button>
           <button type="button" class="codex-button" data-act="codex">별자리 도감</button>
         </section>
@@ -271,6 +272,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=73" defer></script>
+    <script src="game.js?v=74" defer></script>
   </body>
 </html>
