@@ -3,7 +3,7 @@ import fs from "node:fs";
 const js=fs.readFileSync(new URL("../game.js",import.meta.url),"utf8");
 const html=fs.readFileSync(new URL("../index.html",import.meta.url),"utf8");
 const css=fs.readFileSync(new URL("../styles.css",import.meta.url),"utf8");
-assert.match(js,/const GAME_VERSION = "1\.06 BETA"/);
+assert.match(js,/id: "beta_1_06_battle_hud_resonance_ui", version: "1.06 BETA"/);
 assert.match(js,/beta_1_06_battle_hud_resonance_ui/);
 for (const version of ["1.01 BETA","1.02 BETA","1.03 BETA","1.04 BETA"]) assert.match(js,new RegExp(version.replace(".","\\.")));
 assert.match(js,/beta_1_05_star_resonance/);

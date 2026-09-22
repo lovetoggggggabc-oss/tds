@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=56" />
+    <link rel="stylesheet" href="styles.css?v=57" />
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
@@ -132,15 +132,14 @@
     </section>
     <main class="app battle-screen" id="game-shell" hidden>
       <header class="game-hud battle-top-hud">
-        <div class="brand"><b>별자리 디펜스</b><small>ZODIAC DEFENSE</small></div>
         <div class="wave">
-          <b><small>WAVE</small><span id="wave">0</span></b><i aria-hidden="true"></i>
-          <span><strong class="clock">◷</strong> <strong id="timer">00:00</strong><small>다음 웨이브까지</small></span>
+          <b><small>WAVE</small><span id="wave">0</span></b>
+          <span><strong id="timer">00:00</strong><small>다음 웨이브까지</small></span>
         </div>
         <div class="binding-relic-status" id="bindingRelicStatus" hidden>결속성의 악 · <b>사용 가능 1/1</b></div>
-        <div class="hp"><b id="hp">♥ 400 / 400</b><em id="baseShields" hidden>🛡 ×0</em><span>ASTRAL CORE</span></div>
+        <div class="hp"><b id="hp">♥ 400 / 400</b><em id="baseShields" hidden>🛡 ×0</em></div>
         <aside class="next-wave" aria-label="다음 적 정보">
-          <small>NEXT ENEMY</small><b>다음 적 정보</b><div id="nextEnemies"></div>
+          <b>다음 적</b><div id="nextEnemies"></div>
         </aside>
       </header>
       <div class="battle-map-area"><section class="arena" id="arena" aria-label="게임 필드"><div class="battle-world" id="battleWorld">
@@ -252,6 +251,6 @@
     <section class="confirm-dialog" id="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" hidden>
       <div><small>LEAVE BATTLE</small><h2 id="exit-dialog-title">전투 종료</h2><p>전투를 종료하고 메인 메뉴로 돌아가시겠습니까?</p><footer><button type="button" id="exit-cancel">취소</button><button type="button" class="danger" id="exit-confirm">나가기</button></footer></div>
     </section>
-    <script src="game.js?v=55" defer></script>
+    <script src="game.js?v=56" defer></script>
   </body>
 </html>

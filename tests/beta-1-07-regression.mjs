@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 const [js, html, css] = await Promise.all(["game.js", "index.html", "styles.css"].map((file) => readFile(file, "utf8")));
-assert.match(js, /const GAME_VERSION = "1\.07 BETA"/);
+assert.match(js, /id: "beta_1_07_galaxy_boss_update", version: "1.07 BETA"/);
 assert.match(js, /id: "beta_1_07_galaxy_boss_update"/);
 assert.match(js, /new Set\(\["hamburger123", "hamburger7777"\]\)/);
 assert.match(js, /for \(const id of Object\.keys\(CONSTELLATION_DEFINITIONS\)\)/);
