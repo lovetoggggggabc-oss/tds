@@ -1867,8 +1867,6 @@ body[data-zodiac-vfx="weak"] .zodiac-link,body[data-zodiac-vfx="weak"] .zodiac-p
 .battle-result-overlay:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 18%,#9a7aff22,transparent 25%),linear-gradient(#01031688,#070319dd);animation:resultDarken 1.2s both}.battle-result-overlay.reveal-results .result-sigil{filter:drop-shadow(0 0 20px #8d6cff);animation:resultSigil 1.1s .35s both}@keyframes resultDarken{from{opacity:0}to{opacity:1}}@keyframes resultSigil{from{opacity:0;transform:scale(.3) rotate(-40deg)}to{opacity:1;transform:scale(1) rotate(0)}}
 
 /* Authoritative preparation, vote, readable collection and code-entry states. */
-.route-arrows.arrow{opacity:0;visibility:hidden;transition:opacity .2s}
-.route-arrows.arrow.visible{opacity:.88;visibility:visible}
 .map-vote-cards button.selected{border:2px solid #74f3ff;box-shadow:0 0 20px #55dfff77,inset 0 0 18px #557cff33;transform:scale(1.018);animation:voteStarlight 1.25s ease-in-out infinite alternate}
 .map-vote-cards button.winner{border-color:#fff2a1;box-shadow:0 0 28px #ffe77e88;animation:winnerBurst .7s ease-out}
 .map-vote-cards button.faded{opacity:.3;filter:brightness(.65)}

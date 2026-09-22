@@ -3139,7 +3139,6 @@ class UIManager {
   }
   static renderHud(g, force = false) {
     const preparing = g.phase === "PREPARING" || g.phase === "SPECIAL_EVENT";
-    document.querySelector?.(".route-arrows")?.classList.toggle("visible", preparing);
     const unboundedBoss = !preparing && waveDefinition(g.wave.wave, g.mode).waitForBossDefeat;
     const seconds = Math.max(0, Math.ceil(preparing ? g.preparationRemaining : (g.wave.left ?? 0)));
     const values = {
@@ -3724,9 +3723,6 @@ function renderActiveMap() {
   if (mapObject) { mapObject.hidden = !illustratedMap; if (illustratedMap) mapObject.src = activeMap.artwork; }
   fitBattleWorldToArena();
   pathSvg.querySelectorAll(".roadGlow,.roadEdge,.road,.roadStars").forEach((path) => path.setAttribute("d", pathData));
-  const arrowLayer = pathSvg.querySelector(".route-arrows");
-  if (arrowLayer) arrowLayer.innerHTML = activeMap.arrows.map((progress) => { const point = routePoint(progress), before = routePoint(progress-.004), after = routePoint(progress+.004); const angle = Math.atan2(after.y-before.y,after.x-before.x)*180/Math.PI+90; return `<path d="M0 -2.2L2 1.8L0 .8L-2 1.8Z" transform="translate(${point.x} ${point.y}) rotate(${angle})"/>`; }).join("");
-  arrowLayer?.classList.toggle("visible", game?.phase === "PREPARING");
 }
 
 function bootstrapGame() {

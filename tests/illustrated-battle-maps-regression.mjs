@@ -9,6 +9,8 @@ for (const asset of ["space-background.png", "star-s-path.png", "nebula-curve-ma
   assert.match(html + game, new RegExp(`assets/battle/${asset.replace(".", "\\.")}`));
 
 assert.match(html, /class="battle-space-background"[\s\S]*class="battle-map-art"/);
+assert.doesNotMatch(html, /class="route-arrows arrow"/);
+assert.doesNotMatch(game, /querySelector\("\.route-arrows"\)/);
 assert.match(html, /class="battle-ui-art"/);
 assert.match(css, /\.battle-ui-art\{[\s\S]*pointer-events:none/);
 assert.match(css, /\.battle-control-rail button\{[\s\S]*touch-action:manipulation/);
