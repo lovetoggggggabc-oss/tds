@@ -13,7 +13,7 @@ assert.deepEqual({...maps.LOOP_MAP.spawn},{x:40.7,y:85.2}); assert.deepEqual({..
 for(const map of Object.values(maps)){assert.deepEqual({...map.route[0][0]},{...map.spawn});assert.deepEqual({...map.route.at(-1).at(-1)},{...map.destination});}
 assert.equal(maps.LOOP_MAP.route.length,8); assert.match(source,/ROUTE_CACHES/); assert.match(source,/binary|while \(low < high\)/);
 assert.equal(maps.ORIGINAL_S.assetWidth,885); assert.equal(maps.CURVED_MAP.assetWidth,883); assert.equal(maps.LOOP_MAP.assetWidth,882);
-assert.equal(maps.ORIGINAL_S.route.length,22);
+assert.equal(maps.ORIGINAL_S.route.length,80);
 assert.ok(maps.ORIGINAL_S.route.some((segment)=>segment[0].x<33 && segment[0].y>60));
 assert.ok(maps.ORIGINAL_S.route.some((segment)=>segment[0].x>69 && segment[0].y>40 && segment[0].y<46));
 console.log("Path geometry regression passed: three cached ordered Bezier routes verified.");
