@@ -2443,3 +2443,10 @@ body[data-resonance-pulse="red"] .resonance-panel{animation:resonanceRed .8s eas
 #main-menu .main-menu-dropdown{display:none!important}
 #main-menu .main-menu-dropdown-wrap[open]>.main-menu-dropdown{display:grid!important}
 #main-menu .main-menu-dropdown-wrap[open]>.main-menu-toggle i{transform:rotate(180deg)}
+
+/* Utility screens fully own the viewport while open. This prevents the main
+   dropdown from showing through and keeps every panel inside small iPad views. */
+body.modal-open #main-menu .main-top-bar.redesigned{visibility:hidden!important}
+.utility-dialog>.modal-panel,.utility-dialog>.mail-panel,.utility-dialog>.news-modal{width:min(calc(100% - 20px),430px)!important;max-height:calc(100dvh - max(20px,env(safe-area-inset-top)) - max(20px,env(safe-area-inset-bottom)))!important;margin:auto;overflow:hidden}
+.utility-dialog>.mail-panel,.utility-dialog>.news-modal{display:flex;flex-direction:column}
+.utility-dialog .modal-body,.utility-dialog .news-scroll-body{min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}

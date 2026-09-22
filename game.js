@@ -3699,9 +3699,13 @@ function bootstrapGame() {
   const closeMainDropdown=()=>{if(mainMenuDisclosure)mainMenuDisclosure.open=false;};
   const bindReliableMenuAction=(button,action)=>{if(!button)return;let lastTouch=0;button.addEventListener("touchend",(event)=>{lastTouch=Date.now();event.preventDefault();event.stopPropagation();action(event);closeMainDropdown();},{passive:false});button.addEventListener("click",(event)=>{event.preventDefault();event.stopPropagation();if(Date.now()-lastTouch<700)return;action(event);closeMainDropdown();});};
   if(mainMenuDisclosure&&mainMenuToggle&&mainMenuDropdown){
-    // Native <details>/<summary> owns opening so iPad Safari does not depend on
-    // the order of pointer, touch, and compatibility-click events.
+    // Keep the native disclosure structure, but own the state transition so
+    // iPad Safari cannot lose the closing tap or apply it twice.
     const syncMainDropdownState=()=>mainMenuToggle.setAttribute("aria-expanded",String(mainMenuDisclosure.open));
+    let lastSummaryTouch=0;
+    const toggleMainDropdown=(event)=>{event.preventDefault();event.stopPropagation();mainMenuDisclosure.open=!mainMenuDisclosure.open;syncMainDropdownState();};
+    mainMenuToggle.addEventListener("touchend",(event)=>{lastSummaryTouch=Date.now();toggleMainDropdown(event);},{passive:false});
+    mainMenuToggle.addEventListener("click",(event)=>{if(Date.now()-lastSummaryTouch<700){event.preventDefault();event.stopPropagation();return;}toggleMainDropdown(event);});
     mainMenuDisclosure.addEventListener("toggle",syncMainDropdownState);
     document.addEventListener("pointerdown",(event)=>{if(mainMenuDisclosure.open&&!event.target.closest(".main-menu-dropdown-wrap"))mainMenuDisclosure.open=false;});
     syncMainDropdownState();
@@ -4046,6 +4050,7 @@ function bootstrapGame() {
   getRequiredElement("close-draw-results").onclick = () => summonController.close();
   const settingsDialog = getRequiredElement("settings-dialog"), mailDialog = getRequiredElement("mail-dialog"), newsDialog = getRequiredElement("news-dialog"), resonanceDialog=getRequiredElement("resonance-dialog");
   const setModalOpen = (dialog, open) => {
+    if(open)closeMainDropdown();
     if (open) document.querySelectorAll(".utility-dialog:not([hidden])").forEach((other) => { if (other !== dialog) other.hidden = true; });
     dialog.hidden = !open;
     document.body.classList.toggle("modal-open", open || Boolean(document.querySelector(".utility-dialog:not([hidden])")));
