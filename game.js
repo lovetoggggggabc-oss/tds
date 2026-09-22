@@ -51,13 +51,13 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.12 BETA";
+const GAME_VERSION = "1.12.1 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, oneStarChance: .04, twoStarChance: .01, oneStarPityLimit: 40, twoStarPityLimit: 100 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong", showBattleStarInfo: true });
-const NEWS_ITEMS = Object.freeze([Object.freeze({
+const NEWS_ITEMS = Object.freeze([Object.freeze({ id:"beta_1_12_1_signup_fix", version:GAME_VERSION, date:"2026.09.22", title:"회원가입 안정화", sections:Object.freeze([Object.freeze({title:"[1.12.1 BETA]",bullets:Object.freeze(["모바일에서 회원가입 버튼의 처리 상태가 보이지 않던 문제를 수정했습니다.","회원가입 요청 중·인증 메일 발송·오류 내용을 계정 창에 직접 표시합니다.","중복 터치로 회원가입 요청이 여러 번 전송되지 않도록 개선했습니다."])})]), footer:"계정 생성 상태를 더 명확하게 확인할 수 있습니다." }), Object.freeze({
   id: "beta_1_12_account_cloud_save", version: GAME_VERSION, date: "2026.09.22", title: "계정 및 클라우드 저장",
   sections: Object.freeze([Object.freeze({ title: "[1.12 BETA]", paragraphs: Object.freeze(["이메일 계정 로그인과 클라우드 저장 기능을 추가했습니다."]) }),Object.freeze({ title: "계정", bullets: Object.freeze(["이메일 회원가입 · 로그인 · 로그아웃 지원", "로그인 시 계정별 player_saves 데이터를 불러옵니다.", "게임 진행 변경 시 로컬 저장과 함께 클라우드에도 자동 저장합니다.", "처음 로그인해 클라우드 저장이 비어 있으면 현재 기기의 진행 상황을 계정에 업로드합니다."]) })]), footer: "이제 같은 계정으로 다른 기기에서도 진행 상황을 이어갈 수 있습니다.",
 }), Object.freeze({
@@ -3630,7 +3630,7 @@ function bootstrapGame() {
   accountModal?.querySelector("[data-close-account]")?.addEventListener("click",()=>accountModal.hidden=true);
   accountModal?.addEventListener("click",(e)=>{if(e.target===accountModal)accountModal.hidden=true;});
   const authValues=()=>({email:accountModal.querySelector("[data-auth-email]").value.trim(),password:accountModal.querySelector("[data-auth-password]").value});
-  accountModal?.querySelector("[data-auth-signup]")?.addEventListener("click",async()=>{const {email,password}=authValues();if(!email||password.length<6)return showToast("이메일과 6자 이상 비밀번호를 입력하세요.");const {error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:"https://lovetoggggggabc-oss.github.io/tds/"}});showToast(error?error.message:"인증 메일을 보냈습니다. 이메일을 확인하세요.");});
+  accountModal?.querySelector("[data-auth-signup]")?.addEventListener("click",async()=>{const {email,password}=authValues();const status=accountModal?.querySelector("[data-account-status]");if(!email||password.length<6){if(status)status.textContent="이메일과 6자 이상 비밀번호를 입력하세요.";return;}if(!supabaseClient){if(status)status.textContent="로그인 서버를 불러오지 못했습니다. 페이지를 새로고침해주세요.";return;}const button=accountModal.querySelector("[data-auth-signup]");button.disabled=true;if(status)status.textContent="회원가입 요청 중…";try{const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:"https://lovetoggggggabc-oss.github.io/tds/"}});if(error){if(status)status.textContent=`회원가입 실패: ${error.message}`;return;}if(status)status.textContent=data.session?"회원가입 및 로그인 완료!":"인증 메일을 보냈습니다. 이메일에서 인증 링크를 눌러주세요.";if(data.session?.user){await syncCloudAfterLogin(data.session.user);refreshAccountUI();}}catch(error){if(status)status.textContent=`회원가입 오류: ${error?.message||"네트워크 연결을 확인해주세요."}`;}finally{button.disabled=false;}});
   accountModal?.querySelector("[data-auth-login]")?.addEventListener("click",async()=>{const {email,password}=authValues();const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)return showToast("로그인 실패: "+error.message);await syncCloudAfterLogin(data.user);refreshAccountUI();updateMetaCurrency();renderCollection?.();renderRelics?.();showToast("로그인했습니다.");});
   accountModal?.querySelector("[data-auth-logout]")?.addEventListener("click",async()=>{await pushCloudSave();await supabaseClient.auth.signOut();authUser=null;refreshAccountUI();showToast("로그아웃했습니다.");});
   window.addEventListener("astra-auth-updated",()=>{refreshAccountUI();updateMetaCurrency();});
