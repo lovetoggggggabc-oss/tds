@@ -41,7 +41,7 @@ let activeGameMode = GAME_MODES.NORMAL;
 
 const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", MAP_RANDOM: "MAP_RANDOM", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS", MONSTER_CODEX: "MONSTER_CODEX", NEWS: "NEWS" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
-const PROGRESS_SCHEMA_VERSION = 7;
+const PROGRESS_SCHEMA_VERSION = 8;
 const UPDATE_REWARD_ID = "balance_update_stardust_3000_v1";
 const RESONANCE_UPDATE_REWARD_ID = "beta_1_05_resonance_stardust_1000";
 const METEOR_MAIL_REWARD_ID = "meteor_fragment_mail_30_v1";
@@ -51,13 +51,19 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.09 BETA";
+const GAME_VERSION = "1.10 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong", showBattleStarInfo: true });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
+  id: "beta_1_10_stability_update", version: GAME_VERSION, date: "2026.09.22", title: "안정화 업데이트",
+  sections: Object.freeze([
+    Object.freeze({ title: "[1.10 BETA]", paragraphs: Object.freeze(["전투 반복 플레이와 저장 데이터의 안정성을 개선했습니다."]) }),
+    Object.freeze({ title: "버그 수정", bullets: Object.freeze(["전투 간 일부 효과와 예약 동작이 남을 수 있던 문제 수정", "공명 및 활성 별자리 상태 정리 안정성 개선", "심판 대상과 보스의 조디악 해제 처리 안정성 개선", "새벽의 자리 킬 관여가 해제 후에도 남을 수 있던 문제 수정", "오래된 저장 데이터의 컬렉션/장착 정보가 손상된 경우 전체 진행이 초기화될 수 있던 문제 수정", "전투 종료 시 타이머·참조·효과·애니메이션 정리 강화"]) }),
+  ]), footer: "반복 플레이에서도 안정적으로 이어지는 전투를 준비했습니다.",
+}), Object.freeze({
   id: "beta_1_09_balance_resonance_update", version: GAME_VERSION, date: "2026.09.22", title: "별자리 밸런스 및 공명 개편",
   sections: Object.freeze([
     Object.freeze({ title: "[1.09 BETA]", paragraphs: Object.freeze(["별자리 밸런스와 공명 시스템을 개편했습니다."]) }),
@@ -361,7 +367,8 @@ function normalizeConstellationCollection(saved, owned) {
   return Object.fromEntries(owned.map((id) => [id, { owned: true, copies: Math.max(0, Math.floor(Number(source[id]?.copies) || 0)), level: Math.min(4, Math.max(1, Math.floor(Number(source[id]?.level) || 1))) }]));
 }
 function normalizeRelicProgress(saved) {
-  const legacyOwned = new Set((saved?.ownedRelics || []).filter((id) => RELIC_DEFINITIONS[id]));
+  const legacyOwnedList = Array.isArray(saved?.ownedRelics) ? saved.ownedRelics : [];
+  const legacyOwned = new Set(legacyOwnedList.filter((id) => RELIC_DEFINITIONS[id]));
   const source = saved?.relicProgress || {};
   return Object.fromEntries(Object.keys(RELIC_DEFINITIONS).map((id) => {
     const old = source[id];
@@ -394,8 +401,10 @@ function loadPlayerProgress() {
     const ownedStars = {};
     if (Array.isArray(sourceStars)) sourceStars.forEach((id) => { const normalized = normalizeStarId(id); ownedStars[normalized] = (ownedStars[normalized] || 0) + 1; });
     else Object.entries(sourceStars || {}).forEach(([id, count]) => { const normalized = normalizeStarId(id); ownedStars[normalized] = (ownedStars[normalized] || 0) + Math.max(0, Math.floor(Number(count) || 0)); });
-    const ownedConstellations = [...new Set(saved?.ownedConstellations ?? STARTER_COLLECTION.ownedConstellations)];
-    const equippedConstellations = [...new Set(saved?.equippedConstellations ?? STARTER_COLLECTION.equippedConstellations)]
+    const savedOwnedConstellations = Array.isArray(saved?.ownedConstellations) ? saved.ownedConstellations : STARTER_COLLECTION.ownedConstellations;
+    const ownedConstellations = [...new Set(savedOwnedConstellations.filter((id) => CONSTELLATION_DEFINITIONS[id]))];
+    const savedEquippedConstellations = Array.isArray(saved?.equippedConstellations) ? saved.equippedConstellations : STARTER_COLLECTION.equippedConstellations;
+    const equippedConstellations = [...new Set(savedEquippedConstellations)]
       .filter((id) => ownedConstellations.includes(id)).slice(0, MAX_EQUIPPED_CONSTELLATIONS);
     const grants = { ...(saved?.oneTimeGrants || {}) };
     const dustGranted = grants[STAR_DUST_GRANT_ID] === true;
@@ -428,7 +437,11 @@ function loadPlayerProgress() {
       constellationPity: Math.min(GACHA_RULES.pityLimit - 1, Math.max(0, Number.isFinite(saved?.constellationPity) ? Math.floor(saved.constellationPity) : 0)),
       relicProgress: normalizeRelicProgress(saved),
       ownedRelics: [...new Set((saved?.ownedRelics || []).filter((id) => RELIC_DEFINITIONS[id]))],
-      settings: { ...DEFAULT_SETTINGS, ...(saved?.settings || {}) },
+      settings: {
+        showMonsterHpNumbers: typeof saved?.settings?.showMonsterHpNumbers === "boolean" ? saved.settings.showMonsterHpNumbers : DEFAULT_SETTINGS.showMonsterHpNumbers,
+        zodiacVfx: ["strong", "reduced", "off"].includes(saved?.settings?.zodiacVfx) ? saved.settings.zodiacVfx : DEFAULT_SETTINGS.zodiacVfx,
+        showBattleStarInfo: typeof saved?.settings?.showBattleStarInfo === "boolean" ? saved.settings.showBattleStarInfo : DEFAULT_SETTINGS.showBattleStarInfo,
+      },
       claimedMail: { ...(saved?.claimedMail || {}) },
       redeemedSpecialCodes: { ...(saved?.redeemedSpecialCodes || {}) },
       oneTimeGrants: grants,
@@ -3229,7 +3242,16 @@ class GameManager {
     const target = active[Math.floor(Math.random() * active.length)];
     UIManager.horizonLink(enemy.position(), target.owner.pos(target.center));
     target.centerElement()?.classList.add("forced-sever");
-    this.simulationTimeout(() => { target.release(); target.owner.selected = []; this.recomputeCombatCaches(); this.render(); }, 320);
+    this.simulationTimeout(() => {
+      if (!this.running || enemy.dead) return;
+      const stillActive = this.players.some((player) => player.manager.activeConstellations().includes(target));
+      if (!stillActive) return;
+      target.release();
+      target.owner.selected = [];
+      this.recomputeCombatCaches();
+      this.clearInactiveJudgementTargets();
+      this.render();
+    }, 320);
     return true;
   }
   hasActiveConstellation(definitionId) {
@@ -3285,7 +3307,10 @@ class GameManager {
     });
     this.clearEnemyReferences(e);
     if (sourceConstellation?.definitionId !== CONSTELLATION_IDS.DAWN) sourceConstellation?.registerKill();
-    e.dawnContributors?.forEach((constellation) => constellation.registerKill());
+    e.dawnContributors?.forEach((constellation) => {
+      const stillActive = this.players.some((player) => player.manager.activeConstellations().includes(constellation));
+      if (stillActive) constellation.registerKill();
+    });
     if (this.mode === VERTICAL_BETA && this.wave.wave === 40 && e.type === "galaxySlayer" && !e.bossRewardClaimed) {
       e.bossRewardClaimed = true; this.wave40GalaxySlayerDefeated = true;
     }
@@ -3747,9 +3772,9 @@ function bootstrapGame() {
       playerProgress.galaxyFragments += galaxyReward;
       savePlayerProgress();
     }
-    battle.running = false;
-    battle.rafRunning = false;
-    if (typeof cancelAnimationFrame === "function" && battle.rafId) cancelAnimationFrame(battle.rafId);
+    // Use the authoritative teardown path so scheduled callbacks, camera listeners,
+    // transient references and battle VFX cannot leak into the next run.
+    battle.destroy();
     finalWave.textContent = reachedWave;
     getRequiredElement("dustReward").textContent = battle.starDustReward ?? reward;
     getRequiredElement("shardReward").textContent = battle.starShardReward ?? shardReward;
