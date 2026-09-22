@@ -20,7 +20,7 @@ assert.match(html, /class="map-ambient-motion"[\s\S]*<i><\/i>[\s\S]*<b><\/b>/);
 assert.match(css, /\.arena\.illustrated-normal-map #paths\{z-index:4;opacity:1\}/);
 assert.match(css, /@keyframes ambientAsteroid[\s\S]*@keyframes ambientConstellation/);
 assert.match(game, /CURVED_MAP:[\s\S]*artwork: "assets\/battle\/nebula-curve-map\.png"[\s\S]*spawn: Object\.freeze\(\{ x: 73\.2, y: 8\.2 \}\), destination: Object\.freeze\(\{ x: 47\.2, y: 84\.5 \}\)/);
-assert.match(game, /LOOP_MAP:[\s\S]*\{x:71,y:50\}[\s\S]*\{x:53,y:59\}[\s\S]*\{x:47,y:43\}/);
+assert.match(game, /LOOP_MAP:[\s\S]*spawn: Object\.freeze\(\{ x: 46\.2, y: 86\.5 \}\)[\s\S]*\{x:78,y:54\}[\s\S]*\{x:62,y:64\.5\}[\s\S]*\{x:47,y:46\}/);
 assert.match(css, /button\[data-act="zodiac-cancel"\]\{left:28%!important;top:88\.1%!important;width:40\.5%!important/);
 assert.doesNotMatch(css, /\.battle-bottom-area:before\{content:""[\s\S]*left:1\.4%/);
 assert.match(css, /#paths \.roadGlow,[\s\S]*#paths \.roadEdge\{opacity:0\}/);
