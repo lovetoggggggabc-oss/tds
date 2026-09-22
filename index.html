@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=67" />
+    <link rel="stylesheet" href="styles.css?v=68" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
@@ -143,6 +143,8 @@
         </aside>
       </header>
       <div class="battle-map-area"><section class="arena" id="arena" aria-label="게임 필드"><div class="battle-world" id="battleWorld">
+        <img class="battle-space-background" src="assets/battle/space-background.png" alt="" aria-hidden="true" draggable="false">
+        <img class="battle-map-art" id="battleMapArt" src="assets/battle/star-s-path.png" alt="" aria-hidden="true" draggable="false">
         <div class="planet a"><i></i><i></i><i></i></div>
         <div class="planet b"></div>
         <div class="space-dust" aria-hidden="true"></div>
@@ -216,6 +218,7 @@
         </div>
       </section>
       </div>
+      <img class="battle-ui-art" src="assets/battle/battle-ui-overlay.png" alt="" aria-hidden="true" draggable="false">
       <div class="battle-overlay-layer" aria-label="전투 오버레이"><div class="binding-status-slot"></div><aside class="star-info battle-selection-info" id="starInfo" hidden aria-live="polite"></aside><nav class="side-controls battle-control-rail" aria-label="게임 설정">
         <button type="button" id="battle-exit" aria-label="전투 나가기"><span>나가기</span></button>
         <button type="button" class="speed" id="speed" aria-label="게임 속도 변경">×1</button>
@@ -268,6 +271,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=70" defer></script>
+    <script src="game.js?v=71" defer></script>
   </body>
 </html>
