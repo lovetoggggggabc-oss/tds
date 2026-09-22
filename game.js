@@ -41,7 +41,7 @@ let activeGameMode = GAME_MODES.NORMAL;
 
 const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", MAP_RANDOM: "MAP_RANDOM", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS", MONSTER_CODEX: "MONSTER_CODEX", NEWS: "NEWS" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
-const PROGRESS_SCHEMA_VERSION = 8;
+const PROGRESS_SCHEMA_VERSION = 9;
 const UPDATE_REWARD_ID = "balance_update_stardust_3000_v1";
 const RESONANCE_UPDATE_REWARD_ID = "beta_1_05_resonance_stardust_1000";
 const METEOR_MAIL_REWARD_ID = "meteor_fragment_mail_30_v1";
@@ -51,11 +51,11 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.10 BETA";
+const GAME_VERSION = "1.11 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
-const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
+const GACHA_RULES = Object.freeze({ starChance: .95, oneStarChance: .04, twoStarChance: .01, oneStarPityLimit: 40, twoStarPityLimit: 100 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong", showBattleStarInfo: true });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
   id: "beta_1_10_stability_update", version: GAME_VERSION, date: "2026.09.22", title: "안정화 업데이트",
@@ -434,7 +434,8 @@ function loadPlayerProgress() {
       ownedConstellations,
       constellationCollection: normalizeConstellationCollection(saved, ownedConstellations),
       equippedConstellations,
-      constellationPity: Math.min(GACHA_RULES.pityLimit - 1, Math.max(0, Number.isFinite(saved?.constellationPity) ? Math.floor(saved.constellationPity) : 0)),
+      constellationPity: Math.min(GACHA_RULES.oneStarPityLimit - 1, Math.max(0, Number.isFinite(saved?.constellationPity) ? Math.floor(saved.constellationPity) : 0)),
+      twoStarConstellationPity: Math.min(GACHA_RULES.twoStarPityLimit - 1, Math.max(0, Number.isFinite(saved?.twoStarConstellationPity) ? Math.floor(saved.twoStarConstellationPity) : 0)),
       relicProgress: normalizeRelicProgress(saved),
       ownedRelics: [...new Set((saved?.ownedRelics || []).filter((id) => RELIC_DEFINITIONS[id]))],
       settings: {
@@ -457,7 +458,7 @@ function loadPlayerProgress() {
     return progress;
   } catch (_error) {
     specialGrantApplied = true;
-    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, galaxyFragments: 0, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], constellationCollection: normalizeConstellationCollection(null, STARTER_COLLECTION.ownedConstellations), equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, relicProgress: normalizeRelicProgress(null), ownedRelics: [], settings: { ...DEFAULT_SETTINGS }, claimedMail: {}, redeemedSpecialCodes: {}, oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true }, lastReadNewsVersion: "", readNewsIds: {}, seenStars: {}, seenConstellations: {}, seenRelics: {}, seenMonsters: {} };
+    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, galaxyFragments: 0, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], constellationCollection: normalizeConstellationCollection(null, STARTER_COLLECTION.ownedConstellations), equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, twoStarConstellationPity: 0, relicProgress: normalizeRelicProgress(null), ownedRelics: [], settings: { ...DEFAULT_SETTINGS }, claimedMail: {}, redeemedSpecialCodes: {}, oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true }, lastReadNewsVersion: "", readNewsIds: {}, seenStars: {}, seenConstellations: {}, seenRelics: {}, seenMonsters: {} };
     syncOwnedStars(progress);
     return progress;
   }
@@ -473,11 +474,15 @@ function savePlayerProgress() {
 savePlayerProgress();
 function redeemSpecialCode(rawCode) {
   const code = String(rawCode ?? "").trim();
-  const supportedCodes = new Set(["hamburger123", "hamburger7777"]);
+  const supportedCodes = new Set(["hamburger123", "hamburger7777", "sorry777sorry"]);
   if (!supportedCodes.has(code)) return { ok: false, message: "유효하지 않은 코드입니다." };
   playerProgress.redeemedSpecialCodes ||= {};
   if (playerProgress.redeemedSpecialCodes[code]) return { ok: false, message: "이미 사용한 코드입니다." };
   playerProgress.redeemedSpecialCodes[code] = true;
+  if (code === "sorry777sorry") {
+    playerProgress.starDust += 75000; playerProgress.starShards += 7500; playerProgress.meteorFragments += 1200; playerProgress.galaxyFragments += 15;
+    savePlayerProgress(); return { ok: true, message: "코드 사용 완료!\n별가루 +75,000\n별조각 +7,500\n운석파편 +1,200\n은하파편 +15" };
+  }
   if (code === "hamburger7777") {
     // The definitions registry is authoritative, so future constellations are included automatically.
     for (const id of Object.keys(CONSTELLATION_DEFINITIONS)) {
@@ -562,6 +567,7 @@ const CONSTELLATION_IDS = Object.freeze({
   STRIKE: "STRIKE",
   HORIZON: "HORIZON",
   JUDGEMENT: "JUDGEMENT",
+  DAYBREAK: "DAYBREAK",
 });
 const BASE_MAX_HP = 10000;
 const BASE_MAX_HP_CAP = 500000;
