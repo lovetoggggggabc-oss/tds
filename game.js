@@ -3125,7 +3125,9 @@ class UIManager {
       if (battleUiFrame) {
         const frameState = showCancel ? "cancel" : "default";
         if (battleUiFrame.dataset.frameState !== frameState) {
-          battleUiFrame.src = `assets/battle/battle-ui-${frameState}-frame.png`;
+          battleUiFrame.src = showCancel
+            ? "./assets/battle/battle-ui-cancel-frame.png"
+            : "./assets/battle/battle-ui-default-frame.png";
           battleUiFrame.dataset.frameState = frameState;
         }
       }
