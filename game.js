@@ -41,7 +41,7 @@ let activeGameMode = GAME_MODES.NORMAL;
 
 const SCREEN_STATES = Object.freeze({ MAIN_MENU: "MAIN_MENU", BATTLE_MENU: "BATTLE_MENU", MAP_RANDOM: "MAP_RANDOM", BATTLE_GAME: "BATTLE_GAME", GACHA: "GACHA", COLLECTION: "COLLECTION", RELICS: "RELICS", MONSTER_CODEX: "MONSTER_CODEX", NEWS: "NEWS" });
 const PROGRESS_STORAGE_KEY = "zodiacDefenseProgress";
-const PROGRESS_SCHEMA_VERSION = 10;
+const PROGRESS_SCHEMA_VERSION = 11;
 const UPDATE_REWARD_ID = "balance_update_stardust_3000_v1";
 const RESONANCE_UPDATE_REWARD_ID = "beta_1_05_resonance_stardust_1000";
 const METEOR_MAIL_REWARD_ID = "meteor_fragment_mail_30_v1";
@@ -51,13 +51,13 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.12.6 BETA";
+const GAME_VERSION = "1.13 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, oneStarChance: .04, twoStarChance: .01, oneStarPityLimit: 40, twoStarPityLimit: 100 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong", showBattleStarInfo: true });
-const NEWS_ITEMS = Object.freeze([Object.freeze({id:"beta_1_12_6_signup_direct",version:GAME_VERSION,date:"2026.09.22",title:"회원가입 흐름 개선",sections:Object.freeze([Object.freeze({title:"[1.12.6 BETA]",bullets:Object.freeze(["개발 테스트 단계에서 이메일 인증 없이 회원가입 즉시 로그인되도록 계정 흐름을 변경했습니다.","가입 직후 계정별 클라우드 저장을 바로 연결합니다.","비밀번호 재설정 메일은 SMTP 제한의 영향을 받을 수 있습니다."])})]),footer:"회원가입 후 바로 게임을 시작할 수 있습니다."}),Object.freeze({id:"beta_1_12_5_auth_feedback",version:GAME_VERSION,date:"2026.09.22",title:"계정 사용성 개선",sections:Object.freeze([Object.freeze({title:"[1.12.5 BETA]",bullets:Object.freeze(["로그인·회원가입 버튼에 눌림 애니메이션과 처리 중 표시를 강화했습니다.","Supabase 인증 오류를 이해하기 쉬운 한국어 안내로 변경했습니다.","인증 메일 재전송 기능과 연속 요청 방지 처리를 추가했습니다."])})]),footer:"계정 버튼의 반응과 인증 안내를 개선했습니다."}),Object.freeze({id:"beta_1_12_4_password_reset",version:GAME_VERSION,date:"2026.09.22",title:"비밀번호 재설정",sections:Object.freeze([Object.freeze({title:"[1.12.4 BETA]",bullets:Object.freeze(["계정 창에 비밀번호 재설정 기능을 추가했습니다.","가입 이메일로 재설정 링크를 받고 게임으로 돌아와 새 비밀번호를 설정할 수 있습니다."])})]),footer:"계정 복구 기능을 추가했습니다."}),Object.freeze({id:"beta_1_12_3_auth_tap_fallback",version:GAME_VERSION,date:"2026.09.22",title:"계정 버튼 호환성 수정",sections:Object.freeze([Object.freeze({title:"[1.12.3 BETA]",bullets:Object.freeze(["iPad Safari에서 로그인·회원가입 버튼이 반응하지 않는 문제를 추가 수정했습니다.","계정 창 버튼은 touchend와 click을 직접 처리하고 중복 실행을 방지합니다."])})]),footer:"모바일 Safari 계정 버튼 호환성을 개선했습니다."}),Object.freeze({id:"beta_1_12_2_auth_touch_fix",version:GAME_VERSION,date:"2026.09.22",title:"로그인 터치 수정",sections:Object.freeze([Object.freeze({title:"[1.12.2 BETA]",bullets:Object.freeze(["iPad/iPhone에서 로그인·회원가입 버튼 터치가 동작하지 않던 문제를 수정했습니다.","계정 버튼과 로그인 모달의 터치 처리를 게임의 Pointer Events 방식으로 통일했습니다.","로그인·회원가입 진행 상태와 오류를 계정 창에서 바로 확인할 수 있습니다."])})]),footer:"모바일 계정 입력과 버튼 동작을 안정화했습니다."}),Object.freeze({ id:"beta_1_12_1_signup_fix", version:GAME_VERSION, date:"2026.09.22", title:"회원가입 안정화", sections:Object.freeze([Object.freeze({title:"[1.12.1 BETA]",bullets:Object.freeze(["모바일에서 회원가입 버튼의 처리 상태가 보이지 않던 문제를 수정했습니다.","회원가입 요청 중·인증 메일 발송·오류 내용을 계정 창에 직접 표시합니다.","중복 터치로 회원가입 요청이 여러 번 전송되지 않도록 개선했습니다."])})]), footer:"계정 생성 상태를 더 명확하게 확인할 수 있습니다." }), Object.freeze({
+const NEWS_ITEMS = Object.freeze([Object.freeze({id:"beta_1_13_ui_gacha_zodiac",version:GAME_VERSION,date:"2026.09.22",title:"메인 UI · 뽑기 · 조디악 개선",sections:Object.freeze([Object.freeze({title:"[1.13 BETA]",bullets:Object.freeze(["메인 상단을 프로필과 메뉴 드롭다운 구조로 개편했습니다.","프로필 팝업에서 닉네임을 설정할 수 있습니다. 프로필 그림 변경은 추후 지원합니다.","여명의 자리가 ★★ 뽑기에서 정상 등장하고 전투 특수능력이 동작하도록 수정했습니다.","1회 뽑기 연출 전에 결과가 노출되던 문제를 수정했습니다.","조디악 취소를 조디악 버튼 위치에 표시하고 연결된 별이 선택된 경우 표시하지 않습니다.","새벽의 별자리 특수능력 2 시각효과의 번쩍임을 제거했습니다."])})]),footer:"메인과 전투 조작의 가독성과 안정성을 개선했습니다."}),Object.freeze({id:"beta_1_12_6_signup_direct",version:GAME_VERSION,date:"2026.09.22",title:"회원가입 흐름 개선",sections:Object.freeze([Object.freeze({title:"[1.12.6 BETA]",bullets:Object.freeze(["개발 테스트 단계에서 이메일 인증 없이 회원가입 즉시 로그인되도록 계정 흐름을 변경했습니다.","가입 직후 계정별 클라우드 저장을 바로 연결합니다.","비밀번호 재설정 메일은 SMTP 제한의 영향을 받을 수 있습니다."])})]),footer:"회원가입 후 바로 게임을 시작할 수 있습니다."}),Object.freeze({id:"beta_1_12_5_auth_feedback",version:GAME_VERSION,date:"2026.09.22",title:"계정 사용성 개선",sections:Object.freeze([Object.freeze({title:"[1.12.5 BETA]",bullets:Object.freeze(["로그인·회원가입 버튼에 눌림 애니메이션과 처리 중 표시를 강화했습니다.","Supabase 인증 오류를 이해하기 쉬운 한국어 안내로 변경했습니다.","인증 메일 재전송 기능과 연속 요청 방지 처리를 추가했습니다."])})]),footer:"계정 버튼의 반응과 인증 안내를 개선했습니다."}),Object.freeze({id:"beta_1_12_4_password_reset",version:GAME_VERSION,date:"2026.09.22",title:"비밀번호 재설정",sections:Object.freeze([Object.freeze({title:"[1.12.4 BETA]",bullets:Object.freeze(["계정 창에 비밀번호 재설정 기능을 추가했습니다.","가입 이메일로 재설정 링크를 받고 게임으로 돌아와 새 비밀번호를 설정할 수 있습니다."])})]),footer:"계정 복구 기능을 추가했습니다."}),Object.freeze({id:"beta_1_12_3_auth_tap_fallback",version:GAME_VERSION,date:"2026.09.22",title:"계정 버튼 호환성 수정",sections:Object.freeze([Object.freeze({title:"[1.12.3 BETA]",bullets:Object.freeze(["iPad Safari에서 로그인·회원가입 버튼이 반응하지 않는 문제를 추가 수정했습니다.","계정 창 버튼은 touchend와 click을 직접 처리하고 중복 실행을 방지합니다."])})]),footer:"모바일 Safari 계정 버튼 호환성을 개선했습니다."}),Object.freeze({id:"beta_1_12_2_auth_touch_fix",version:GAME_VERSION,date:"2026.09.22",title:"로그인 터치 수정",sections:Object.freeze([Object.freeze({title:"[1.12.2 BETA]",bullets:Object.freeze(["iPad/iPhone에서 로그인·회원가입 버튼 터치가 동작하지 않던 문제를 수정했습니다.","계정 버튼과 로그인 모달의 터치 처리를 게임의 Pointer Events 방식으로 통일했습니다.","로그인·회원가입 진행 상태와 오류를 계정 창에서 바로 확인할 수 있습니다."])})]),footer:"모바일 계정 입력과 버튼 동작을 안정화했습니다."}),Object.freeze({ id:"beta_1_12_1_signup_fix", version:GAME_VERSION, date:"2026.09.22", title:"회원가입 안정화", sections:Object.freeze([Object.freeze({title:"[1.12.1 BETA]",bullets:Object.freeze(["모바일에서 회원가입 버튼의 처리 상태가 보이지 않던 문제를 수정했습니다.","회원가입 요청 중·인증 메일 발송·오류 내용을 계정 창에 직접 표시합니다.","중복 터치로 회원가입 요청이 여러 번 전송되지 않도록 개선했습니다."])})]), footer:"계정 생성 상태를 더 명확하게 확인할 수 있습니다." }), Object.freeze({
   id: "beta_1_12_account_cloud_save", version: GAME_VERSION, date: "2026.09.22", title: "계정 및 클라우드 저장",
   sections: Object.freeze([Object.freeze({ title: "[1.12 BETA]", paragraphs: Object.freeze(["이메일 계정 로그인과 클라우드 저장 기능을 추가했습니다."]) }),Object.freeze({ title: "계정", bullets: Object.freeze(["이메일 회원가입 · 로그인 · 로그아웃 지원", "로그인 시 계정별 player_saves 데이터를 불러옵니다.", "게임 진행 변경 시 로컬 저장과 함께 클라우드에도 자동 저장합니다.", "처음 로그인해 클라우드 저장이 비어 있으면 현재 기기의 진행 상황을 계정에 업로드합니다."]) })]), footer: "이제 같은 계정으로 다른 기기에서도 진행 상황을 이어갈 수 있습니다.",
 }), Object.freeze({
@@ -440,6 +440,7 @@ function loadPlayerProgress() {
       starShards: Math.max(0, Math.floor(Number(saved?.starShards) || 0)),
       meteorFragments: Math.max(0, Number.isFinite(saved?.meteorFragments) ? Math.floor(saved.meteorFragments) : 0) + (meteorGranted ? 0 : METEOR_GRANT_AMOUNT),
       galaxyFragments: Math.max(0, Math.floor(Number(saved?.galaxyFragments) || 0)),
+      profile: { nickname: typeof saved?.profile?.nickname === "string" && saved.profile.nickname.trim() ? saved.profile.nickname.trim().slice(0,12) : "별빛 수호자", avatar: "default" },
       starCollection: normalizeStarCollection(saved, ownedStars),
       ownedStars,
       ownedConstellations,
@@ -469,7 +470,7 @@ function loadPlayerProgress() {
     return progress;
   } catch (_error) {
     specialGrantApplied = true;
-    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, galaxyFragments: 0, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], constellationCollection: normalizeConstellationCollection(null, STARTER_COLLECTION.ownedConstellations), equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, twoStarConstellationPity: 0, relicProgress: normalizeRelicProgress(null), ownedRelics: [], settings: { ...DEFAULT_SETTINGS }, claimedMail: {}, redeemedSpecialCodes: {}, oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true }, lastReadNewsVersion: "", readNewsIds: {}, seenStars: {}, seenConstellations: {}, seenRelics: {}, seenMonsters: {} };
+    const progress = { schemaVersion: PROGRESS_SCHEMA_VERSION, starDust: STAR_DUST_GRANT_AMOUNT, starShards: 0, meteorFragments: METEOR_GRANT_AMOUNT, galaxyFragments: 0, profile: { nickname: "별빛 수호자", avatar: "default" }, starCollection: normalizeStarCollection(null, STARTER_COLLECTION.ownedStars), ownedStars: {}, ownedConstellations: [...STARTER_COLLECTION.ownedConstellations], constellationCollection: normalizeConstellationCollection(null, STARTER_COLLECTION.ownedConstellations), equippedConstellations: [...STARTER_COLLECTION.equippedConstellations], constellationPity: 0, twoStarConstellationPity: 0, relicProgress: normalizeRelicProgress(null), ownedRelics: [], settings: { ...DEFAULT_SETTINGS }, claimedMail: {}, redeemedSpecialCodes: {}, oneTimeGrants: { [STAR_DUST_GRANT_ID]: true, [METEOR_GRANT_ID]: true }, lastReadNewsVersion: "", readNewsIds: {}, seenStars: {}, seenConstellations: {}, seenRelics: {}, seenMonsters: {} };
     syncOwnedStars(progress);
     return progress;
   }
@@ -714,23 +715,6 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
       "같은 적을 4회 공격하면 현재 공격력의 1500% 특수 피해",
       "새벽의 자리가 피해를 준 적의 킬 관여 4회마다 살아있는 모든 적에게 현재 체력의 15% 특수 피해를 줍니다.",
     ]),
-  }),
-  [CONSTELLATION_IDS.DAYBREAK]: Object.freeze({
-    createRuntime: (constellation) => ({ componentStageSum: constellation.componentStageSum, lightStacks: 0, awakened: false, hitCount: 0 }),
-    attack(constellation, target, origin) {
-      if (!target.hit(constellation.currentDamage(), origin, constellation)) return;
-      if (!constellation.runtime.awakened || target.dead) return;
-      constellation.runtime.hitCount++;
-      if (constellation.runtime.hitCount < 8) return;
-      constellation.runtime.hitCount = 0;
-      constellation.originalComponents.forEach((component) => {
-        if (target.dead) return;
-        const from=constellation.owner.pos(component.index);
-        UIManager.beam(from,target.position());
-        target.hit(target.maxHp*0.025,from,null,true);
-      });
-      game.markDirty();
-    },
   }),
   [CONSTELLATION_IDS.RADIANCE]: Object.freeze({
     id: CONSTELLATION_IDS.RADIANCE, family: "RED", name: "광휘의 별자리",
@@ -1627,6 +1611,23 @@ class SpatialGrid {
   }
 }
 const CONSTELLATION_BEHAVIORS = Object.freeze({
+  [CONSTELLATION_IDS.DAYBREAK]: Object.freeze({
+    createRuntime: (constellation) => ({ componentStageSum: constellation.componentStageSum, lightStacks: 0, awakened: false, hitCount: 0 }),
+    attack(constellation, target, origin) {
+      if (!target.hit(constellation.currentDamage(), origin, constellation)) return;
+      if (!constellation.runtime.awakened || target.dead) return;
+      constellation.runtime.hitCount++;
+      if (constellation.runtime.hitCount < 8) return;
+      constellation.runtime.hitCount = 0;
+      constellation.originalComponents.forEach((component) => {
+        if (target.dead) return;
+        const from=constellation.owner.pos(component.index);
+        UIManager.beam(from,target.position());
+        target.hit(target.maxHp*0.025,from,null,true);
+      });
+      game.markDirty();
+    },
+  }),
   [CONSTELLATION_IDS.DAWN]: Object.freeze({
     createRuntime: (constellation) => ({
       componentStageSum: constellation.componentStageSum,
@@ -2692,20 +2693,20 @@ class UIManager {
     this.addTransient(burst, arena, 480);
   }
   static dawnMoonfall(origin, enemies) {
-    const pulse = document.createElement("i");
-    pulse.className = "dawn-moonfall-pulse";
-    pulse.style.left = `${origin.x}%`;
-    pulse.style.top = `${origin.y}%`;
-    pulse.setAttribute("aria-hidden", "true");
-    this.addTransient(pulse, arena, 650);
+    const marker = document.createElement("i");
+    marker.className = "dawn-moonfall-soft";
+    marker.style.left = `${origin.x}%`;
+    marker.style.top = `${origin.y}%`;
+    marker.setAttribute("aria-hidden", "true");
+    this.addTransient(marker, arena, 520);
     enemies.forEach((enemy) => {
       const position = enemy.position();
       const hit = document.createElement("i");
-      hit.className = "dawn-moonfall-hit";
+      hit.className = "dawn-moonfall-soft-hit";
       hit.style.left = `${position.x}%`;
       hit.style.top = `${position.y}%`;
       hit.setAttribute("aria-hidden", "true");
-      this.addTransient(hit, arena, 460);
+      this.addTransient(hit, arena, 360);
     });
   }
   static divinationEffect(position, success) {
@@ -3002,7 +3003,10 @@ class UIManager {
       const cancel = panel.querySelector("[data-act=zodiac-cancel]");
       panel.classList.toggle("active-player", p.manager.selected.length > 0 || p.manager.swapMode || p.manager.zodiacMode);
       z.classList.toggle("active", p.manager.zodiacMode);
-      cancel.hidden = !p.manager.zodiacMode;
+      const selectedHasLinkedConstellation = p.manager.selected.some((index) => Boolean(p.manager.stars[index]?.constellation || p.manager.stars[index]?.support));
+      const showCancel = p.manager.zodiacMode && !selectedHasLinkedConstellation;
+      cancel.hidden = !showCancel;
+      z.hidden = showCancel;
       const match = ZodiacSystem.exactMatch(ZodiacSystem.counts(p.manager));
       const zodiacLabel = p.manager.zodiacMode
         ? (match ? `${ZODIAC_RECIPES[match].name} 연결` : "조디악 선택 중")
@@ -3533,7 +3537,7 @@ const CONSTELLATION_SUMMON_COLORS = Object.freeze({
   DAWN: ["#e7e5ff", "#9d75ff"], RADIANCE: ["#fffef0", "#ffd65c"], SAGITTARIUS: ["#65baff", "#ffe06b"],
   ASTROLOGER: ["#bd75ff", "#ffd96b"], GUARDIAN: ["#d9f8ff", "#5dbdff"], TWILIGHT: ["#9a48dc", "#ff4d68"],
   BOND: ["#f7fff9", "#55db85"], LINK: ["#b16cff", "#ff5064"], STRIKE: ["#ff5064", "#e9dfff"], HORIZON: ["#55db85", "#b16cff"],
-  JUDGEMENT: ["#fff8d7", "#91cfff"],
+  JUDGEMENT: ["#fff8d7", "#91cfff"], DAYBREAK: ["#fff7cf", "#ffad62"],
 });
 
 function summonSequencePreview(results) {
@@ -3649,6 +3653,14 @@ function bootstrapGame() {
   bindAuthAction(logoutButton,async()=>{await pushCloudSave();await supabaseClient?.auth.signOut();authUser=null;refreshAccountUI();setAccountStatus("로그아웃했습니다.");});
   window.addEventListener("astra-auth-updated",()=>{refreshAccountUI();updateMetaCurrency();});
   if(supabaseClient){supabaseClient.auth.getSession().then(async({data})=>{if(data.session?.user)await syncCloudAfterLogin(data.session.user);refreshAccountUI();}).catch(()=>setAccountStatus("로그인 상태를 확인하지 못했습니다."));supabaseClient.auth.onAuthStateChange((event,session)=>{if(event==="PASSWORD_RECOVERY"){authUser=session?.user||authUser;if(accountModal){accountModal.hidden=false;authForm.hidden=true;if(authUserPanel)authUserPanel.hidden=true;if(resetForm)resetForm.hidden=false;}setAccountStatus("새 비밀번호를 입력해주세요.");}else if(event==="SIGNED_OUT"){authUser=null;refreshAccountUI();}});}else setAccountStatus("로그인 서버 스크립트를 불러오지 못했습니다.");
+  const profileModal=document.getElementById("profile-modal"),profileInput=profileModal?.querySelector("[data-profile-nickname-input]");
+  const refreshProfile=()=>{const nickname=playerProgress.profile?.nickname||"별빛 수호자";document.querySelectorAll("[data-profile-nickname]").forEach(node=>node.textContent=nickname);if(profileInput)profileInput.value=nickname;};
+  document.querySelectorAll("[data-open-profile]").forEach(button=>bindPointerTap(button,()=>{refreshProfile();profileModal.hidden=false;}));
+  if(profileModal){bindPointerTap(profileModal.querySelector("[data-close-profile]"),()=>profileModal.hidden=true);bindPointerTap(profileModal.querySelector("[data-profile-save]"),()=>{const nickname=(profileInput.value||"").trim().slice(0,12);const message=profileModal.querySelector("[data-profile-message]");if(nickname.length<2){message.textContent="닉네임은 2자 이상 입력해주세요.";return;}playerProgress.profile={nickname,avatar:"default"};savePlayerProgress();refreshProfile();message.textContent="닉네임을 저장했습니다.";});profileModal.addEventListener("pointerup",event=>{if(event.target===profileModal)profileModal.hidden=true;});}
+  refreshProfile();
+  const mainMenuToggle=document.querySelector("[data-main-menu-toggle]"),mainMenuDropdown=document.querySelector("[data-main-menu-dropdown]");
+  if(mainMenuToggle&&mainMenuDropdown)bindPointerTap(mainMenuToggle,()=>{const opening=mainMenuDropdown.hidden;mainMenuDropdown.hidden=!opening;mainMenuToggle.setAttribute("aria-expanded",String(opening));});
+  document.addEventListener("pointerdown",(event)=>{if(mainMenuDropdown&&!mainMenuDropdown.hidden&&!event.target.closest(".main-menu-dropdown-wrap")){mainMenuDropdown.hidden=true;mainMenuToggle?.setAttribute("aria-expanded","false");}});
   const mainMenu = getRequiredElement("main-menu");
   const battleMenu = getRequiredElement("battle-menu");
   const gachaScreen = getRequiredElement("gacha-screen");
@@ -3707,7 +3719,7 @@ function bootstrapGame() {
     active() { return !resultDialog.hidden && this.state !== SUMMON_STATES.IDLE; },
     clearTimers() { this.timers.forEach(clearTimeout); this.timers.length = 0; },
     schedule(state, delay, action) { this.timers.push(setTimeout(() => { this.state = state; resultDialog.dataset.summonState = state; action?.(); }, delay)); },
-    begin(results) {
+    begin(results, pendingResultHtml = "") {
       this.clearTimers(); this.results = results;
       const featured = [...results].reverse().find((item) => item.kind === "constellation") || results[0];
       const isRelic = featured.kind === "relic";
@@ -3723,7 +3735,7 @@ function bootstrapGame() {
       this.schedule(SUMMON_STATES.FORMING, 260);
       this.schedule(SUMMON_STATES.COMPLETE, 2100);
       this.schedule(SUMMON_STATES.FLASH, 2600);
-      this.schedule(SUMMON_STATES.REVEAL, 2920, () => resultDialog.classList.add("summon-complete"));
+      this.schedule(SUMMON_STATES.REVEAL, 2920, () => { getRequiredElement("draw-result-grid").innerHTML = pendingResultHtml; resultDialog.classList.add("summon-complete"); });
       this.schedule(SUMMON_STATES.IDLE, 2920 + results.length * 90, () => resultDialog.classList.add("results-idle"));
     },
     skip() {
@@ -3973,13 +3985,14 @@ function bootstrapGame() {
       const results = relicDraw ? performRelicDraws(count) : performConstellationDraws(count);
       if (!results) return showToast(relicDraw ? "운석조각이 부족합니다." : "별가루가 부족합니다.");
       const resultSequence = getRequiredElement("draw-sequence");
-      resultSequence.innerHTML = relicDraw ? relicSummonPreview() : summonSequencePreview(results);
-      getRequiredElement("draw-result-grid").innerHTML = results.map((result, index) => result.kind === "relic"
+      resultSequence.innerHTML = relicDraw ? relicSummonPreview() : (count === 1 ? summonSequencePreview([]) : summonSequencePreview(results));
+      const pendingResultHtml = results.map((result, index) => result.kind === "relic"
         ? `<article class="draw-result relic-result" style="--result-order:${index}"><em>${result.isNew ? "NEW" : "+1"}</em><i>${RELIC_DEFINITIONS[result.id].icon}</i><b>${RELIC_DEFINITIONS[result.id].name}</b></article>`
         : result.kind === "star"
         ? `<article class="draw-result star-result" style="--star-color:${STAR_TYPES[result.id].color};--result-order:${index}"><em>${result.isNew ? "NEW" : "+1"}</em><small>일반 별</small><i>✦</i><b>${STAR_TYPES[result.id].name} 별</b></article>`
         : `<article class="draw-result constellation-result constellation-${result.id.toLowerCase()}" style="--result-order:${index};--identity:${CONSTELLATION_SUMMON_COLORS[result.id][0]}"><em>${result.isNew ? "NEW" : "+1"}</em><small>별자리</small>${constellationPreview(CONSTELLATION_DEFINITIONS[result.id])}<b>${CONSTELLATION_DEFINITIONS[result.id].name}</b></article>`).join("");
-      summonController.begin(results);
+      getRequiredElement("draw-result-grid").replaceChildren();
+      summonController.begin(results, pendingResultHtml);
       updateMetaCurrency(); renderCollection(); renderRelics();
     };
   });

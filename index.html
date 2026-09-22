@@ -9,18 +9,17 @@
     <meta name="theme-color" content="#090b24" />
     <title>별빛 수호대 — 협동 타워디펜스</title>
     <!-- Keep deployed iOS browsers from reusing the pre-portrait stylesheet. -->
-    <link rel="stylesheet" href="styles.css?v=58" />
+    <link rel="stylesheet" href="styles.css?v=59" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
     <section class="lobby-screen main-lobby screen-active" id="main-menu" aria-labelledby="main-menu-title">
       <div class="observatory-backdrop" aria-hidden="true"></div>
-      <div class="main-top-bar"><div class="permanent-wallet" aria-label="보유 영구 재화">
-        <span class="currency-item"><i class="atlas-sprite currency-dust" aria-hidden="true"></i><small class="currency-label">별가루</small><b class="currency-value" data-star-dust>0</b></span>
-        <span class="currency-item"><i class="atlas-sprite currency-shard" aria-hidden="true"></i><small class="currency-label">별조각</small><b class="currency-value" data-star-shards>0</b></span>
-        <span class="currency-item"><i class="atlas-sprite currency-meteor" aria-hidden="true"></i><small class="currency-label">운석조각</small><b class="currency-value" data-meteor-fragments>0</b></span>
+      <div class="main-top-bar redesigned">
+        <button type="button" class="main-profile" data-open-profile aria-label="프로필 열기"><span class="profile-avatar" data-profile-avatar>✦</span><span><b data-profile-nickname>별빛 수호자</b><small>PROFILE</small></span></button>
+        <div class="permanent-wallet" aria-label="보유 영구 재화"><span class="currency-item"><i class="atlas-sprite currency-dust" aria-hidden="true"></i><small class="currency-label">별가루</small><b class="currency-value" data-star-dust>0</b></span><span class="currency-item"><i class="atlas-sprite currency-shard" aria-hidden="true"></i><small class="currency-label">별조각</small><b class="currency-value" data-star-shards>0</b></span><span class="currency-item"><i class="atlas-sprite currency-meteor" aria-hidden="true"></i><small class="currency-label">운석조각</small><b class="currency-value" data-meteor-fragments>0</b></span></div>
+        <div class="main-menu-dropdown-wrap"><button type="button" class="main-menu-toggle" data-main-menu-toggle aria-expanded="false">메뉴 <i>⌄</i></button><div class="main-menu-dropdown" data-main-menu-dropdown hidden><button type="button" data-open-mail>편지함 <b data-mail-badge>2</b></button><button type="button" data-open-news>소식 <b data-news-badge>NEW</b></button><button type="button" data-open-settings>설정</button><button type="button" data-open-account><span data-account-label>로그인</span></button></div></div>
       </div>
-      <div class="menu-tools"><button type="button" class="account-button" data-open-account aria-label="계정"><span data-account-label>로그인</span></button><button type="button" data-open-news aria-label="소식"><i class="atlas-sprite tool-news" aria-hidden="true"></i><span>소식</span><b data-news-badge>NEW</b></button><button type="button" data-open-mail aria-label="우편함"><i class="atlas-sprite tool-mail" aria-hidden="true"></i><span class="utility-label">우편함</span><b data-mail-badge>2</b></button><button type="button" data-open-settings aria-label="설정"><i class="atlas-sprite tool-settings" aria-hidden="true"></i><span class="utility-label">설정</span></button></div></div>
       <header class="lobby-title">
         <h1 id="main-menu-title" class="sr-only">별자리 디펜스</h1><span class="main-logo atlas-sprite" role="img" aria-label="별자리 디펜스"></span>
         <small class="game-version" data-game-version aria-label="현재 게임 버전"></small>
@@ -241,8 +240,8 @@
       <div class="battle-bottom-area"><nav class="control-deck battle-bottom-hud" id="controls" aria-label="플레이어 게임 조작"><div class="resources battle-resources" aria-label="전투 재화"><span class="primary-resource"><i>✦</i><em>별빛</em><b id="starlight1">0</b></span><span class="primary-resource divinity"><i>◆</i><em>신성</em><b id="divinity1">0</b></span><span class="partner-resource" hidden>2P ✦ <b id="starlight2">0</b> · ◆ <b id="divinity2">0</b></span></div>
         <section class="game-controls" data-player="0" aria-label="1P 게임 조작">
           <b class="player-badge">1P</b>
-          <button type="button" class="zodiac-cancel" data-act="zodiac-cancel" hidden>조디악 실행 취소</button>
           <button type="button" data-act="zodiac"><i>✦</i><span>조디악<small>ZODIAC</small></span></button>
+          <button type="button" class="zodiac-cancel" data-act="zodiac-cancel" hidden>조디악 취소</button>
           <button type="button" class="battle-resonance-button" data-battle-resonance>✦ 공명</button>
           <button type="button" class="codex-button" data-act="codex">별자리 도감</button>
         </section>
@@ -252,6 +251,8 @@
     <section class="confirm-dialog" id="exit-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-dialog-title" hidden>
       <div><small>LEAVE BATTLE</small><h2 id="exit-dialog-title">전투 종료</h2><p>전투를 종료하고 메인 메뉴로 돌아가시겠습니까?</p><footer><button type="button" id="exit-cancel">취소</button><button type="button" class="danger" id="exit-confirm">나가기</button></footer></div>
     </section>
+    <div class="profile-modal" id="profile-modal" hidden><div class="profile-panel" role="dialog" aria-modal="true" aria-labelledby="profile-title"><button type="button" data-close-profile aria-label="닫기">×</button><small>ASTRA PROFILE</small><h2 id="profile-title">프로필</h2><div class="profile-avatar-large" data-profile-avatar>✦</div><button type="button" class="profile-image-later" disabled>프로필 그림 설정 · 추후 지원</button><label>닉네임<input type="text" maxlength="12" data-profile-nickname-input placeholder="별빛 수호자"></label><p data-profile-message></p><button type="button" class="profile-save" data-profile-save>닉네임 설정하기</button></div></div>
+
     <div class="account-modal" id="account-modal" hidden>
       <div class="account-panel" role="dialog" aria-modal="true" aria-labelledby="account-title">
         <button type="button" class="account-close" data-close-account aria-label="닫기">×</button>
@@ -267,6 +268,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=56" defer></script>
+    <script src="game.js?v=57" defer></script>
   </body>
 </html>
