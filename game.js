@@ -618,36 +618,39 @@ const MAX_STARS_PER_PLAYER = effectiveMaxStars();
 const MAP_DEFINITIONS = Object.freeze({
   ORIGINAL_S: Object.freeze({
     id: "ORIGINAL_S", name: "별의 S길",
+    artwork: "assets/battle/star-s-path.png",
     roadWidth: 34,
     placementPadding: 3,
     spawn: Object.freeze({ x: 50, y: 94 }),
     destination: Object.freeze({ x: 50, y: 6 }),
     route: Object.freeze([
-      Object.freeze([{ x: 50, y: 94 }, { x: 50, y: 86 }, { x: 20, y: 86 }, { x: 26, y: 70 }]),
-      Object.freeze([{ x: 26, y: 70 }, { x: 30, y: 55 }, { x: 78, y: 57 }, { x: 76, y: 39 }]),
-      Object.freeze([{ x: 76, y: 39 }, { x: 74, y: 23 }, { x: 30, y: 25 }, { x: 50, y: 6 }]),
+      Object.freeze([{ x: 50, y: 94 }, { x: 49, y: 85 }, { x: 25, y: 83 }, { x: 31, y: 69 }]),
+      Object.freeze([{ x: 31, y: 69 }, { x: 38, y: 57 }, { x: 72, y: 58 }, { x: 69, y: 43 }]),
+      Object.freeze([{ x: 69, y: 43 }, { x: 66, y: 31 }, { x: 39, y: 30 }, { x: 50, y: 6 }]),
     ]),
     arrows: Object.freeze([0.14, 0.38, 0.63, 0.86]),
   }),
   CURVED_MAP: Object.freeze({
     id: "CURVED_MAP", name: "성운의 곡선",
+    artwork: "assets/battle/nebula-curve-map.png",
     roadWidth: 34, placementPadding: 3,
     spawn: Object.freeze({ x: 72, y: 6 }), destination: Object.freeze({ x: 42, y: 94 }),
     route: Object.freeze([
-      Object.freeze([{x:72,y:6},{x:64,y:18},{x:24,y:20},{x:28,y:40}]),
-      Object.freeze([{x:28,y:40},{x:31,y:54},{x:79,y:43},{x:76,y:62}]),
-      Object.freeze([{x:76,y:62},{x:72,y:75},{x:38,y:78},{x:42,y:94}]),
+      Object.freeze([{x:72,y:6},{x:70,y:20},{x:36,y:18},{x:34,y:35}]),
+      Object.freeze([{x:34,y:35},{x:32,y:48},{x:72,y:45},{x:70,y:61}]),
+      Object.freeze([{x:70,y:61},{x:68,y:74},{x:32,y:72},{x:42,y:94}]),
     ]), arrows: Object.freeze([.14,.38,.63,.86]),
   }),
   LOOP_MAP: Object.freeze({
     id: "LOOP_MAP", name: "은하의 고리",
+    artwork: "assets/battle/galaxy-ring-map.png",
     roadWidth: 30, placementPadding: 3,
-    spawn: Object.freeze({ x: 27, y: 94 }), destination: Object.freeze({ x: 70, y: 6 }),
+    spawn: Object.freeze({ x: 43, y: 88 }), destination: Object.freeze({ x: 73, y: 7 }),
     route: Object.freeze([
-      Object.freeze([{x:27,y:94},{x:13,y:80},{x:13,y:55},{x:34,y:49}]),
-      Object.freeze([{x:34,y:49},{x:54,y:43},{x:73,y:50},{x:66,y:66}]),
-      Object.freeze([{x:66,y:66},{x:58,y:81},{x:31,y:69},{x:36,y:50}]),
-      Object.freeze([{x:36,y:50},{x:42,y:27},{x:78,y:38},{x:70,y:6}]),
+      Object.freeze([{x:43,y:88},{x:24,y:78},{x:17,y:60},{x:38,y:48}]),
+      Object.freeze([{x:38,y:48},{x:57,y:36},{x:77,y:43},{x:70,y:56}]),
+      Object.freeze([{x:70,y:56},{x:63,y:69},{x:39,y:61},{x:45,y:48}]),
+      Object.freeze([{x:45,y:48},{x:53,y:32},{x:77,y:28},{x:73,y:7}]),
     ]), arrows: Object.freeze([.12,.34,.55,.76,.91]),
   }),
 });
@@ -3626,6 +3629,11 @@ class RandomMapSelector {
 
 function renderActiveMap() {
   const pathSvg = getRequiredElement("paths"); const pathData = routePathData();
+  const mapArt = document.getElementById("battleMapArt");
+  const illustratedMap = Boolean(activeMap.artwork);
+  arena.dataset.mapId = activeMap.id;
+  arena.classList.toggle("illustrated-normal-map", illustratedMap);
+  if (mapArt) { mapArt.hidden = !illustratedMap; if (illustratedMap) mapArt.src = activeMap.artwork; }
   pathSvg.querySelectorAll(".roadGlow,.roadEdge,.road,.roadStars").forEach((path) => path.setAttribute("d", pathData));
   const arrowLayer = pathSvg.querySelector(".route-arrows");
   if (arrowLayer) arrowLayer.innerHTML = activeMap.arrows.map((progress) => { const point = routePoint(progress), before = routePoint(progress-.004), after = routePoint(progress+.004); const angle = Math.atan2(after.y-before.y,after.x-before.x)*180/Math.PI+90; return `<path d="M0 -2.2L2 1.8L0 .8L-2 1.8Z" transform="translate(${point.x} ${point.y}) rotate(${angle})"/>`; }).join("");
