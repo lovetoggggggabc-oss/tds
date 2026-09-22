@@ -3121,6 +3121,14 @@ class UIManager {
       const showCancel = p.manager.zodiacMode && !selectedHasLinkedConstellation && !exactZodiac;
       cancel.hidden = !showCancel;
       z.hidden = showCancel;
+      const battleUiFrame = document.getElementById("battleUiFrame");
+      if (battleUiFrame) {
+        const frameState = showCancel ? "cancel" : "default";
+        if (battleUiFrame.dataset.frameState !== frameState) {
+          battleUiFrame.src = `assets/battle/battle-ui-${frameState}-frame.png`;
+          battleUiFrame.dataset.frameState = frameState;
+        }
+      }
       const match = ZodiacSystem.exactMatch(ZodiacSystem.counts(p.manager));
       const zodiacLabel = p.manager.zodiacMode
         ? (match ? `${ZODIAC_RECIPES[match].name} 연결` : "조디악 선택 중")

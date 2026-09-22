@@ -2505,3 +2505,24 @@ body.modal-open #main-menu .main-top-bar.redesigned{visibility:hidden!important}
 #game-shell:has(.arena.illustrated-normal-map) .context-actions{z-index:140;bottom:12%}
 #game-shell:has(.arena.experimental-vertical) .battle-space-background,#game-shell:has(.arena.experimental-vertical) .battle-map-art,#game-shell:has(.arena.experimental-vertical) .battle-ui-art{display:none}
 @media(prefers-reduced-motion:reduce){.map-ambient-motion i,.map-ambient-motion b{animation:none}}
+
+/* The frame artwork and every interactive/text layer use the battle shell's
+   same 9:16 coordinate space. Artwork never intercepts a touch; only the
+   transparent controls above its painted buttons do. */
+#game-shell:has(.arena.illustrated-normal-map) .battle-ui-art{object-fit:fill;pointer-events:none}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .wave{top:1.15%;width:31%;padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .wave>b>small{font:800 clamp(8px,2.35cqw,13px)/1 system-ui;color:#aebfee;letter-spacing:.14em;text-shadow:0 0 7px #4779ff}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .wave>b>#wave{font:900 clamp(18px,5.8cqw,32px)/.95 Georgia,serif;color:#eef3ff;text-shadow:0 0 5px #fff,0 0 13px #627dff}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .wave>span{font:800 clamp(11px,3cqw,17px)/1.15 system-ui;color:#f5f7ff;text-shadow:0 1px 3px #000}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .wave span small{font-size:clamp(7px,2.1cqw,11px);color:#aeb9dc}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .hp{top:1.3%;right:2.3%;width:28.4%;height:3.5%;padding:0;border:0;background:transparent;box-shadow:none}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .hp b{width:100%;font:900 clamp(8px,2.5cqw,14px)/1 system-ui;text-align:center;color:#ffe6ed;text-shadow:0 0 5px #fff,0 0 9px #ff477a}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .next-wave{top:5.1%;right:2.3%;width:28.4%;max-width:none;padding:.5% 2%;border:0;background:transparent;box-shadow:none;backdrop-filter:none}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud .next-wave>b{font-size:clamp(7px,2.1cqw,11px);color:#dce8ff;text-shadow:0 1px 3px #000}
+#game-shell:has(.arena.illustrated-normal-map) .battle-top-hud #nextEnemies{font-size:clamp(6px,1.8cqw,10px);color:#dce8ff;text-shadow:0 1px 3px #000}
+#game-shell:has(.arena.illustrated-normal-map) .battle-resources{left:5.7%!important;top:1.35%!important;width:18.5%;gap:1.1cqh!important}
+#game-shell:has(.arena.illustrated-normal-map) .battle-resources .primary-resource{width:100%;min-width:0;height:3.2cqh;padding:0;background:transparent;border:0}
+#game-shell:has(.arena.illustrated-normal-map) .battle-resources .primary-resource b{padding:0 5% 0 0;font:900 clamp(10px,3.1cqw,17px)/1 system-ui;color:#fff0aa;text-shadow:0 0 5px #fff,0 0 8px #ffd642}
+#game-shell:has(.arena.illustrated-normal-map) .battle-resources .divinity b{color:#edd8ff;text-shadow:0 0 5px #fff,0 0 9px #9e55ff}
+#game-shell:has(.arena.illustrated-normal-map) .battle-control-rail button span{display:block;color:#cedcff;font:800 clamp(8px,2.2cqw,12px)/1 system-ui;text-shadow:0 1px 3px #000,0 0 6px #668cff}
+#game-shell:has(.arena.illustrated-normal-map) .game-controls button span{color:#edf2ff;text-shadow:0 1px 3px #000,0 0 7px #728cff}
