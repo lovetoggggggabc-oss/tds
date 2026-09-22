@@ -2431,3 +2431,6 @@ body[data-resonance-pulse="red"] .resonance-panel{animation:resonanceRed .8s eas
 
 /* 1.15.4 five-item main nav and tappable menu */
 #main-menu .bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr))!important}#main-menu .main-menu-dropdown-wrap{position:relative!important;z-index:500!important;pointer-events:auto!important}#main-menu .main-menu-toggle{position:relative!important;z-index:502!important;pointer-events:auto!important;touch-action:manipulation!important}#main-menu .main-menu-dropdown{z-index:501!important;pointer-events:auto!important}
+
+/* 1.15.6 top menu owns the highest interactive layer */
+#main-menu .main-top-bar.redesigned{z-index:900!important;pointer-events:none!important}#main-menu .main-profile,#main-menu .permanent-wallet,#main-menu .main-menu-dropdown-wrap{pointer-events:auto!important}#main-menu .main-menu-dropdown-wrap{isolation:isolate;z-index:910!important}#main-menu .main-menu-toggle{z-index:912!important;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}#main-menu .main-menu-dropdown{z-index:911!important;display:grid}#main-menu .main-menu-dropdown[hidden]{display:none!important}
