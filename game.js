@@ -51,13 +51,13 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.13.2 BETA";
+const GAME_VERSION = "1.13.3 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, oneStarChance: .04, twoStarChance: .01, oneStarPityLimit: 40, twoStarPityLimit: 100 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong", showBattleStarInfo: true });
-const NEWS_ITEMS = Object.freeze([Object.freeze({id:"beta_1_13_2_zodiac_battle_fix",version:GAME_VERSION,date:"2026.09.22",title:"조디악 버튼 복구",sections:Object.freeze([Object.freeze({title:"[1.13.2 BETA]",bullets:Object.freeze(["전투 하단 조디악 버튼이 사라지는 문제를 수정했습니다.","선택 중에는 같은 위치에 취소가 표시되고 완성 가능한 조합이 되면 조디악 버튼이 다시 표시됩니다."])})]),footer:"조디악 생성 흐름을 복구했습니다."}),Object.freeze({id:"beta_1_13_1_main_alignment",version:GAME_VERSION,date:"2026.09.22",title:"메인 UI 정렬 수정",sections:Object.freeze([Object.freeze({title:"[1.13.1 BETA]",bullets:Object.freeze(["메인 상단 프로필·재화·메뉴를 좌/중앙/우 기준으로 정확히 정렬했습니다.","메뉴 펼침 항목을 각각 독립된 버튼 형태로 변경했습니다.","메인 하단에 조디악 버튼을 복구하고 별자리 화면으로 바로 이동하도록 연결했습니다."])})]),footer:"메인 화면 UI 배치를 정돈했습니다."}),Object.freeze({id:"beta_1_13_ui_gacha_zodiac",version:GAME_VERSION,date:"2026.09.22",title:"메인 UI · 뽑기 · 조디악 개선",sections:Object.freeze([Object.freeze({title:"[1.13 BETA]",bullets:Object.freeze(["메인 상단을 프로필과 메뉴 드롭다운 구조로 개편했습니다.","프로필 팝업에서 닉네임을 설정할 수 있습니다. 프로필 그림 변경은 추후 지원합니다.","여명의 자리가 ★★ 뽑기에서 정상 등장하고 전투 특수능력이 동작하도록 수정했습니다.","1회 뽑기 연출 전에 결과가 노출되던 문제를 수정했습니다.","조디악 취소를 조디악 버튼 위치에 표시하고 연결된 별이 선택된 경우 표시하지 않습니다.","새벽의 별자리 특수능력 2 시각효과의 번쩍임을 제거했습니다."])})]),footer:"메인과 전투 조작의 가독성과 안정성을 개선했습니다."}),Object.freeze({id:"beta_1_12_6_signup_direct",version:GAME_VERSION,date:"2026.09.22",title:"회원가입 흐름 개선",sections:Object.freeze([Object.freeze({title:"[1.12.6 BETA]",bullets:Object.freeze(["개발 테스트 단계에서 이메일 인증 없이 회원가입 즉시 로그인되도록 계정 흐름을 변경했습니다.","가입 직후 계정별 클라우드 저장을 바로 연결합니다.","비밀번호 재설정 메일은 SMTP 제한의 영향을 받을 수 있습니다."])})]),footer:"회원가입 후 바로 게임을 시작할 수 있습니다."}),Object.freeze({id:"beta_1_12_5_auth_feedback",version:GAME_VERSION,date:"2026.09.22",title:"계정 사용성 개선",sections:Object.freeze([Object.freeze({title:"[1.12.5 BETA]",bullets:Object.freeze(["로그인·회원가입 버튼에 눌림 애니메이션과 처리 중 표시를 강화했습니다.","Supabase 인증 오류를 이해하기 쉬운 한국어 안내로 변경했습니다.","인증 메일 재전송 기능과 연속 요청 방지 처리를 추가했습니다."])})]),footer:"계정 버튼의 반응과 인증 안내를 개선했습니다."}),Object.freeze({id:"beta_1_12_4_password_reset",version:GAME_VERSION,date:"2026.09.22",title:"비밀번호 재설정",sections:Object.freeze([Object.freeze({title:"[1.12.4 BETA]",bullets:Object.freeze(["계정 창에 비밀번호 재설정 기능을 추가했습니다.","가입 이메일로 재설정 링크를 받고 게임으로 돌아와 새 비밀번호를 설정할 수 있습니다."])})]),footer:"계정 복구 기능을 추가했습니다."}),Object.freeze({id:"beta_1_12_3_auth_tap_fallback",version:GAME_VERSION,date:"2026.09.22",title:"계정 버튼 호환성 수정",sections:Object.freeze([Object.freeze({title:"[1.12.3 BETA]",bullets:Object.freeze(["iPad Safari에서 로그인·회원가입 버튼이 반응하지 않는 문제를 추가 수정했습니다.","계정 창 버튼은 touchend와 click을 직접 처리하고 중복 실행을 방지합니다."])})]),footer:"모바일 Safari 계정 버튼 호환성을 개선했습니다."}),Object.freeze({id:"beta_1_12_2_auth_touch_fix",version:GAME_VERSION,date:"2026.09.22",title:"로그인 터치 수정",sections:Object.freeze([Object.freeze({title:"[1.12.2 BETA]",bullets:Object.freeze(["iPad/iPhone에서 로그인·회원가입 버튼 터치가 동작하지 않던 문제를 수정했습니다.","계정 버튼과 로그인 모달의 터치 처리를 게임의 Pointer Events 방식으로 통일했습니다.","로그인·회원가입 진행 상태와 오류를 계정 창에서 바로 확인할 수 있습니다."])})]),footer:"모바일 계정 입력과 버튼 동작을 안정화했습니다."}),Object.freeze({ id:"beta_1_12_1_signup_fix", version:GAME_VERSION, date:"2026.09.22", title:"회원가입 안정화", sections:Object.freeze([Object.freeze({title:"[1.12.1 BETA]",bullets:Object.freeze(["모바일에서 회원가입 버튼의 처리 상태가 보이지 않던 문제를 수정했습니다.","회원가입 요청 중·인증 메일 발송·오류 내용을 계정 창에 직접 표시합니다.","중복 터치로 회원가입 요청이 여러 번 전송되지 않도록 개선했습니다."])})]), footer:"계정 생성 상태를 더 명확하게 확인할 수 있습니다." }), Object.freeze({
+const NEWS_ITEMS = Object.freeze([Object.freeze({id:"beta_1_13_3_daybreak_skip",version:GAME_VERSION,date:"2026.09.22",title:"광명 · 뽑기 개선",sections:Object.freeze([Object.freeze({title:"[1.13.3 BETA]",bullets:Object.freeze(["여명의 자리 광명 제물 조건을 Stage 4에서 Stage 3 일반 별로 변경했습니다.","광명 사용 시 제물 별 폭파와 여명의 자리로 흡수되는 시각효과를 추가했습니다.","광명 버튼을 눌렀을 때 반응 효과를 추가했습니다.","뽑기 연출을 스킵하면 결과창이 비어 있던 문제를 수정했습니다."])})]),footer:"여명의 자리 조작감과 뽑기 스킵을 개선했습니다."}),Object.freeze({id:"beta_1_13_2_zodiac_battle_fix",version:GAME_VERSION,date:"2026.09.22",title:"조디악 버튼 복구",sections:Object.freeze([Object.freeze({title:"[1.13.2 BETA]",bullets:Object.freeze(["전투 하단 조디악 버튼이 사라지는 문제를 수정했습니다.","선택 중에는 같은 위치에 취소가 표시되고 완성 가능한 조합이 되면 조디악 버튼이 다시 표시됩니다."])})]),footer:"조디악 생성 흐름을 복구했습니다."}),Object.freeze({id:"beta_1_13_1_main_alignment",version:GAME_VERSION,date:"2026.09.22",title:"메인 UI 정렬 수정",sections:Object.freeze([Object.freeze({title:"[1.13.1 BETA]",bullets:Object.freeze(["메인 상단 프로필·재화·메뉴를 좌/중앙/우 기준으로 정확히 정렬했습니다.","메뉴 펼침 항목을 각각 독립된 버튼 형태로 변경했습니다.","메인 하단에 조디악 버튼을 복구하고 별자리 화면으로 바로 이동하도록 연결했습니다."])})]),footer:"메인 화면 UI 배치를 정돈했습니다."}),Object.freeze({id:"beta_1_13_ui_gacha_zodiac",version:GAME_VERSION,date:"2026.09.22",title:"메인 UI · 뽑기 · 조디악 개선",sections:Object.freeze([Object.freeze({title:"[1.13 BETA]",bullets:Object.freeze(["메인 상단을 프로필과 메뉴 드롭다운 구조로 개편했습니다.","프로필 팝업에서 닉네임을 설정할 수 있습니다. 프로필 그림 변경은 추후 지원합니다.","여명의 자리가 ★★ 뽑기에서 정상 등장하고 전투 특수능력이 동작하도록 수정했습니다.","1회 뽑기 연출 전에 결과가 노출되던 문제를 수정했습니다.","조디악 취소를 조디악 버튼 위치에 표시하고 연결된 별이 선택된 경우 표시하지 않습니다.","새벽의 별자리 특수능력 2 시각효과의 번쩍임을 제거했습니다."])})]),footer:"메인과 전투 조작의 가독성과 안정성을 개선했습니다."}),Object.freeze({id:"beta_1_12_6_signup_direct",version:GAME_VERSION,date:"2026.09.22",title:"회원가입 흐름 개선",sections:Object.freeze([Object.freeze({title:"[1.12.6 BETA]",bullets:Object.freeze(["개발 테스트 단계에서 이메일 인증 없이 회원가입 즉시 로그인되도록 계정 흐름을 변경했습니다.","가입 직후 계정별 클라우드 저장을 바로 연결합니다.","비밀번호 재설정 메일은 SMTP 제한의 영향을 받을 수 있습니다."])})]),footer:"회원가입 후 바로 게임을 시작할 수 있습니다."}),Object.freeze({id:"beta_1_12_5_auth_feedback",version:GAME_VERSION,date:"2026.09.22",title:"계정 사용성 개선",sections:Object.freeze([Object.freeze({title:"[1.12.5 BETA]",bullets:Object.freeze(["로그인·회원가입 버튼에 눌림 애니메이션과 처리 중 표시를 강화했습니다.","Supabase 인증 오류를 이해하기 쉬운 한국어 안내로 변경했습니다.","인증 메일 재전송 기능과 연속 요청 방지 처리를 추가했습니다."])})]),footer:"계정 버튼의 반응과 인증 안내를 개선했습니다."}),Object.freeze({id:"beta_1_12_4_password_reset",version:GAME_VERSION,date:"2026.09.22",title:"비밀번호 재설정",sections:Object.freeze([Object.freeze({title:"[1.12.4 BETA]",bullets:Object.freeze(["계정 창에 비밀번호 재설정 기능을 추가했습니다.","가입 이메일로 재설정 링크를 받고 게임으로 돌아와 새 비밀번호를 설정할 수 있습니다."])})]),footer:"계정 복구 기능을 추가했습니다."}),Object.freeze({id:"beta_1_12_3_auth_tap_fallback",version:GAME_VERSION,date:"2026.09.22",title:"계정 버튼 호환성 수정",sections:Object.freeze([Object.freeze({title:"[1.12.3 BETA]",bullets:Object.freeze(["iPad Safari에서 로그인·회원가입 버튼이 반응하지 않는 문제를 추가 수정했습니다.","계정 창 버튼은 touchend와 click을 직접 처리하고 중복 실행을 방지합니다."])})]),footer:"모바일 Safari 계정 버튼 호환성을 개선했습니다."}),Object.freeze({id:"beta_1_12_2_auth_touch_fix",version:GAME_VERSION,date:"2026.09.22",title:"로그인 터치 수정",sections:Object.freeze([Object.freeze({title:"[1.12.2 BETA]",bullets:Object.freeze(["iPad/iPhone에서 로그인·회원가입 버튼 터치가 동작하지 않던 문제를 수정했습니다.","계정 버튼과 로그인 모달의 터치 처리를 게임의 Pointer Events 방식으로 통일했습니다.","로그인·회원가입 진행 상태와 오류를 계정 창에서 바로 확인할 수 있습니다."])})]),footer:"모바일 계정 입력과 버튼 동작을 안정화했습니다."}),Object.freeze({ id:"beta_1_12_1_signup_fix", version:GAME_VERSION, date:"2026.09.22", title:"회원가입 안정화", sections:Object.freeze([Object.freeze({title:"[1.12.1 BETA]",bullets:Object.freeze(["모바일에서 회원가입 버튼의 처리 상태가 보이지 않던 문제를 수정했습니다.","회원가입 요청 중·인증 메일 발송·오류 내용을 계정 창에 직접 표시합니다.","중복 터치로 회원가입 요청이 여러 번 전송되지 않도록 개선했습니다."])})]), footer:"계정 생성 상태를 더 명확하게 확인할 수 있습니다." }), Object.freeze({
   id: "beta_1_12_account_cloud_save", version: GAME_VERSION, date: "2026.09.22", title: "계정 및 클라우드 저장",
   sections: Object.freeze([Object.freeze({ title: "[1.12 BETA]", paragraphs: Object.freeze(["이메일 계정 로그인과 클라우드 저장 기능을 추가했습니다."]) }),Object.freeze({ title: "계정", bullets: Object.freeze(["이메일 회원가입 · 로그인 · 로그아웃 지원", "로그인 시 계정별 player_saves 데이터를 불러옵니다.", "게임 진행 변경 시 로컬 저장과 함께 클라우드에도 자동 저장합니다.", "처음 로그인해 클라우드 저장이 비어 있으면 현재 기기의 진행 상황을 계정에 업로드합니다."]) })]), footer: "이제 같은 계정으로 다른 기기에서도 진행 상황을 이어갈 수 있습니다.",
 }), Object.freeze({
@@ -839,7 +839,7 @@ const CONSTELLATION_DEFINITIONS = Object.freeze({
     id: CONSTELLATION_IDS.DAYBREAK, rarity: 2, family: "WHITE", name: "여명의 자리",
     recipe: Object.freeze({ white: 3, orange: 2 }), attackDamage: 200, attackSpeed: 3.3, range: 1, targeting: "progress",
     previewLayout: Object.freeze({ nodes: Object.freeze([[16,70],[32,36],[50,18],[68,36],[84,70]]), edges: Object.freeze([[0,1],[1,2],[2,3],[3,4],[1,3]]) }),
-    specialDescriptions: Object.freeze(["광명: [광명] 버튼으로 별자리에 연결되지 않은 Stage 4 일반 별을 선택해 폭파하고 광명 1스택을 얻습니다.","광명 5스택에서 공격력 3,500 · 공격속도 5 · 사정거리 5로 힘을 개방합니다.","각성 후 8회 타격마다 구성 별 5개가 현재 대상에게 사거리와 관계없이 각각 대상 최대 체력의 2.5% 빛의 화살을 1회 발사합니다."]),
+    specialDescriptions: Object.freeze(["광명: [광명] 버튼으로 별자리에 연결되지 않은 Stage 3 일반 별을 선택해 폭파하고 광명 1스택을 얻습니다.","광명 5스택에서 공격력 3,500 · 공격속도 5 · 사정거리 5로 힘을 개방합니다.","각성 후 8회 타격마다 구성 별 5개가 현재 대상에게 사거리와 관계없이 각각 대상 최대 체력의 2.5% 빛의 화살을 1회 발사합니다."]),
   }),
 });
 const RESONANCE_FAMILIES = Object.freeze({ RED: "RED", WHITE: "WHITE", BLUE: "BLUE", SPECIAL: "SPECIAL" });
@@ -2126,8 +2126,8 @@ class StarManager {
     if (!this.stars[i]) return;
     if (this.daybreakOfferingSource) {
       const source=this.daybreakOfferingSource, star=this.stars[i];
-      if (star.constellation || star.support || star.tier !== 4) return UIManager.hint("별자리에 연결되지 않은 Stage 4 일반 별을 선택하세요.");
-      this.stars[i]=null; source.runtime.lightStacks=Math.min(5,source.runtime.lightStacks+1); this.daybreakOfferingSource=null; this.selected=[];
+      if (star.constellation || star.support || star.tier !== 3) return UIManager.hint("별자리에 연결되지 않은 Stage 3 일반 별을 선택하세요.");
+      UIManager.daybreakSacrifice?.(this.pos(i), source.owner.pos(source.center)); this.stars[i]=null; source.runtime.lightStacks=Math.min(5,source.runtime.lightStacks+1); this.daybreakOfferingSource=null; this.selected=[];
       if(source.runtime.lightStacks>=5){source.runtime.awakened=true;UIManager.hint("여명의 자리가 광명을 개방했습니다.");}else UIManager.hint(`광명 ${source.runtime.lightStacks} / 5`);
       game.recomputeCombatCaches(); game.render(); return;
     }
@@ -2604,6 +2604,11 @@ class UIManager {
     );
     this.addTransient(line, effects, 170);
   }
+  static daybreakSacrifice(position, destination) {
+    const burst=document.createElement("i"); burst.className="daybreak-sacrifice-burst"; burst.style.left=position.x+"%"; burst.style.top=position.y+"%"; this.addTransient(burst,battleWorld||arena,620);
+    const line=document.createElementNS("http://www.w3.org/2000/svg","line"); line.setAttribute("class","daybreak-sacrifice-line"); [["x1",position.x],["y1",position.y],["x2",destination.x],["y2",destination.y]].forEach(([k,v])=>line.setAttribute(k,v)); this.addTransient(line,effects,520);
+  }
+  static daybreakButtonPulse(button) { if(!button)return; button.classList.remove("daybreak-button-pulse"); void button.offsetWidth; button.classList.add("daybreak-button-pulse"); setTimeout(()=>button.classList.remove("daybreak-button-pulse"),520); }
   static chainBeam(a, b) {
     let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("class", "chain-beam");
@@ -2945,7 +2950,7 @@ class UIManager {
             BondOfferingSystem.execute(pick.m, pick.index);
         if (isStrike) contextActions.querySelector('[data-context="strike"]').onclick = () => constellation.unleashStrike();
         if (isHorizon) contextActions.querySelector('[data-context="horizon"]').onclick = () => { pick.m.horizonFocusSource = constellation; pick.m.selected = []; UIManager.hint("계승할 다른 별자리를 선택하세요."); game.render(); };
-        if (isDaybreak && !constellation.runtime.awakened) contextActions.querySelector('[data-context="daybreak"]').onclick = () => { pick.m.daybreakOfferingSource=constellation; pick.m.selected=[]; UIManager.hint("바칠 Stage 4 일반 별을 선택하세요."); game.render(); };
+        if (isDaybreak && !constellation.runtime.awakened) contextActions.querySelector('[data-context="daybreak"]').onclick = () => { pick.m.daybreakOfferingSource=constellation; pick.m.selected=[]; UIManager.daybreakButtonPulse?.(contextActions.querySelector('[data-context="daybreak"]')); UIManager.hint("바칠 Stage 3 일반 별을 선택하세요."); game.render(); };
         contextActions.querySelector('[data-context="release"]').onclick = () =>
           ZodiacSystem.release(pick.m, pick.index);
         this.actionKey = actionKey;
@@ -3721,7 +3726,7 @@ function bootstrapGame() {
     clearTimers() { this.timers.forEach(clearTimeout); this.timers.length = 0; },
     schedule(state, delay, action) { this.timers.push(setTimeout(() => { this.state = state; resultDialog.dataset.summonState = state; action?.(); }, delay)); },
     begin(results, pendingResultHtml = "") {
-      this.clearTimers(); this.results = results;
+      this.clearTimers(); this.results = results; this.pendingResultHtml = pendingResultHtml;
       const featured = [...results].reverse().find((item) => item.kind === "constellation") || results[0];
       const isRelic = featured.kind === "relic";
       const colors = isRelic ? ["#a36bff", "#63dfff"] : featured.kind === "constellation" ? CONSTELLATION_SUMMON_COLORS[featured.id] : [STAR_TYPES[featured.id].color, "#ffffff"];
@@ -3742,11 +3747,11 @@ function bootstrapGame() {
     skip() {
       if (!this.active()) return;
       this.clearTimers(); this.state = SUMMON_STATES.IDLE; resultDialog.dataset.summonState = this.state;
-      resultDialog.classList.add("summon-complete", "results-idle", "summon-skipped");
+      getRequiredElement("draw-result-grid").innerHTML = this.pendingResultHtml || ""; resultDialog.classList.add("summon-complete", "results-idle", "summon-skipped");
     },
     close() {
       if (this.state !== SUMMON_STATES.IDLE) return;
-      this.clearTimers(); this.results = []; resultDialog.hidden = true; resultDialog.removeAttribute("data-summon-state");
+      this.clearTimers(); this.results = []; this.pendingResultHtml = ""; resultDialog.hidden = true; resultDialog.removeAttribute("data-summon-state");
       resultDialog.className = "draw-result-dialog"; document.body.classList.remove("summon-input-locked");
       getRequiredElement("skip-summon").hidden = false;
       getRequiredElement("draw-sequence").replaceChildren(); getRequiredElement("draw-result-grid").replaceChildren();
