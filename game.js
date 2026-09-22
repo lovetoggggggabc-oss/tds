@@ -2637,7 +2637,7 @@ class UIManager {
     const line=document.createElementNS("http://www.w3.org/2000/svg","line"); line.setAttribute("class","daybreak-sacrifice-line"); [["x1",position.x],["y1",position.y],["x2",destination.x],["y2",destination.y]].forEach(([k,v])=>line.setAttribute(k,v)); this.addTransient(line,effects,520);
   }
   static daybreakButtonPulse(button) { if(!button)return; button.classList.remove("daybreak-button-pulse"); void button.offsetWidth; button.classList.add("daybreak-button-pulse"); setTimeout(()=>button.classList.remove("daybreak-button-pulse"),520); }
-  static damageNumber(position,damage,critical=false){const host=battleWorld||arena;if(!host)return;const n=document.createElement("b");n.className="damage-number"+(critical?" critical":"");const rect=host.getBoundingClientRect(),metrics=RangeSystem.metrics();const px=(position.x/100)*metrics.width,py=(position.y/100)*metrics.height;n.style.left=px+"px";n.style.top=py+"px";n.textContent=Math.round(damage).toLocaleString();this.addTransient(n,host,650);}
+  static damageNumber(position,damage,critical=false){const host=battleWorld||arena;if(!host||!position)return;const n=document.createElement("b");n.className="damage-number"+(critical?" critical":"");n.style.left=`${position.x}%`;n.style.top=`${position.y}%`;n.textContent=Math.round(damage).toLocaleString();this.addTransient(n,host,650);}
   static guidanceLaser(a,b){const line=document.createElementNS("http://www.w3.org/2000/svg","line");line.setAttribute("class","guidance-laser");[["x1",a.x],["y1",a.y],["x2",b.x],["y2",b.y]].forEach(([k,v])=>line.setAttribute(k,v));this.addTransient(line,effects,240);}
   static chainBeam(a, b) {
     let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -3671,7 +3671,6 @@ function bootstrapGame() {
   const setAccountStatus=(message)=>{const node=accountStatus();if(node)node.textContent=message;};
   const refreshAccountUI=()=>{const logged=Boolean(authUser);document.querySelectorAll("[data-account-label]").forEach(n=>n.textContent=logged?(authUser.email||"계정"):"로그인");if(authForm)authForm.hidden=logged;if(authUserPanel)authUserPanel.hidden=!logged;const label=accountModal?.querySelector("[data-auth-email-label]");if(label)label.textContent=authUser?.email||"";setAccountStatus(logged?"로그인됨 · 진행 상황이 클라우드에 저장됩니다.":"로그인하면 진행 상황을 클라우드에 저장할 수 있습니다.");};
   const openAccount=()=>{refreshAccountUI();if(accountModal)accountModal.hidden=false;};
-  document.querySelectorAll("[data-open-account]").forEach((button)=>bindPointerTap(button,(event)=>{event.stopPropagation();openAccount();}));
   const closeAccount=()=>{if(accountModal)accountModal.hidden=true;};
   const closeButton=accountModal?.querySelector("[data-close-account]"); if(closeButton)bindPointerTap(closeButton,(event)=>{event.stopPropagation();closeAccount();});
   accountModal?.addEventListener("pointerup",(event)=>{if(event.target===accountModal)closeAccount();});
@@ -3697,15 +3696,17 @@ function bootstrapGame() {
   if(profileModal){bindPointerTap(profileModal.querySelector("[data-close-profile]"),()=>profileModal.hidden=true);bindPointerTap(profileModal.querySelector("[data-profile-save]"),()=>{const nickname=(profileInput.value||"").trim().slice(0,12);const message=profileModal.querySelector("[data-profile-message]");if(nickname.length<2){message.textContent="닉네임은 2자 이상 입력해주세요.";return;}playerProgress.profile={nickname,avatar:"default"};savePlayerProgress();refreshProfile();message.textContent="닉네임을 저장했습니다.";});profileModal.addEventListener("pointerup",event=>{if(event.target===profileModal)profileModal.hidden=true;});}
   refreshProfile();
   const mainMenuDisclosure=document.querySelector("[data-main-menu-disclosure]"),mainMenuToggle=document.querySelector("[data-main-menu-toggle]"),mainMenuDropdown=document.querySelector("[data-main-menu-dropdown]");
+  const closeMainDropdown=()=>{if(mainMenuDisclosure)mainMenuDisclosure.open=false;};
+  const bindReliableMenuAction=(button,action)=>{if(!button)return;let lastTouch=0;button.addEventListener("touchend",(event)=>{lastTouch=Date.now();event.preventDefault();event.stopPropagation();action(event);closeMainDropdown();},{passive:false});button.addEventListener("click",(event)=>{event.preventDefault();event.stopPropagation();if(Date.now()-lastTouch<700)return;action(event);closeMainDropdown();});};
   if(mainMenuDisclosure&&mainMenuToggle&&mainMenuDropdown){
     // Native <details>/<summary> owns opening so iPad Safari does not depend on
     // the order of pointer, touch, and compatibility-click events.
     const syncMainDropdownState=()=>mainMenuToggle.setAttribute("aria-expanded",String(mainMenuDisclosure.open));
     mainMenuDisclosure.addEventListener("toggle",syncMainDropdownState);
-    mainMenuDropdown.addEventListener("click",(event)=>{if(event.target.closest("button"))mainMenuDisclosure.open=false;});
     document.addEventListener("pointerdown",(event)=>{if(mainMenuDisclosure.open&&!event.target.closest(".main-menu-dropdown-wrap"))mainMenuDisclosure.open=false;});
     syncMainDropdownState();
   }
+  document.querySelectorAll("[data-open-account]").forEach((button)=>bindReliableMenuAction(button,openAccount));
   const mainMenu = getRequiredElement("main-menu");
   const battleMenu = getRequiredElement("battle-menu");
   const gachaScreen = getRequiredElement("gacha-screen");
@@ -4064,11 +4065,11 @@ function bootstrapGame() {
     document.querySelectorAll?.("[data-news-badge]").forEach((badge) => { badge.hidden = unread===0; badge.textContent=unread; });
     getRequiredElement("news-items").innerHTML = NEWS_ITEMS.map((item) => `<article class="news-item"><header>${item.version ? `<strong class="news-version">VERSION ${item.version}</strong>` : ""}<time>${item.date}${playerProgress.readNewsIds[item.id] ? "" : " · NEW"}</time><h3>${item.title}</h3></header>${item.sections.map((section) => `<section><h4>${section.title}</h4>${(section.paragraphs || []).map((paragraph) => `<p>${paragraph}</p>`).join("")}${section.bullets ? `<ul>${section.bullets.map((bullet) => `<li>${bullet}</li>`).join("")}</ul>` : ""}</section>`).join("")}<footer>${item.footer}</footer></article>`).join("");
   };
-  document.querySelectorAll?.("[data-open-news]").forEach((button) => button.onclick = () => {
+  document.querySelectorAll?.("[data-open-news]").forEach((button) => bindReliableMenuAction(button,() => {
     NEWS_ITEMS.forEach((item) => { playerProgress.readNewsIds[item.id] = true; });
     playerProgress.lastReadNewsVersion = latestNewsId;
     savePlayerProgress(); refreshNews(); setModalOpen(newsDialog, true);
-  });
+  }));
   const refreshResonanceDialog = (r = getEquippedResonance()) => {
     const current=resonanceDialog.querySelector("[data-current-resonance]");
     if (current) current.innerHTML=`<h3>현재 공명</h3>${renderResonanceSummary(r)}`;
@@ -4088,7 +4089,7 @@ function bootstrapGame() {
   document.addEventListener("battle-resonance-ready",(event)=>{const rows=activeResonanceRows(event.detail.resonance);if(!rows.length)return;const layer=document.querySelector("[data-resonance-vfx]");clearTimeout(resonanceVfxTimer);layer.hidden=false;layer.className="resonance-vfx-layer battle-active";layer.innerHTML=`<section><small>✦ ACTIVE RESONANCE</small>${rows.map(([family,tier])=>`<b>${FAMILY_META[family].icon} ${FAMILY_META[family].label.replace("계열","")} ${tier}공명</b>`).join("")}</section>`;resonanceVfxTimer=setTimeout(()=>{layer.hidden=true;layer.replaceChildren();layer.className="resonance-vfx-layer";},1100);});
   document.querySelectorAll?.("[data-battle-resonance]").forEach((button)=>button.onclick=()=>openResonanceDialog(game?.resonance||getEquippedResonance()));
   const showSettingsView = (view) => settingsDialog.querySelectorAll("[data-settings-view]").forEach((panel) => { panel.hidden = panel.dataset.settingsView !== view; });
-  document.querySelectorAll?.("[data-open-settings]").forEach((button) => button.onclick = (event) => { event.preventDefault(); event.stopPropagation(); refreshSettings(); showSettingsView("main"); setModalOpen(settingsDialog, true); });
+  document.querySelectorAll?.("[data-open-settings]").forEach((button) => bindReliableMenuAction(button,() => { refreshSettings(); showSettingsView("main"); setModalOpen(settingsDialog, true); }));
   const hpSettingButton = settingsDialog.querySelector("[data-setting-hp]"), damageSettingButton=settingsDialog.querySelector("[data-setting-damage]"), vfxSettingButton = settingsDialog.querySelector("[data-setting-vfx]"), starInfoSettingButton = settingsDialog.querySelector("[data-setting-star-info]");
   if(damageSettingButton) damageSettingButton.onclick=()=>{playerProgress.settings.showDamageNumbers=!playerProgress.settings.showDamageNumbers;savePlayerProgress();refreshSettings();};
   if (hpSettingButton) hpSettingButton.onclick = () => { playerProgress.settings.showMonsterHpNumbers = !playerProgress.settings.showMonsterHpNumbers; savePlayerProgress(); refreshSettings(); };
@@ -4108,7 +4109,7 @@ function bootstrapGame() {
     const meteorButton=getRequiredElement("claim-meteor-mail"); meteorButton.disabled=meteorClaimed; meteorButton.textContent=meteorClaimed?"✓ 수령 완료":"받기";
     const resonanceCard=getRequiredElement("resonance-mail-card"), resonanceButton=getRequiredElement("claim-resonance-reward"); resonanceCard.classList.toggle("claimed",resonanceClaimed); resonanceCard.querySelector("i")?.replaceChildren(resonanceClaimed?"✓":"NEW"); resonanceButton.disabled=resonanceClaimed; resonanceButton.textContent=resonanceClaimed?"✓ 수령 완료":"보상 수령";
   };
-  document.querySelectorAll?.("[data-open-mail]").forEach((button)=>button.onclick=()=>{refreshMail();setModalOpen(mailDialog,true);});
+  document.querySelectorAll?.("[data-open-mail]").forEach((button)=>bindReliableMenuAction(button,()=>{refreshMail();setModalOpen(mailDialog,true);}));
   let updateRewardClaiming = false;
   let resonanceRewardClaiming = false;
   getRequiredElement("claim-resonance-reward").onclick=()=>{if(resonanceRewardClaiming||playerProgress.claimedMail[RESONANCE_UPDATE_REWARD_ID])return;resonanceRewardClaiming=true;playerProgress.claimedMail[RESONANCE_UPDATE_REWARD_ID]=true;playerProgress.starDust+=1000;savePlayerProgress();refreshMail();updateMetaCurrency();resonanceRewardClaiming=false;};

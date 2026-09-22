@@ -23,6 +23,8 @@ assert.match(css, /env\(safe-area-inset-top\)/);
 assert.match(css, /env\(safe-area-inset-bottom\)/);
 assert.match(css, /\.main-menu-dropdown-wrap\[open\]>\.main-menu-dropdown\{display:grid!important\}/);
 assert.match(game, /mainMenuDisclosure\.addEventListener\("toggle",syncMainDropdownState\)/);
+assert.match(game, /const bindReliableMenuAction=\(button,action\)=>/);
+assert.match(game, /n\.style\.left=`\$\{position\.x\}%`;n\.style\.top=`\$\{position\.y\}%`/);
 
 assert.match(html, /class="screen-scroll-content summon-content-scroll"[\s\S]*class="draw-actions"/);
 assert.doesNotMatch(html, />\ucc9c\uc7a5 \[<b data-constellation-pity/);
