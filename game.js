@@ -51,14 +51,22 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.05 BETA";
+const GAME_VERSION = "1.06 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong", showBattleStarInfo: true });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
-  id: "beta_1_05_star_resonance", version: GAME_VERSION, date: "2026.09.22", title: "별의 공명",
+  id: "beta_1_06_battle_hud_resonance_ui", version: GAME_VERSION, date: "2026.09.22", title: "전투 HUD 및 공명 연출 개선",
+  sections: Object.freeze([
+    Object.freeze({ title: "[1.06 BETA]", paragraphs: Object.freeze(["전투 HUD와 별의 공명 UI 및 활성화 연출을 개선했습니다."]) }),
+    Object.freeze({ title: "전투 HUD 수정", bullets: Object.freeze(["전투 중 별빛과 신성이 표시되지 않던 문제를 수정했습니다.", "별빛과 신성을 조디악 왼쪽에 표시하도록 수정했습니다.", "조디악이 화면 하단 중앙에서 밀리지 않도록 배치를 개선했습니다.", "공명 및 별자리 도감 버튼과 전투 재화 UI가 겹치지 않도록 개선했습니다."]) }),
+    Object.freeze({ title: "별의 공명 UI 개선", bullets: Object.freeze(["별자리 화면에 항상 표시되던 큰 공명 현황 패널을 제거했습니다.", "이제 [공명 정보]를 눌렀을 때만 현재 공명과 전체 공명 효과를 확인할 수 있습니다.", "전투 별자리 장착 UI는 별자리 탭에서만 표시됩니다."]) }),
+    Object.freeze({ title: "공명 연출", bullets: Object.freeze(["새로운 공명 단계가 활성화될 때 계열별 전용 연출이 추가되었습니다.", "적색 공명은 붉은 별빛, 백색 공명은 백색/은색 별빛, 청색 공명은 푸른 별빛으로 표시됩니다.", "최대 공명 달성 시 MAX RESONANCE 연출이 표시됩니다.", "전투 시작 시 현재 활성화된 공명을 짧게 확인할 수 있습니다."]) }),
+  ]), footer: "더 선명해진 전투 HUD와 별의 공명을 만나보세요.",
+}), Object.freeze({
+  id: "beta_1_05_star_resonance", version: "1.05 BETA", date: "2026.09.22", title: "별의 공명",
   sections: Object.freeze([
     Object.freeze({ title: "[1.05 BETA] 신규 시스템 — 별의 공명", paragraphs: Object.freeze(["같은 계열의 별자리를 여러 개 장착하면 전투에서 특별한 공명 효과가 활성화됩니다.", "공명은 필드의 별자리 수가 아니라 전투 전에 장착한 별자리를 기준으로 계산됩니다."]) }),
     Object.freeze({ title: "🔴 적색계열", bullets: Object.freeze(["3공명 · 적색계열 별&별자리 공격력 +50%", "4공명 · 적색계열 공격력 +100%", "5공명 · 적색계열 공격력 +200%", "6공명 · 모든 별&별자리 공격력 +300%"]) }),
@@ -769,6 +777,14 @@ function renderResonanceSummary(r) {
     ["WHITE",r.whiteCount,r.whiteTier,[2,3],r.whiteTier?`전체 공격속도 +${r.globalAttackSpeedFlat} · 처치 별빛 +${r.killStarlightFlat}`:""],
     ["BLUE",r.blueCount,r.blueTier,[3,4,5,6],r.blueTier?`청색계열 공격력 +${r.blueDamageBonus*100}% · 공격속도 +${r.blueAttackSpeedFlat}`:""]];
   return rows.map(([family,count,tier,tiers,effect])=>{const next=tiers.find((value)=>value>count);return `<div class="resonance-row family-${family.toLowerCase()}"><b>${FAMILY_META[family].icon} ${FAMILY_META[family].label.replace("계열","")} ${count} / ${family==="WHITE"?3:6}</b><span>${tier?`${tier}공명 활성 · ${effect}`:next?`${next}공명까지 ${next-count}개`:"공명 없음"}</span>${next?`<small>다음: ${next}공명</small>`:""}</div>`;}).join("");
+}
+function resonanceTierDetails(family, tier) {
+  if (family === "RED") return tier === 6 ? "모든 별&별자리 공격력 +300%" : `공격력 +${({3:50,4:100,5:200})[tier]}%`;
+  if (family === "WHITE") return tier === 3 ? "공격속도 +1 · 처치 별빛 +2" : "공격속도 +0.5 · 처치 별빛 +1";
+  return `공격력 +${({3:25,4:50,5:100,6:200})[tier]}% · 공격속도 +${({3:.25,4:.5,5:.75,6:1})[tier]}`;
+}
+function activeResonanceRows(r) {
+  return [["RED",r.redTier],["WHITE",r.whiteTier],["BLUE",r.blueTier]].filter(([,tier])=>tier);
 }
 function canUpgradeStar(id) { const e=playerProgress.starCollection[id], cost=e&&starLevelCosts(e.level); return Boolean(cost&&e.count>=cost.copies&&playerProgress.starShards>=cost.shards); }
 function canUpgradeConstellation(id) { const e=playerProgress.constellationCollection[id], cost=e&&CONSTELLATION_LEVEL_COSTS[e.level]; return Boolean(cost&&e.copies>=cost.copies&&playerProgress.galaxyFragments>=cost.galaxyFragments); }
@@ -2963,6 +2979,8 @@ class GameManager {
       p.manager = new StarManager(p, getRequiredElement(`field-${i}`), maxStars);
       return p;
     });
+    // Announce the immutable equipped-deck resonance once the battle shell is visible.
+    setTimeout(() => document.dispatchEvent(new CustomEvent("battle-resonance-ready", { detail: { resonance: this.resonance } })), 120);
     window.BOOT_STAGE = "creating-wave";
     this.wave = new WaveManager(this);
     this.spawner = new EnemySpawner(this);
@@ -3274,6 +3292,8 @@ function toggleEquippedConstellation(id) {
   const after=getEquippedResonance(current), family=CONSTELLATION_DEFINITIONS[id].family;
   if (family!=="SPECIAL" && after[`${family.toLowerCase()}Tier`]>before[`${family.toLowerCase()}Tier`])
     document.dispatchEvent(new CustomEvent("resonance-tier-up",{detail:{family,tier:after[`${family.toLowerCase()}Tier`]}}));
+  else if (family!=="SPECIAL" && after[`${family.toLowerCase()}Tier`]<before[`${family.toLowerCase()}Tier`])
+    document.dispatchEvent(new CustomEvent("resonance-tier-down",{detail:{family,tier:after[`${family.toLowerCase()}Tier`]}}));
   return { ok: true };
 }
 
@@ -3678,9 +3698,24 @@ function bootstrapGame() {
     playerProgress.lastReadNewsVersion = latestNewsId;
     savePlayerProgress(); refreshNews(); setModalOpen(newsDialog, true);
   });
-  document.querySelectorAll?.("[data-open-resonance]").forEach((button)=>button.onclick=()=>setModalOpen(resonanceDialog,true));
-  document.addEventListener("resonance-tier-up",(event)=>{const {family,tier}=event.detail;document.body.dataset.resonancePulse=family.toLowerCase();showToast(`RESONANCE\n${FAMILY_META[family].icon} ${FAMILY_META[family].label} ${tier}공명 활성`);setTimeout(()=>delete document.body.dataset.resonancePulse,900);});
-  document.querySelectorAll?.("[data-battle-resonance]").forEach((button)=>button.onclick=()=>{const r=game?.resonance||getEquippedResonance();resonanceDialog.querySelector(".resonance-info").insertAdjacentHTML("afterbegin",`<div class="battle-resonance-current">현재 전투 · 🔴 ${r.redCount} ⚪ ${r.whiteCount} 🔵 ${r.blueCount}</div>`);setModalOpen(resonanceDialog,true);});
+  const refreshResonanceDialog = (r = getEquippedResonance()) => {
+    const current=resonanceDialog.querySelector("[data-current-resonance]");
+    if (current) current.innerHTML=`<h3>현재 공명</h3>${renderResonanceSummary(r)}`;
+  };
+  const openResonanceDialog = (r) => { refreshResonanceDialog(r); setModalOpen(resonanceDialog,true); };
+  document.querySelectorAll?.("[data-open-resonance]").forEach((button)=>button.onclick=()=>openResonanceDialog());
+  let resonanceVfxTimer=0;
+  const playResonanceVfx = ({family,tier}, mode="tier-up") => {
+    const layer=document.querySelector("[data-resonance-vfx]"); if(!layer)return;
+    clearTimeout(resonanceVfxTimer); layer.hidden=false; layer.className=`resonance-vfx-layer family-${family.toLowerCase()} ${mode}`;
+    const maximum=(family==="WHITE"?3:6)===tier;
+    layer.innerHTML=`<div class="resonance-rays" aria-hidden="true"><i></i><i></i><i></i></div><section><small>${maximum?"MAX RESONANCE":"RESONANCE"}</small><b>${FAMILY_META[family].icon} ${FAMILY_META[family].label.replace("계열","")} ${tier}공명</b><span>${resonanceTierDetails(family,tier)}</span></section>`;
+    resonanceVfxTimer=setTimeout(()=>{layer.hidden=true;layer.replaceChildren();layer.className="resonance-vfx-layer";},1100);
+  };
+  document.addEventListener("resonance-tier-up",(event)=>playResonanceVfx(event.detail));
+  document.addEventListener("resonance-tier-down",(event)=>{document.body.dataset.resonanceFade=event.detail.family.toLowerCase();setTimeout(()=>delete document.body.dataset.resonanceFade,350);});
+  document.addEventListener("battle-resonance-ready",(event)=>{const rows=activeResonanceRows(event.detail.resonance);if(!rows.length)return;const layer=document.querySelector("[data-resonance-vfx]");clearTimeout(resonanceVfxTimer);layer.hidden=false;layer.className="resonance-vfx-layer battle-active";layer.innerHTML=`<section><small>✦ ACTIVE RESONANCE</small>${rows.map(([family,tier])=>`<b>${FAMILY_META[family].icon} ${FAMILY_META[family].label.replace("계열","")} ${tier}공명</b>`).join("")}</section>`;resonanceVfxTimer=setTimeout(()=>{layer.hidden=true;layer.replaceChildren();layer.className="resonance-vfx-layer";},1100);});
+  document.querySelectorAll?.("[data-battle-resonance]").forEach((button)=>button.onclick=()=>openResonanceDialog(game?.resonance||getEquippedResonance()));
   const showSettingsView = (view) => settingsDialog.querySelectorAll("[data-settings-view]").forEach((panel) => { panel.hidden = panel.dataset.settingsView !== view; });
   document.querySelectorAll?.("[data-open-settings]").forEach((button) => button.onclick = (event) => { event.preventDefault(); event.stopPropagation(); refreshSettings(); showSettingsView("main"); setModalOpen(settingsDialog, true); });
   const hpSettingButton = settingsDialog.querySelector("[data-setting-hp]"), vfxSettingButton = settingsDialog.querySelector("[data-setting-vfx]"), starInfoSettingButton = settingsDialog.querySelector("[data-setting-star-info]");
