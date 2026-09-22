@@ -644,29 +644,25 @@ const MAP_DEFINITIONS = Object.freeze({
     artwork: "assets/battle/nebula-curve-map.png", assetWidth: 883, assetHeight: 1536,
     roadWidth: 34, placementPadding: 3,
     spawn: Object.freeze({ x: 73.2, y: 8.2 }), destination: Object.freeze({ x: 47.2, y: 84.5 }),
-    route: Object.freeze([
-      Object.freeze([{x:73.2,y:8.2},{x:72,y:15},{x:46,y:20},{x:38.5,y:29}]),
-      Object.freeze([{x:38.5,y:29},{x:31,y:34},{x:48,y:38},{x:64,y:42}]),
-      Object.freeze([{x:64,y:42},{x:76,y:45},{x:72,y:53},{x:54,y:56}]),
-      Object.freeze([{x:54,y:56},{x:40,y:59},{x:29,y:63},{x:36,y:69}]),
-      Object.freeze([{x:36,y:69},{x:37,y:75},{x:50,y:77},{x:47.2,y:84.5}]),
-    ]), arrows: Object.freeze([.14,.38,.63,.86]),
+    route: buildSmoothRoute([
+      {x:73.2,y:8.2},{x:70,y:10},{x:67,y:12},{x:64,y:14},{x:59,y:16},{x:54,y:18},{x:48,y:20},{x:43,y:22},{x:39,y:24},{x:36,y:26},
+      {x:34,y:28},{x:34,y:30},{x:36,y:32},{x:40,y:34},{x:46,y:36},{x:53,y:38},{x:60,y:40},{x:67,y:42},{x:71,y:44},{x:72,y:46},
+      {x:71,y:48},{x:67,y:50},{x:61,y:52},{x:54,y:54},{x:46,y:56},{x:39,y:58},{x:34,y:60},{x:31,y:62},{x:30,y:64},{x:31,y:66},
+      {x:34,y:68},{x:39,y:70},{x:45,y:72},{x:50,y:74},{x:53,y:76},{x:54,y:78},{x:53,y:80},{x:50,y:82},{x:47.2,y:84.5},
+    ],160), arrows: Object.freeze([.14,.38,.63,.86]),
   }),
   LOOP_MAP: Object.freeze({
     id: "LOOP_MAP", name: "은하의 고리",
     artwork: "assets/battle/galaxy-ring-map.png", assetWidth: 882, assetHeight: 1536,
     roadWidth: 30, placementPadding: 3,
     spawn: Object.freeze({ x: 40.7, y: 85.2 }), destination: Object.freeze({ x: 72.9, y: 8.2 }),
-    route: Object.freeze([
-      Object.freeze([{x:40.7,y:85.2},{x:36,y:78},{x:25,y:72},{x:24,y:63}]),
-      Object.freeze([{x:24,y:63},{x:23,y:54},{x:32,y:48},{x:40,y:43}]),
-      Object.freeze([{x:40,y:43},{x:52,y:38},{x:68,y:40},{x:72,y:48}]),
-      Object.freeze([{x:72,y:48},{x:76,y:56},{x:68,y:62},{x:57,y:62}]),
-      Object.freeze([{x:57,y:62},{x:45,y:62},{x:37,y:57},{x:39,y:50}]),
-      Object.freeze([{x:39,y:50},{x:39,y:46},{x:40,y:44},{x:44,y:42}]),
-      Object.freeze([{x:44,y:42},{x:52,y:37},{x:62,y:33},{x:68,y:27}]),
-      Object.freeze([{x:68,y:27},{x:73,y:22},{x:72,y:14},{x:72.9,y:8.2}]),
-    ]), arrows: Object.freeze([.12,.34,.55,.76,.91]),
+    route: buildSmoothRoute([
+      {x:40.7,y:85.2},{x:39,y:82},{x:37,y:80},{x:34,y:78},{x:31,y:76},{x:28,y:74},{x:25,y:72},{x:23,y:70},{x:22,y:68},{x:22,y:66},
+      {x:23,y:64},{x:24,y:62},{x:26,y:60},{x:29,y:58},{x:32,y:56},{x:36,y:54},{x:40,y:51},{x:43,y:48},{x:46,y:45},{x:50,y:43},
+      {x:55,y:41},{x:61,y:41},{x:67,y:42},{x:72,y:45},{x:75,y:49},{x:75,y:53},{x:72,y:57},{x:67,y:60},{x:60,y:62},{x:53,y:62},
+      {x:47,y:60},{x:43,y:57},{x:42,y:53},{x:43,y:49},{x:46,y:46},{x:45,y:42},{x:49,y:39},{x:54,y:37},{x:60,y:34},{x:66,y:30},
+      {x:70,y:26},{x:72,y:22},{x:72,y:18},{x:72,y:14},{x:72.9,y:8.2},
+    ],160), arrows: Object.freeze([.12,.34,.55,.76,.91]),
   }),
 });
 
@@ -1571,7 +1567,7 @@ function buildRouteCache(map) {
   // The illustrated S road uses 160 exact curve pieces. Forty samples per
   // piece retain the same 6,400-point precision as before while preventing a
   // larger cache from changing frame cost on mobile devices.
-  const stepsPerSegment = map.id === "ORIGINAL_S" ? 40 : 80;
+  const stepsPerSegment = map.route.length >= 160 ? 40 : 80;
   map.route.forEach((segment) => { for (let step = 1; step <= stepsPerSegment; step++) {
     const point = curvePoint(segment, step / stepsPerSegment); total += Math.hypot((point.x - previous.x) * xScale, (point.y - previous.y) * yScale);
     samples.push({ ...point, distance: total }); previous = point;
