@@ -2314,3 +2314,14 @@ body[data-resonance-pulse="red"] .resonance-panel{animation:resonanceRed .8s eas
 @media(max-width:380px){.battle-bottom-area .game-controls button[data-act="zodiac"]{width:112px}.battle-bottom-area .battle-resonance-button{left:calc(50% + 59px);width:43px;padding-inline:2px!important}.battle-bottom-area .game-controls .codex-button{width:62px}.battle-bottom-area .battle-resources .primary-resource{min-width:70px}}
 @media(prefers-reduced-motion:reduce){.resonance-vfx-layer,.resonance-vfx-layer section,.resonance-rays i{animation-duration:.01ms!important}}
 @media(max-width:390px){.battle-bottom-area .battle-resonance-button{right:auto;left:calc(50% + 59px)}.resonance-row{padding:6px}}
+
+/* 1.07 BETA — shell-local summon results, countdown and galactic bosses. */
+.draw-result-grid:has(> .draw-result:only-child){position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(78%,360px);height:auto;display:grid;grid-template-columns:1fr;padding:0;overflow:visible}
+.battle-countdown{position:absolute;z-index:120;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff5bc;font-size:clamp(76px,22cqw,150px);font-weight:1000;text-shadow:0 0 16px #fff,0 0 42px #8b66ff;pointer-events:none}
+.battle-countdown.play{animation:battleCount .82s ease-out both}
+.wave40-event{position:absolute;z-index:119;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;pointer-events:none;background:radial-gradient(circle,#7549a43d,transparent 58%)}
+.wave40-event[hidden]{display:none}.wave40-event strong{font-size:clamp(24px,7cqw,50px);color:#f2e8ff;text-shadow:0 0 24px #ad70ff}.wave40-event span{animation:eventMessage 15s both;color:#dce5ff;font-size:clamp(17px,4.5cqw,30px);line-height:1.5}.wave40-event b{color:#fff09e}.arena.galaxy-tremor .space-dust{animation:galaxyTremor 2.6s ease-in-out infinite}
+.enemy.galaxySlayer .enemy-body{background:radial-gradient(circle,#05020d 22%,#7d254e 27%,#261044 46%,transparent 48%);border:3px dashed #c24a79;box-shadow:0 0 16px #7a2a9d}.enemy.starDevourer .enemy-body{background:radial-gradient(circle,#000 18%,#ecebff 20%,#211249 27%,#050817 49%,transparent 52%);border:3px solid #563e96;box-shadow:0 0 20px #6249ba}.enemy.devour-growth .enemy-body{animation:devourPulse .65s ease-out}
+@keyframes battleCount{0%{opacity:0;transform:translate(-50%,-50%) scale(.65)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.16)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35)}}
+@keyframes eventMessage{0%,18%{opacity:0}25%,90%{opacity:1}100%{opacity:0}}@keyframes galaxyTremor{50%{transform:translate(1px,-1px)}}@keyframes devourPulse{50%{filter:brightness(2);transform:scale(1.25)}}
+.devour-beam{stroke:#e9e9ff;stroke-width:.65;stroke-dasharray:1 1;filter:drop-shadow(0 0 5px #754bbd);animation:devourBeam .65s ease-in both}@keyframes devourBeam{to{stroke-dashoffset:8;opacity:0}}
