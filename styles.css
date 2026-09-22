@@ -2315,6 +2315,53 @@ body[data-resonance-pulse="red"] .resonance-panel{animation:resonanceRed .8s eas
 @media(prefers-reduced-motion:reduce){.resonance-vfx-layer,.resonance-vfx-layer section,.resonance-rays i{animation-duration:.01ms!important}}
 @media(max-width:390px){.battle-bottom-area .battle-resonance-button{right:auto;left:calc(50% + 59px)}.resonance-row{padding:6px}}
 
+/* 1.08 BETA — the combat HUD floats over the map instead of reserving a
+   title-sized row. All map entities continue to share the same normalized
+   battle-world, so paths, monsters, effects and placed stars scale together. */
+.battle-top-hud{
+  position:absolute!important;z-index:125;top:0;left:0;right:0;width:100%;height:0;
+  min-height:0!important;padding:0!important;display:block!important;
+  border:0;background:none;box-shadow:none;pointer-events:none;
+}
+.battle-top-hud .wave{
+  position:absolute;top:max(7px,env(safe-area-inset-top));left:50%;translate:-50% 0;
+  display:grid;justify-items:center;gap:1px;width:max-content;padding:4px 10px 5px;
+  border:1px solid #91b8ee38;border-radius:11px;background:#070b27c7;
+  box-shadow:0 3px 12px #0008;backdrop-filter:blur(5px);
+}
+.battle-top-hud .wave>b{display:flex;align-items:baseline;justify-content:center;gap:5px;line-height:1}
+.battle-top-hud .wave>b>small{color:#9cacd3;font:800 9px/1 system-ui;letter-spacing:.12em}
+.battle-top-hud .wave>b>#wave{color:#fff;font:900 22px/.9 Georgia,serif;text-shadow:0 0 10px #778cff}
+.battle-top-hud .wave>span{display:grid;justify-items:center;color:#eaf7ff;font-size:11px;line-height:1.05}
+.battle-top-hud .wave span small{margin-top:2px;color:#a5b2d5;font-size:8px;letter-spacing:.05em}
+.battle-top-hud .hp{
+  position:absolute;top:max(8px,env(safe-area-inset-top));right:9px;display:flex;align-items:center;gap:5px;
+  max-width:39%;padding:5px 7px;border:1px solid #ee91ae40;border-radius:10px;background:#080b25d2;
+  box-shadow:0 3px 12px #0007;white-space:nowrap;
+}
+.battle-top-hud .hp b{display:block;color:#ffd8e3;font-size:10px;line-height:1.1;text-shadow:0 0 6px #fa648d;font-variant-numeric:tabular-nums}
+.battle-top-hud .hp em{color:#cceaff;font-size:9px;font-style:normal}
+.battle-top-hud .next-wave{
+  position:absolute;top:calc(max(8px,env(safe-area-inset-top)) + 31px);right:9px;width:auto;max-width:min(43%,174px);
+  padding:4px 7px 5px;border:1px solid #8ca8e33d;border-radius:9px;background:#080c27d2;
+  box-shadow:0 3px 12px #0006;backdrop-filter:blur(5px);
+}
+.battle-top-hud .next-wave>b{display:block;color:#aebde1;font-size:8px;line-height:1.15}
+.battle-top-hud #nextEnemies{display:flex;flex-wrap:wrap;gap:1px 5px;margin-top:2px;color:#ecf2ff;font-size:8px;line-height:1.25}
+.battle-top-hud #nextEnemies span{white-space:nowrap}.battle-top-hud .next-wave.boss{border-color:#ffb85e88;background:#261323df}
+.battle-top-hud .next-wave.boss>b{color:#ffc76f}.battle-top-hud .boss-enemy{color:#ffe0a0;font-weight:900}
+.battle-top-hud .binding-relic-status{position:absolute;top:70px;left:8px;max-width:45%;font-size:8px}
+.battle-map-area{padding:0!important}
+.battle-map-area .arena{border-radius:0 0 22px 22px}
+.battle-overlay-layer .side-controls{top:calc(max(8px,env(safe-area-inset-top)) + 84px);right:8px;gap:6px}
+.battle-overlay-layer .side-controls button{width:42px;height:38px;min-width:38px;min-height:38px;border-radius:12px;font-size:13px}
+.battle-overlay-layer .star-info{top:calc(max(8px,env(safe-area-inset-top)) + 84px)}
+@media(max-width:380px){
+  .battle-top-hud .wave{padding-inline:7px}.battle-top-hud .wave>b>#wave{font-size:20px}
+  .battle-top-hud .hp{right:5px;max-width:40%;padding-inline:5px}.battle-top-hud .hp b{font-size:9px}
+  .battle-top-hud .next-wave{right:5px;max-width:42%;padding:3px 5px}.battle-top-hud #nextEnemies{font-size:7px;gap-inline:3px}
+}
+
 /* 1.07 BETA — shell-local summon results, countdown and galactic bosses. */
 .draw-result-grid:has(> .draw-result:only-child){position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(78%,360px);height:auto;display:grid;grid-template-columns:1fr;padding:0;overflow:visible}
 .battle-countdown{position:absolute;z-index:120;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff5bc;font-size:clamp(76px,22cqw,150px);font-weight:1000;text-shadow:0 0 16px #fff,0 0 42px #8b66ff;pointer-events:none}

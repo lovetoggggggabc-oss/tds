@@ -51,14 +51,27 @@ const STAR_DUST_GRANT_AMOUNT = 5000;
 const METEOR_GRANT_AMOUNT = 20;
 // Release versions are advanced only when a new patch NEWS_ITEM is added.
 // Never derive or increment this value from launches, saves, or dates.
-const GAME_VERSION = "1.07 BETA";
+const GAME_VERSION = "1.08 BETA";
 let specialGrantApplied = false;
 const PREPARATION_SECONDS = 15;
 const GACHA_COSTS = Object.freeze({ constellation: Object.freeze([100, 1000]), relic: Object.freeze([3, 30]) });
 const GACHA_RULES = Object.freeze({ starChance: .95, constellationChance: .05, pityLimit: 40 });
 const DEFAULT_SETTINGS = Object.freeze({ showMonsterHpNumbers: true, zodiacVfx: "strong", showBattleStarInfo: true });
 const NEWS_ITEMS = Object.freeze([Object.freeze({
-  id: "beta_1_07_galaxy_boss_update", version: GAME_VERSION, date: "2026.09.22", title: "은하계의 진동",
+  id: "beta_1_08_battle_view_expansion", version: GAME_VERSION, date: "2026.09.22", title: "전투 화면 개선",
+  sections: Object.freeze([
+    Object.freeze({ title: "[1.08 BETA]", paragraphs: Object.freeze(["[전투 화면 개선]"]) }),
+    Object.freeze({ title: "전투 화면 개선", bullets: Object.freeze([
+      "전투 화면 상단의 '별자리 디펜스' 로고를 제거했습니다.",
+      "WAVE 정보를 전투 화면 상단 중앙으로 이동했습니다.",
+      "상단 HUD의 크기를 줄여 실제 전투 공간을 더욱 넓혔습니다.",
+      "기지 체력 표시를 더욱 간결하게 개선했습니다.",
+      "다음 적 정보를 더 작고 읽기 쉬운 형태로 개선했습니다.",
+      "모바일에서 실제 전투 맵이 더 넓고 길게 표시되도록 개선했습니다.",
+    ]) }),
+  ]), footer: "불필요한 여백을 전장으로 돌려 더 넓어진 전투를 만나보세요.",
+}), Object.freeze({
+  id: "beta_1_07_galaxy_boss_update", version: "1.07 BETA", date: "2026.09.22", title: "은하계의 진동",
   sections: Object.freeze([
     Object.freeze({ title: "[1.07 BETA]", paragraphs: Object.freeze(["은하계가 진동하며 새로운 위협이 나타났습니다."]) }),
     Object.freeze({ title: "신규 보스", paragraphs: Object.freeze(["은하계 학살자가 그림자 러너 무리를 이끌고 등장하며 활성 조디악 연결을 붕괴시킵니다.", "별 포식자가 공허 골렘과 등장해 연결되지 않은 별의 Stage를 흡수하고, 완전히 포식할수록 최대 체력이 증가합니다."]) }),
@@ -2917,8 +2930,11 @@ class UIManager {
     }
     const nextWave = g.wave.wave + 1;
     if (force || this.hudValues.nextWave !== nextWave) {
-      nextEnemies.innerHTML = nextWaveSummary(g.wave.wave)
-        .map(({ type, count }) => `<span>${CONFIG.monsters[type].boss ? "◈" : "◉"} ${CONFIG.monsters[type].name} ×${count}</span>`)
+      const nextSummary = nextWaveSummary(g.wave.wave);
+      const hasBoss = nextSummary.some(({ type }) => CONFIG.monsters[type].boss);
+      nextEnemies.parentElement?.classList.toggle("boss", hasBoss);
+      nextEnemies.innerHTML = nextSummary
+        .map(({ type, count }) => `<span class="${CONFIG.monsters[type].boss ? "boss-enemy" : ""}">${CONFIG.monsters[type].boss ? "⚠ BOSS ·" : "●"} ${CONFIG.monsters[type].name}${count > 1 ? ` ×${count}` : ""}</span>`)
         .join("");
       this.hudValues.nextWave = nextWave;
     }

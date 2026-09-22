@@ -3,7 +3,7 @@ import fs from "node:fs";
 const js=fs.readFileSync(new URL("../game.js",import.meta.url),"utf8");
 const html=fs.readFileSync(new URL("../index.html",import.meta.url),"utf8");
 const css=fs.readFileSync(new URL("../styles.css",import.meta.url),"utf8");
-assert.match(js,/const GAME_VERSION = "1\.06 BETA"/);
+assert.match(js,/id: "beta_1_06_battle_hud_resonance_ui", version: "1.06 BETA"/);
 assert.match(js,/beta_1_05_star_resonance/);
 assert.match(js,/beta_1_05_resonance_stardust_1000/);
 for(const [id,family] of Object.entries({DAWN:"BLUE",SAGITTARIUS:"BLUE",GUARDIAN:"BLUE",JUDGEMENT:"WHITE",BOND:"WHITE",STRIKE:"WHITE",RADIANCE:"RED",ASTROLOGER:"RED",TWILIGHT:"RED",LINK:"RED",HORIZON:"SPECIAL"})) assert.match(js,new RegExp(`id: CONSTELLATION_IDS\\.${id}, family: "${family}"`));
