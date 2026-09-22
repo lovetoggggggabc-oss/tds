@@ -1985,6 +1985,7 @@ class StarManager {
     this.selected = [];
     this.swapMode = false;
     this.zodiacMode = false;
+    this.daybreakOfferingSource = null;
     for (let i = 0; i < maxStars; i++) {
       let b = document.createElement("button");
       b.className = "star-node";
@@ -2075,6 +2076,13 @@ class StarManager {
   }
   tap(i) {
     if (!this.stars[i]) return;
+    if (this.daybreakOfferingSource) {
+      const source=this.daybreakOfferingSource, star=this.stars[i];
+      if (star.constellation || star.support || star.tier !== 4) return UIManager.hint("별자리에 연결되지 않은 Stage 4 일반 별을 선택하세요.");
+      this.stars[i]=null; source.runtime.lightStacks=Math.min(5,source.runtime.lightStacks+1); this.daybreakOfferingSource=null; this.selected=[];
+      if(source.runtime.lightStacks>=5){source.runtime.awakened=true;UIManager.hint("여명의 자리가 광명을 개방했습니다.");}else UIManager.hint(`광명 ${source.runtime.lightStacks} / 5`);
+      game.recomputeCombatCaches(); game.render(); return;
+    }
     if (this.horizonFocusSource) {
       const target = this.stars[i].constellation;
       if (!target || target.definitionId === CONSTELLATION_IDS.HORIZON || target === this.horizonFocusSource) return UIManager.hint("다른 활성 별자리를 선택하세요.");
@@ -2125,6 +2133,7 @@ class StarManager {
     this.zodiacMode = false;
     this.selected = [];
     this.horizonFocusSource = null;
+    this.daybreakOfferingSource = null;
   }
   update(dt) {
     this.stars.forEach((s, i) => {
@@ -2833,10 +2842,11 @@ class UIManager {
     const strikeInfo = constellation?.definitionId === CONSTELLATION_IDS.STRIKE ? `<span>일격 스택: ${constellation.runtime.strikeStacks}</span>` : "";
     const radianceInfo = constellation?.definitionId === CONSTELLATION_IDS.RADIANCE ? `<span>광휘 처치 수: ${constellation.runtime.radianceKills}</span><span>공격력 증가: +${formatMultiplier(constellation.runtime.radianceKillBonus * 100)}%</span>` : "";
     const horizonInfo = constellation?.definitionId === CONSTELLATION_IDS.HORIZON ? `<span>계승 대상: ${constellation.runtime.inheritedDefinitionId ? CONSTELLATION_DEFINITIONS[constellation.runtime.inheritedDefinitionId].name : "없음"}</span>` : "";
+    const daybreakInfo = constellation?.definitionId === CONSTELLATION_IDS.DAYBREAK ? `<span>광명: ${constellation.runtime.lightStacks} / 5</span><span>${constellation.runtime.awakened?"광명 개방":"미각성"}</span>` : "";
     const constellationLevel = constellation ? (playerProgress.constellationCollection[constellation.definitionId]?.level || 1) : 1;
     const recipe = constellation ? Object.entries(constellationStats.recipe).map(([type, count]) => `${STAR_TYPES[type.toUpperCase()].name} ×${count}`).join(" + ") : "";
     starInfo.innerHTML = constellation
-      ? `<button type="button" class="battle-info-close" aria-label="현재 별 정보 닫기">×</button><strong>✦ ${constellationStats.name}</strong><small>Lv.${constellationLevel} · Stage 합 ${constellation.componentStageSum}</small><div class="stats"><span>ATK ${Math.round(getStageScaledDamage(constellation) * constellationLevelDamageMultiplier(constellationLevel)).toLocaleString()}${statDelta(getStageScaledDamage(constellation) * constellationLevelDamageMultiplier(constellationLevel), constellation.currentDamage(), 0)}</span><span>SPD ${formatMultiplier(constellationStats.attackSpeed + constellationLevelAttackSpeedBonus(constellationLevel))}${statDelta(constellationStats.attackSpeed + constellationLevelAttackSpeedBonus(constellationLevel), constellation.effectiveAttackSpeed(), 2)}</span><span>RANGE ${constellation.effectiveRange()}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span></div><p class="trait">${constellationStats.specialDescriptions.map((description) => description).slice(0, 2).join(" · ")}</p>${twilightInfo}${bondInfo}${strikeInfo}${radianceInfo}`
+      ? `<button type="button" class="battle-info-close" aria-label="현재 별 정보 닫기">×</button><strong>✦ ${constellationStats.name}</strong><small>Lv.${constellationLevel} · Stage 합 ${constellation.componentStageSum}</small><div class="stats"><span>ATK ${Math.round(getStageScaledDamage(constellation) * constellationLevelDamageMultiplier(constellationLevel)).toLocaleString()}${statDelta(getStageScaledDamage(constellation) * constellationLevelDamageMultiplier(constellationLevel), constellation.currentDamage(), 0)}</span><span>SPD ${formatMultiplier(constellationStats.attackSpeed + constellationLevelAttackSpeedBonus(constellationLevel))}${statDelta(constellationStats.attackSpeed + constellationLevelAttackSpeedBonus(constellationLevel), constellation.effectiveAttackSpeed(), 2)}</span><span>RANGE ${constellation.effectiveRange()}</span><span>단계 공격력 배율: ×${formatMultiplier(getConstellationStageMultiplier(constellation))}</span></div><p class="trait">${constellationStats.specialDescriptions.map((description) => description).slice(0, 2).join(" · ")}</p>${twilightInfo}${bondInfo}${strikeInfo}${radianceInfo}${daybreakInfo}`
       : `<button type="button" class="battle-info-close" aria-label="현재 별 정보 닫기">×</button><strong>✦ ${d.name} 별</strong><small>Stage ${s.tier} · Lv.${permanentLevel}</small><div class="stats"><span>ATK ${damage}${statDelta(damage, damage * (g.attackBuffUntil > g.gameTime ? 11 : 1) * relicMultiplier("BLESSING_OF_PLANETS") * resonanceDamageMultiplier(STAR_FAMILIES[s.type]), 0)}</span><span>${d.target === "burst" ? "CYCLE" : "SPD"} ${d.target === "burst" ? rate : `${formatMultiplier(d.rate + starLevelAttackSpeedBonus(permanentLevel) + (s.type === "purple" ? (g.purpleStageSum || 0) / 10 : 0))}${statDelta(d.rate + starLevelAttackSpeedBonus(permanentLevel) + (s.type === "purple" ? (g.purpleStageSum || 0) / 10 : 0), d.rate * (s.attackSpeedModifier || 1), 2)}`}</span><span>RANGE ${d.range}</span></div><p class="trait">${normalStarAbilityText(s.type, s.tier, permanentLevel, g.normalStarStageSums)}</p>`;
     starInfo.querySelector(".battle-info-close")?.addEventListener("click",(event)=>{event.stopPropagation();this.dismissedInfoKey=infoKey;starInfo.hidden=true;});
     ranges.innerHTML = "";
@@ -2866,6 +2876,7 @@ class UIManager {
       const isBond = constellation.definitionId === CONSTELLATION_IDS.BOND;
       const isStrike = constellation.definitionId === CONSTELLATION_IDS.STRIKE;
       const isHorizon = constellation.definitionId === CONSTELLATION_IDS.HORIZON;
+      const isDaybreak = constellation.definitionId === CONSTELLATION_IDS.DAYBREAK;
       const canDivine = isAstrologer && pick.m.player.resources.can(CONFIG.divinationCost);
       const canUseGuardianLight = isGuardian && pick.m.player.resources.starlight >= CONFIG.guardianLightCost &&
         (game.base.hp < game.base.maxHp || game.base.maxHp < BASE_MAX_HP_CAP);
@@ -2874,7 +2885,7 @@ class UIManager {
       // previous tower type must never survive a selection/type change.
       let actionKey = `${pick.player}:${pick.index}:constellation:${constellation.definitionId}:${enabled}:${canDivine}:${canUseGuardianLight}:${canOfferBond}:${constellation.runtime.bindChance}:${constellation.runtime.strikeStacks || 0}:${constellation.runtime.inheritedDefinitionId || "none"}`;
       if (this.actionKey !== actionKey) {
-        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 350</button>` : ""}${isBond ? `<button class="bond-offering action-above" data-context="bond-offering"${canOfferBond ? "" : " disabled"}>별빛 헌납 300</button>` : ""}${isStrike ? `<button class="strike-action action-above" data-context="strike"${constellation.runtime.strikeStacks ? "" : " disabled"}>일격 가하기</button>` : ""}${isHorizon ? `<button class="horizon-action action-above" data-context="horizon">지평선의 초점</button>` : ""}<button class="${isAstrologer || isGuardian || isBond || isStrike || isHorizon ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
+        contextActions.innerHTML = `${isAstrologer ? `<button class="divination action-above" data-context="divination"${canDivine ? "" : " disabled"}>별빛 점술 30</button>` : ""}${isGuardian ? `<button class="guardian-light action-above" data-context="guardian-light"${canUseGuardianLight ? "" : " disabled"}>수호의 빛 350</button>` : ""}${isBond ? `<button class="bond-offering action-above" data-context="bond-offering"${canOfferBond ? "" : " disabled"}>별빛 헌납 300</button>` : ""}${isStrike ? `<button class="strike-action action-above" data-context="strike"${constellation.runtime.strikeStacks ? "" : " disabled"}>일격 가하기</button>` : ""}${isHorizon ? `<button class="horizon-action action-above" data-context="horizon">지평선의 초점</button>` : ""}${isDaybreak && !constellation.runtime.awakened ? `<button class="daybreak-action action-above" data-context="daybreak">광명 ${constellation.runtime.lightStacks}/5</button>` : ""}<button class="${isAstrologer || isGuardian || isBond || isStrike || isHorizon || isDaybreak ? "action-below" : "action-above"}" data-context="release"${enabled ? "" : " disabled"}>별자리 해제 ◇1</button>`;
         if (isAstrologer)
           contextActions.querySelector('[data-context="divination"]').onclick = () =>
             DivinationSystem.execute(pick.m, pick.index);
@@ -2886,6 +2897,7 @@ class UIManager {
             BondOfferingSystem.execute(pick.m, pick.index);
         if (isStrike) contextActions.querySelector('[data-context="strike"]').onclick = () => constellation.unleashStrike();
         if (isHorizon) contextActions.querySelector('[data-context="horizon"]').onclick = () => { pick.m.horizonFocusSource = constellation; pick.m.selected = []; UIManager.hint("계승할 다른 별자리를 선택하세요."); game.render(); };
+        if (isDaybreak && !constellation.runtime.awakened) contextActions.querySelector('[data-context="daybreak"]').onclick = () => { pick.m.daybreakOfferingSource=constellation; pick.m.selected=[]; UIManager.hint("바칠 Stage 4 일반 별을 선택하세요."); game.render(); };
         contextActions.querySelector('[data-context="release"]').onclick = () =>
           ZodiacSystem.release(pick.m, pick.index);
         this.actionKey = actionKey;
